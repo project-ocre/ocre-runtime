@@ -1,0 +1,58 @@
+menu "Project Ocre options"
+
+source "Kconfig.zephyr"
+
+config OCRE
+	bool "Project Ocre"
+	default y
+
+  select WAMR
+
+  select FLASH
+  select FLASH_MAP
+  select FLASH_PAGE_LAYOUT
+  select FILE_SYSTEM
+  select FILE_SYSTEM_LITTLEFS
+  select REBOOT
+
+  select PRINTK
+
+  select SMF
+  select SMF_ANCESTOR_SUPPORT
+  select SMF_INITIAL_TRANSITION
+
+  select SETTINGS
+  select SETTINGS_RUNTIME
+
+  select NETWORKING
+  select NET_SOCKETS
+  select NET_CONNECTION_MANAGER
+  select NET_UDP
+
+  select EVENTS
+  select EVENTFD
+
+  help
+	  Enable the Project Ocre runtime.
+
+config OCRE_WAMR_HEAP_BUFFER_SIZE
+  int "WAMR heap buffer size in bytes"
+  default 204800
+  help
+    A static memory allocation for WAMR to use as a heap.
+
+config OCRE_LOG_DEBUG
+  bool "Debug logging"
+  default n
+  help
+    Enable Ocre debug logging
+
+if OCRE
+
+module = OCRE
+module-str = OCRE
+source "subsys/logging/Kconfig.template.log_config"
+
+endif
+
+endmenu
