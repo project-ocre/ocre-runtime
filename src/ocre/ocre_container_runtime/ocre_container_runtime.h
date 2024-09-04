@@ -20,121 +20,175 @@
 
 #include "ocre_container_runtime.h"
 #include "../container_healthcheck/ocre_container_healthcheck.h"
-#include "../../components/container_supervisor/cs_sm.h"
 
-#define MAX_CONTAINERS 10
+#define OCRE_CR_DEBUG_ON 0   // Debug flag for container runtime (0: OFF, 1: ON)
+#define MAX_CONTAINERS   10  // Maximum number of containers supported by the runtime !!! Can be configurable
+#define FILE_PATH_MAX    256 // Maximum file path length
 
-#define OCRE_CR_DEBUG_ON 0
-#define FILE_PATH_MAX    256
-
+/**
+ * @brief Structure containing the runtime arguments for a container runtime.
+ */
 typedef struct ocre_runtime_arguments_t {
-    uint32_t size;
-    char *buffer;
-    char error_buf[128];
-    wasm_module_t module;
-    wasm_module_inst_t module_inst;
-    wasm_function_inst_t func;
-    wasm_exec_env_t exec_env;
-    uint32_t stack_size;
-    uint32_t heap_size;
-    ocre_healthcheck WDT;
+    uint32_t size;                  ///< Size of the buffer.
+    char *buffer;                   ///< Pointer to the buffer containing the WASM module.
+    char error_buf[128];            ///< Buffer to store error messages.
+    wasm_module_t module;           ///< Handle to the loaded WASM module.
+    wasm_module_inst_t module_inst; ///< Handle to the instantiated WASM module.
+    wasm_function_inst_t func;      ///< Handle to the function to be executed within the WASM module.
+    wasm_exec_env_t exec_env;       ///< Execution environment for the WASM function.
+    uint32_t stack_size;            ///< Stack size for the WASM module.
+    uint32_t heap_size;             ///< Heap size for the WASM module.
 } ocre_runtime_arguments_t;
 
+/**
+ * @brief Enum representing the permission types for containers.
+ * NOT USED YET
+ */
 typedef enum {
-    OCRE_CONTAINER_PERM_READ_ONLY,
-    OCRE_CONTAINER_PERM_READ_WRITE,
-    OCRE_CONTAINER_PERM_EXECUTE
+    OCRE_CONTAINER_PERM_READ_ONLY,  ///< Container has read-only permissions.
+    OCRE_CONTAINER_PERM_READ_WRITE, ///< Container has read and write permissions.
+    OCRE_CONTAINER_PERM_EXECUTE     ///< Container has execute permissions.
 } ocre_container_permissions_t;
 
+/**
+ * @brief Enum representing the possible status of a container.
+ */
 typedef enum {
-    CONTAINER_STATUS_UNKNOWN,
-    CONTAINER_STATUS_PENDING,
-    CONTAINER_STATUS_CREATED,
-    CONTAINER_STATUS_RUNNING,
-    CONTAINER_STATUS_STOPPED,
-    CONTAINER_STATUS_DESTROYED,
-    CONTAINER_STATUS_UNRESPONSIVE,
-    CONTAINER_STATUS_ERROR,
+    CONTAINER_STATUS_UNKNOWN,      ///< Status is unknown.
+    RUNTIME_STATUS_INITIALIZED,    ///< Runtime has been initialized.
+    RUNTIME_STATUS_ERROR,          ///< An error occurred with the runtime
+    RUNTIME_STATUS_DESTROYED,      ///< Runtime has been destroyed.
+    CONTAINER_STATUS_CREATED,      ///< Container has been created.
+    CONTAINER_STATUS_RUNNING,      ///< Container is currently running.
+    CONTAINER_STATUS_STOPPED,      ///< Container has been stopped.
+    CONTAINER_STATUS_DESTROYED,    ///< Container has been destroyed.
+    CONTAINER_STATUS_UNRESPONSIVE, ///< Container is unresponsive. -> For Healthcheck
+    CONTAINER_STATUS_ERROR,        ///< An error occurred with the container.
 } ocre_container_status_t;
 
-typedef struct ocre_container {
-    ocre_runtime_arguments_t ocre_runtime_arguments;
-    ocre_container_status_t container_runtime_status;
-} ocre_container;
-typedef struct ocre_binary_t {
-    char name[64];
-} ocre_binary_t;
-typedef struct ocre_runime_container_ctx {
-    int file_count;
-    ocre_binary_t ocre_binary;
-    ocre_container container;
-} ocre_runime_container_ctx;
+typedef struct ocre_container_init_arguments_t {
+    uint32_t default_stack_size; ///< Stack size for the WASM module.
+    uint32_t default_heap_size;  ///< Heap size for the WASM module.
+    ocre_healthcheck WDT;        ///< Watchdog timer for container health checking.
+    int maximum_containers;      ///< Maximum number of containers allowed.
+    NativeSymbol *ocre_api_functions;
+} ocre_container_init_arguments_t;
 
 /**
- * @brief Initializes the runtime itself.
- *
- * @return Void
+ * @brief Structure representing the data associated with a container.
  */
-void ocre_container_runtime_init();
+typedef struct ocre_container_data_t {
+    char name[16];          // <! Name of module (must be unique per installed instance)
+    char sha256[70];        // <! Sha256 of file (to be used in file path)
+    uint32_t stack_size;    ///< Stack size for the WASM module.
+    uint32_t heap_size;     ///< Heap size for the WASM module.
+    ocre_healthcheck WDT;   ///< Watchdog timer for container health checking.
+    int maximum_containers; ///< Maximum number of containers allowed.
+    int watchdog_interval;
+    int timers;
+} ocre_container_data_t;
 
 /**
- * @brief Create and initialize a container.
- *
- * @param container_id Identifier for the container.
- * @param image_name Name of the container image to be loaded.
- * @param container_config Additional configuration for the container.
- * @return Returns current status of container
+ * @brief Structure representing a container in the runtime.
  */
-ocre_container_status_t ocre_container_runtime_create_container(char *file_path, ocre_container *container);
+typedef struct ocre_container_t {
+    ocre_runtime_arguments_t ocre_runtime_arguments;  ///< Runtime arguments for the container.
+    ocre_container_status_t container_runtime_status; ///< Current status of the container.
+    sys_snode_t node;                                 ///< System node for linked list integration.
+    struct ocre_container_data_t ocre_container_data; ///< Container-specific data.
+} ocre_container_t;
+
+/**
+ * @brief Structure representing the context for container runtime operations.
+ */
+typedef struct ocre_cs_ctx {
+    ocre_container_t *current_container;
+    void *atym_from_component;
+} ocre_cs_ctx;
+
+extern struct ocre_container_t containers[MAX_CONTAINERS];
+extern int current_container_id;
+extern int download_count;
+
+/**
+ * @brief Initializes the container runtime environment.
+ *
+ * @param args Pointer to the runtime arguments structure.
+ * @return Current status of the container runtime.
+ */
+ocre_container_status_t ocre_container_runtime_init(ocre_container_init_arguments_t *args);
+
+/**
+ * @brief Destroys the container runtime environment.
+ *
+ * @param None.
+ * @return Current status of the container runtime.
+ */
+ocre_container_status_t ocre_container_runtime_destroy(void);
+
+/**
+ * @brief Creates and initializes a new container within the runtime.
+ *
+ * @param ctx Pointer to the container runtime context structure.
+ * @param msg Pointer to the container data structure.
+ * @return Current status of the created container.
+ */
+ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx, int container_id);
 
 /**
  * @brief Runs a loaded container.
  *
- * @param container_id Identifier for the container to be run.
- * @return Returns 0 on success, negative error code on failure.
+ * @param ctx Pointer to the container runtime context structure.
+ * @return Current status of the container after attempting to run it.
  */
-ocre_container_status_t ocre_container_runtime_run_container(ocre_container *container);
+ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, int container_id);
 
 /**
- * @brief Retrieves the status of a specific container.
+ * @brief Retrieves the current status of a specific container.
  *
- * @param container_id Identifier for the container.
- * @return Returns the status of the specified container.
+ * @param ctx Pointer to the container runtime context structure.
+ * @return Current status of the specified container.
  */
-ocre_container_status_t ocre_container_runtime_get_container_status(ocre_container *container);
+ocre_container_status_t ocre_container_runtime_get_container_status(ocre_cs_ctx *ctx, int container_id);
 
 /**
  * @brief Stops a running container.
  *
- * @param container_id Identifier for the container to be stopped.
- * @return Returns 0 on success, negative error code on failure.
+ * @param ctx Pointer to the container runtime context structure.
+ * @return Current status of the container after attempting to stop it.
  */
-ocre_container_status_t ocre_container_runtime_stop_container(ocre_container *container);
+ocre_container_status_t ocre_container_runtime_stop_container(ocre_cs_ctx *ctx, int container_id);
 
 /**
- * @brief Unloads a container.
+ * @brief Destroys and unloads a container from the runtime.
  *
- * @param ocre_cs_ctx context of ocre runtime.
- * @return Returns 0 on success, negative error code on failure.
+ * @param ctx Pointer to the container runtime context structure.
+ * @param msg Pointer to the container data structure.
+ * @return Current status of the container after attempting to destroy it.
  */
-ocre_container_status_t ocre_container_runtime_destroy_container(ocre_container *container);
-
-/**
- * @brief Stops the container runtime.
- *
- * @return Returns 0 on success, negative error code on failure.
- */
-ocre_container_status_t ocre_container_runtime_stop(ocre_container *container);
+ocre_container_status_t ocre_container_runtime_destroy_container(ocre_cs_ctx *ctx, int container_id);
 
 /**
  * @brief Restarts a running container.
  *
- * @param container_id Identifier for the container to be restarted.
- * @return Returns 0 on success, negative error code on failure.
+ * @param ctx Pointer to the container runtime context structure.
+ * @return Current status of the container after attempting to restart it.
  */
-ocre_container_status_t ocre_container_runtime_restart_container(ocre_container *container);
+ocre_container_status_t ocre_container_runtime_restart_container(ocre_cs_ctx *ctx, int container_id);
 
-void ocre_request_create_container();
-void ocre_container_unresponsive();
-void ocre_container_get_file_count(int file_conut);
+/*                               Api calls between Container Runtime and Device manager                           */
+/**
+ * @brief Sends an event to create a container.
+ *
+ * @param install_msg Structure containing information required to install the container.
+ */
+void ocre_container_runtime_send_event_create_container(struct install_msg install_msg);
+
+/**
+ * @brief Sends an event to destroy a container.
+ *
+ * @param install_msg Structure containing information required to uninstall the container.
+ */
+void ocre_container_runtime_send_event_destroy_container(struct install_msg install_msg);
+
 #endif /* OCRE_CONTAINER_RUNTIME_H */

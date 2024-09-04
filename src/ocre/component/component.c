@@ -17,8 +17,8 @@ void ocre_component_init(struct ocre_component *component) {
 
 int ocre_component_send(struct ocre_component *component, struct ocre_message *msg) {
     int ret = k_msgq_put(&component->msgq, msg, K_NO_WAIT);
-    if (ret != 0) {
 
+    if (ret != 0) {
         LOG_HEXDUMP_DBG(msg, sizeof(struct ocre_message), "message");
     }
 

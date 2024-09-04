@@ -2,4 +2,3 @@ name: project-ocre
 
 build:
   cmake-ext: True
-  kconfig-ext: True

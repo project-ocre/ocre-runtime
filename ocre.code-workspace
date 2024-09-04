@@ -52,7 +52,7 @@
 				"command": "west",
 				"args": [
 					"build",
-					// "--pristine",
+					"--pristine",
 					"-b",
 					"${input:board}",
 					"${workspaceFolder}/application",
