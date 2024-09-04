@@ -14,9 +14,6 @@
 #include <zephyr/fs/fs.h>
 #include <zephyr/kernel.h>
 
-// WAMR includes
-#include "coap_ext.h"
-
 #include "../api/ocre_api.h"
 
 #include <ocre/ocre.h>
@@ -32,47 +29,55 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include <ocre/sm/sm.h>
 #include "ocre_container_runtime.h"
 
+#include "../../atym/components/device_manager/device_manager_sm.h"
 #include "../../components/container_supervisor/cs_sm.h"
 
 #include "../container_healthcheck/ocre_container_healthcheck.h"
 
-#define FS_MAX_PATH_LEN 256
-struct k_thread ocre_cs_thread;
+// Data strucrtures shared with cs_sm
+extern struct ocre_container_t containers[MAX_CONTAINERS];
+extern int current_container_id;
+extern int download_count;
 
-extern ocre_runime_container_ctx containers;
-extern int curent_container_index;
-
+// Internal Data structures for runtime
 static char filepath[FILE_PATH_MAX];
-static char wamr_heap_buf[CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE] = {0};
+static char wamr_heap_buf[CONFIG_ATYM_WAMR_HEAP_BUFFER_SIZE] = {0};
 
+static void ocre_container_data_copy(ocre_container_data_t *ocre_container_data, struct install_msg *install_msg) {
+    ocre_container_data->heap_size = install_msg->msg.heap_size;
+    strncpy(ocre_container_data->name, install_msg->msg.name, sizeof(install_msg->msg.name));
+    // ocre_container_data->name = install_msg->msg.name;
+    strncpy(ocre_container_data->sha256, install_msg->msg.sha256, sizeof(install_msg->msg.sha256));
+    // ocre_container_data->sha256 = install_msg->msg.sha256;
+    ocre_container_data->timers = install_msg->msg.timers;
+    ocre_container_data->watchdog_interval = install_msg->msg.watchdog_interval;
+}
 
-static int load_binary_to_buffer_fs(char *file_path, ocre_container *container) {
+static int load_binary_to_buffer_fs(struct ocre_cs_ctx *ctx, int container_id, ocre_container_data_t *container_data) {
     int ret = 0;
     struct fs_file_t app_file;
-
     struct fs_dirent entry;
-    snprintf(filepath, sizeof(filepath), "/lfs/ocre/images/%s", file_path);
-    ret = fs_stat(filepath, &entry);
 
+    snprintf(filepath, sizeof(filepath), "/lfs/ocre/images/%s.bin", container_data->sha256);
+
+    ret = fs_stat(filepath, &entry);
     if (0 > ret) {
         LOG_ERR("Fail with file( %s ): %d", filepath, ret);
     }
 
-    container->ocre_runtime_arguments.size = entry.size;
-
-    container->ocre_runtime_arguments.buffer = malloc(entry.size * sizeof(char));
+    containers[container_id].ocre_runtime_arguments.size = entry.size;
+    containers[container_id].ocre_runtime_arguments.buffer = malloc(entry.size * sizeof(char));
     LOG_INF("file path( %s ), size (%d): ", filepath, entry.size);
     fs_file_t_init(&app_file);
 
     ret = fs_open(&app_file, filepath, FS_O_READ);
-
     if (0 > ret) {
         LOG_ERR("Fail open file( %s ): %d", filepath, ret);
         return ret;
     }
 
-    ret = fs_read(&app_file, container->ocre_runtime_arguments.buffer, container->ocre_runtime_arguments.size);
-
+    ret = fs_read(&app_file, containers[container_id].ocre_runtime_arguments.buffer,
+                  containers[container_id].ocre_runtime_arguments.size);
     if (0 > ret) {
         return ret;
     }
@@ -85,8 +90,7 @@ static int load_binary_to_buffer_fs(char *file_path, ocre_container *container) 
     return ret;
 }
 
-void ocre_container_runtime_init() {
-    struct ocre_message event;
+ocre_container_status_t ocre_container_runtime_init(ocre_container_init_arguments_t *args) {
     RuntimeInitArgs init_args;
     memset(&init_args, 0, sizeof(RuntimeInitArgs));
     init_args.mem_alloc_type = Alloc_With_Pool;
@@ -96,109 +100,144 @@ void ocre_container_runtime_init() {
     init_args.native_module_name = "env";
     init_args.n_native_symbols = ocre_api_table_size;
     init_args.native_symbols = ocre_api_table;
-
     /* initialize runtime environment */
     if (!wasm_runtime_full_init(&init_args)) {
         LOG_ERR("Failed to initialize the WASM runtime");
         return;
     }
-    LOG_INF("Initialized OCRE_CR");
-    event.event = EVENT_CREATE_CONTAINERS;
-    ocre_component_send(&ocre_cs_component, &event);
+    start_ocre_cs_thread();
+    return RUNTIME_STATUS_INITIALIZED;
 }
 
-ocre_container_status_t ocre_container_runtime_create_container(char *file_path, ocre_container *container) {
-    struct ocre_message event;
-    int ret = load_binary_to_buffer_fs(file_path, container);
+ocre_container_status_t ocre_container_runtime_destroy(void) {
+    destroy_ocre_cs_thread();
+    return RUNTIME_STATUS_DESTROYED;
+}
+
+ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx, int container_id) {
+    // setting default values
+    containers[container_id].ocre_runtime_arguments.stack_size = 8092;
+    containers[container_id].ocre_runtime_arguments.heap_size = 8092;
+
+    int ret = load_binary_to_buffer_fs(ctx, container_id, &containers[container_id].ocre_container_data);
     if (0 > ret) {
-        LOG_ERR("Failed to load binary to buffer");
+        LOG_ERR("Failed to load binary to buffer LOL");
     }
     LOG_INF("Loaded binary to buffer (%d)", ret);
+
     // take the info about the app heap, timers, watchdogs needed for run
-    container->ocre_runtime_arguments.stack_size = 4096;
-    container->ocre_runtime_arguments.heap_size = 4096;
+    if (containers[container_id].ocre_container_data.heap_size > 0) {
+        containers[container_id].ocre_runtime_arguments.stack_size =
+                containers[container_id].ocre_container_data.heap_size;
+        containers[container_id].ocre_runtime_arguments.heap_size =
+                containers[container_id].ocre_container_data.heap_size;
+    }
+  
+    if (containers[container_id].ocre_container_data.timers > 0) {
+        // the timers API is in ocre_timer.h
+    }
+  
+    if (containers[container_id].ocre_container_data.watchdog_interval > 0) {
+        ocre_healthcheck_init(&containers[container_id].ocre_container_data.WDT,
+                              containers[container_id].ocre_container_data.watchdog_interval);
+    }
+  
     /* parse the WASM file from buffer and create a WASM module */
-    container->ocre_runtime_arguments.module = wasm_runtime_load(
-            container->ocre_runtime_arguments.buffer, container->ocre_runtime_arguments.size,
-            container->ocre_runtime_arguments.error_buf, sizeof(container->ocre_runtime_arguments.error_buf));
-    if (!container->ocre_runtime_arguments.module) {
-        LOG_ERR("ERROR load: %s", container->ocre_runtime_arguments.error_buf);
+    containers[container_id].ocre_runtime_arguments.module =
+            wasm_runtime_load(containers[container_id].ocre_runtime_arguments.buffer,
+                              containers[container_id].ocre_runtime_arguments.size,
+                              containers[container_id].ocre_runtime_arguments.error_buf,
+                              sizeof(containers[container_id].ocre_runtime_arguments.error_buf));
+    if (!containers[container_id].ocre_runtime_arguments.module) {
+        LOG_ERR("ERROR load: %s", containers[container_id].ocre_runtime_arguments.error_buf);
     }
     /* create an instance of the WASM module (WASM linear memory is ready) */
-    container->ocre_runtime_arguments.module_inst = wasm_runtime_instantiate(
-            container->ocre_runtime_arguments.module, container->ocre_runtime_arguments.stack_size,
-            container->ocre_runtime_arguments.heap_size, container->ocre_runtime_arguments.error_buf,
-            sizeof(container->ocre_runtime_arguments.error_buf));
-    if (!container->ocre_runtime_arguments.module_inst) {
-        LOG_ERR("ERROR instantiate: %s", container->ocre_runtime_arguments.error_buf);
+    containers[container_id].ocre_runtime_arguments.module_inst =
+            wasm_runtime_instantiate(containers[container_id].ocre_runtime_arguments.module,
+                                     containers[container_id].ocre_runtime_arguments.stack_size,
+                                     containers[container_id].ocre_runtime_arguments.heap_size,
+                                     containers[container_id].ocre_runtime_arguments.error_buf,
+                                     sizeof(containers[container_id].ocre_runtime_arguments.error_buf));
+    if (!containers[container_id].ocre_runtime_arguments.module_inst) {
+        LOG_ERR("ERROR instantiate: %s", containers[container_id].ocre_runtime_arguments.error_buf);
     }
-    event.event = EVENT_RUN_CONTAINERS;
-    ocre_component_send(&ocre_cs_component, &event);
-    container->container_runtime_status = CONTAINER_STATUS_CREATED;
-    LOG_INF("Created Container: /lfs/ocre/%s", file_path);
+
+    containers[container_id].container_runtime_status = CONTAINER_STATUS_CREATED;
     return CONTAINER_STATUS_CREATED;
 }
 
-ocre_container_status_t ocre_container_runtime_run_container(ocre_container *container) {
-    /* create an instance of the WASM module (WASM linear memory is ready) */
-    /* lookup a WASM function by its name the function signature can NULL here */
-    container->ocre_runtime_arguments.func =
-            wasm_runtime_lookup_function(container->ocre_runtime_arguments.module_inst, "on_init", "");
-    if (NULL == container->ocre_runtime_arguments.func) {
-        LOG_ERR("ERROR lookup function: ");
-    }
-    /* create an execution environment to execute the WASM functions */
-    container->ocre_runtime_arguments.exec_env = wasm_runtime_create_exec_env(
-            container->ocre_runtime_arguments.module_inst, container->ocre_runtime_arguments.stack_size);
-    if (NULL == container->ocre_runtime_arguments.exec_env) {
-        LOG_ERR("ERROR creating executive environment: ");
-    }
-    /* call the WASM function */
+ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, int container_id) {
     uint32_t argv[2];
     argv[0] = 8;
+    /* Create an instance of the WASM module (WASM linear memory is ready) */
+    /* Lookup a WASM function by its name */
+    containers[container_id].ocre_runtime_arguments.func =
+            wasm_runtime_lookup_function(containers[container_id].ocre_runtime_arguments.module_inst, "on_init", "");
+    if (NULL == containers[container_id].ocre_runtime_arguments.func) {
+        LOG_ERR("ERROR lookup function: ");
+    }
 
-    if (!wasm_runtime_call_wasm(container->ocre_runtime_arguments.exec_env, container->ocre_runtime_arguments.func, 1,
-                                argv)) {
+    /* creat an execution environment to execute the WASM functions */
+    containers[container_id].ocre_runtime_arguments.exec_env =
+            wasm_runtime_create_exec_env(containers[container_id].ocre_runtime_arguments.module_inst,
+                                         containers[container_id].ocre_runtime_arguments.stack_size);
+    if (NULL == containers[container_id].ocre_runtime_arguments.exec_env) {
+        LOG_ERR("ERROR creating executive environment: ");
+    }
+
+    /* call the WASM function */
+    if (!wasm_runtime_call_wasm(containers[container_id].ocre_runtime_arguments.exec_env,
+                                containers[container_id].ocre_runtime_arguments.func, 1, argv)) {
         LOG_ERR("ERROR calling main:");
     }
-    container->container_runtime_status = CONTAINER_STATUS_RUNNING;
 
+    containers[container_id].container_runtime_status = CONTAINER_STATUS_RUNNING;
     return CONTAINER_STATUS_RUNNING;
 }
 
-ocre_container_status_t ocre_container_runtime_destroy_container(ocre_container *container) {
-    wasm_runtime_unload(container->ocre_runtime_arguments.module);
-    container->container_runtime_status = CONTAINER_STATUS_DESTROYED;
+ocre_container_status_t ocre_container_runtime_destroy_container(ocre_cs_ctx *ctx, int container_id) {
+    wasm_runtime_unload(containers[container_id].ocre_runtime_arguments.module);
+    containers[container_id].container_runtime_status = CONTAINER_STATUS_DESTROYED;
     return CONTAINER_STATUS_DESTROYED;
 }
 
-ocre_container_status_t ocre_container_runtime_get_container_status(ocre_container *container) {
-    return container->container_runtime_status;
-}
-
-ocre_container_status_t ocre_container_runtime_stop_container(ocre_container *container) {
-    wasm_runtime_deinstantiate(container->ocre_runtime_arguments.module_inst);
-    container->container_runtime_status = CONTAINER_STATUS_STOPPED;
+ocre_container_status_t ocre_container_runtime_stop_container(ocre_cs_ctx *ctx, int container_id) {
+    wasm_runtime_deinstantiate(containers[container_id].ocre_runtime_arguments.module_inst);
+    containers[container_id].container_runtime_status = CONTAINER_STATUS_STOPPED;
     return CONTAINER_STATUS_STOPPED;
 }
 
-ocre_container_status_t ocre_container_runtime_restart_container(ocre_container *container) {
-    ocre_container_runtime_stop_container(container);
-    ocre_container_runtime_run_container(container);
-    ocre_healthcheck_reinit(&container->ocre_runtime_arguments.WDT);
-    container->container_runtime_status = CONTAINER_STATUS_RUNNING;
+ocre_container_status_t ocre_container_runtime_restart_container(ocre_cs_ctx *ctx, int container_id) {
+    ocre_container_runtime_stop_container(ctx, container_id);
+    ocre_container_runtime_run_container(ctx, container_id);
+    ocre_healthcheck_reinit(&containers[container_id].ocre_container_data.WDT);
+    containers[container_id].container_runtime_status = CONTAINER_STATUS_RUNNING;
     return CONTAINER_STATUS_RUNNING;
 }
 
-void ocre_container_get_file_count(int file_conut) {
+ocre_container_status_t ocre_container_runtime_get_container_status(ocre_cs_ctx *ctx, int container_id) {
+    return containers[container_id].container_runtime_status;
 }
 
-void ocre_request_create_container() {
-    LOG_INF("REQUEST_CREATE_CONTAINER_CATCH");
-    struct ocre_message event;
-    event.event = EVENT_CREATE_CONTAINERS;
+void ocre_container_runtime_send_event_create_container(struct install_msg install_msg) {
+    LOG_INF("catch request and saved the install msg to containers array");
+    struct ocre_message event = {.event = EVENT_CREATE_CONTAINER,
+                                 .components.iwasm.install_msg.from = &device_manager_component};
+    ocre_container_data_t Data;
+    ocre_container_data_copy(&Data, &install_msg);
+    containers[download_count].ocre_container_data = Data;
+    download_count++;
     ocre_component_send(&ocre_cs_component, &event);
 }
 
-void ocre_container_unresponsive() {
+void ocre_container_runtime_send_event_destroy_container(struct install_msg install_msg) {
+    struct ocre_message event = {
+            .event = EVENT_DESTROY_CONTAINER,
+            .components.iwasm.uninstall_msg = {.from = &device_manager_component},
+    };
+    ocre_container_data_t Data;
+  
+    ocre_container_data_copy(&Data, &install_msg);
+    containers[download_count].ocre_container_data = Data;
+    ocre_component_send(&ocre_cs_component, &event);
 }

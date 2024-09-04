@@ -16,33 +16,35 @@
 #include <ocre/sm/sm.h>
 
 extern struct ocre_component ocre_cs_component;
-extern state_machine_t ocre_cs_state_machine; 
+extern state_machine_t ocre_cs_state_machine; // TODO THis needs to get encapsulated into the
+                                              // sm. it's only here so components can operate
+                                              // timers. timers need to be encapsulated.
 
-// define the states
 enum CONTAINER_RUNTIME_STATE {
-    STATE_RUNTIME_INITIALIZED,
-    STATE_RUNTIME_RUNNING,
-    STATE_RUNTIME_STOPPED,
-    STATE_RUNTIME_ERROR,
+    STATE_INITIALIZED,
+    STATE_CREATED,
+    STATE_RUNNING,
+    STATE_STOPPED,
+    STATE_DESTROYED,
+    STATE_ERROR,
+    STATE_RUNTIME_ERROR
 };
+
 enum OCRE_CS_EVENT {
-    EVENT_NO_EVENT,
+    EVENT_CREATE_CONTAINER,
     EVENT_DESTROY_CONTAINER,
-    EVENT_CREATE_CONTAINERS,
+    EVENT_RUN_CONTAINER,
     EVENT_STOP_CONTAINER,
-    EVENT_RUN_CONTAINERS,
-    EVENT_CONTAINER_ERROR,
-    EVENT_RUNTIME_ERROR
+    EVENT_RESTART_CONTAINER,
+    //  errors
+    EVENT_RUNTIME_ERROR,
+    EVENT_ERROR
 };
 enum OCRE_CS_ERROR {
     ERROR_FILE_SYSTEM,
     ERROR_WAMR,
     ERROR_UNDEFINED,
 };
-
-typedef struct ocre_cs_ctx {
-    void *atym_from_component;
-} ocre_cs_ctx;
 
 int _ocre_cs_run();
 
