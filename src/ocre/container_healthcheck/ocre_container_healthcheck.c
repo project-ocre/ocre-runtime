@@ -57,7 +57,6 @@ int ocre_healthcheck_restart(ocre_healthcheck *WDT) {
     k_timer_start(&WDT->timer, K_MSEC(WDT->timeout), K_NO_WAIT);
     return 0;
 }
-
 int ocre_healthcheck_start(ocre_healthcheck *WDT) {
     k_timer_start(&WDT->timer, K_MSEC(WDT->timeout), K_NO_WAIT);
     return 0;
