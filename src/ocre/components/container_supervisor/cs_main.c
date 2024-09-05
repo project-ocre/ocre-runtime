@@ -15,7 +15,7 @@ LOG_MODULE_REGISTER(ocre_cs_component, OCRE_LOG_LEVEL);
 #define OCRE_CS_THREAD_STACK_SIZE 2048
 #define OCRE_CS_THREAD_PRIORITY   0
 
-K_THREAD_STACK_DEFINE(ocre_cs_stack, MY_STACK_SIZE);
+K_THREAD_STACK_DEFINE(ocre_cs_stack, OCRE_CS_THREAD_STACK_SIZE);
 static struct k_thread ocre_cs_tid;
 
 static void ocre_cs_main(void *, void *, void *) {

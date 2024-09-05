@@ -176,19 +176,5 @@ ocre_container_status_t ocre_container_runtime_destroy_container(ocre_cs_ctx *ct
  */
 ocre_container_status_t ocre_container_runtime_restart_container(ocre_cs_ctx *ctx, int container_id);
 
-/*                               Api calls between Container Runtime and Device manager                           */
-/**
- * @brief Sends an event to create a container.
- *
- * @param install_msg Structure containing information required to install the container.
- */
-void ocre_container_runtime_send_event_create_container(struct install_msg install_msg);
-
-/**
- * @brief Sends an event to destroy a container.
- *
- * @param install_msg Structure containing information required to uninstall the container.
- */
-void ocre_container_runtime_send_event_destroy_container(struct install_msg install_msg);
 
 #endif /* OCRE_CONTAINER_RUNTIME_H */

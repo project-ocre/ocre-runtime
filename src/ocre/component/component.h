@@ -9,7 +9,7 @@
 #define OCRE_COMPONENT_H
 
 #include <zephyr/kernel.h>
-#include <ocre/messages.h>
+#include <messaging/messages.g>
 
 #define MSG_QUEUE_DEPTH 16
 

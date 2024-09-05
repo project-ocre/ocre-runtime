@@ -27,31 +27,18 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
 #include <ocre/fs/fs.h>
 #include <ocre/sm/sm.h>
-#include "ocre_container_runtime.h"
+#include "ocre/ocre_container_runtime/ocre_container_runtime.h"
+#include "ocre/components/container_supervisor/cs_sm.h"
+#include "ocre/container_healthcheck/ocre_container_healthcheck.h"
 
-#include "../../atym/components/device_manager/device_manager_sm.h"
-#include "../../components/container_supervisor/cs_sm.h"
-
-#include "../container_healthcheck/ocre_container_healthcheck.h"
-
-// Data strucrtures shared with cs_sm
+// Data structures shared with cs_sm
 extern struct ocre_container_t containers[MAX_CONTAINERS];
 extern int current_container_id;
 extern int download_count;
 
 // Internal Data structures for runtime
 static char filepath[FILE_PATH_MAX];
-static char wamr_heap_buf[CONFIG_ATYM_WAMR_HEAP_BUFFER_SIZE] = {0};
-
-static void ocre_container_data_copy(ocre_container_data_t *ocre_container_data, struct install_msg *install_msg) {
-    ocre_container_data->heap_size = install_msg->msg.heap_size;
-    strncpy(ocre_container_data->name, install_msg->msg.name, sizeof(install_msg->msg.name));
-    // ocre_container_data->name = install_msg->msg.name;
-    strncpy(ocre_container_data->sha256, install_msg->msg.sha256, sizeof(install_msg->msg.sha256));
-    // ocre_container_data->sha256 = install_msg->msg.sha256;
-    ocre_container_data->timers = install_msg->msg.timers;
-    ocre_container_data->watchdog_interval = install_msg->msg.watchdog_interval;
-}
+static char wamr_heap_buf[CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE] = {0};
 
 static int load_binary_to_buffer_fs(struct ocre_cs_ctx *ctx, int container_id, ocre_container_data_t *container_data) {
     int ret = 0;
@@ -172,7 +159,7 @@ ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, i
     /* Create an instance of the WASM module (WASM linear memory is ready) */
     /* Lookup a WASM function by its name */
     containers[container_id].ocre_runtime_arguments.func =
-            wasm_runtime_lookup_function(containers[container_id].ocre_runtime_arguments.module_inst, "on_init", "");
+        wasm_runtime_lookup_function(containers[container_id].ocre_runtime_arguments.module_inst, "on_init");
     if (NULL == containers[container_id].ocre_runtime_arguments.func) {
         LOG_ERR("ERROR lookup function: ");
     }
@@ -219,25 +206,3 @@ ocre_container_status_t ocre_container_runtime_get_container_status(ocre_cs_ctx 
     return containers[container_id].container_runtime_status;
 }
 
-void ocre_container_runtime_send_event_create_container(struct install_msg install_msg) {
-    LOG_INF("catch request and saved the install msg to containers array");
-    struct ocre_message event = {.event = EVENT_CREATE_CONTAINER,
-                                 .components.iwasm.install_msg.from = &device_manager_component};
-    ocre_container_data_t Data;
-    ocre_container_data_copy(&Data, &install_msg);
-    containers[download_count].ocre_container_data = Data;
-    download_count++;
-    ocre_component_send(&ocre_cs_component, &event);
-}
-
-void ocre_container_runtime_send_event_destroy_container(struct install_msg install_msg) {
-    struct ocre_message event = {
-            .event = EVENT_DESTROY_CONTAINER,
-            .components.iwasm.uninstall_msg = {.from = &device_manager_component},
-    };
-    ocre_container_data_t Data;
-  
-    ocre_container_data_copy(&Data, &install_msg);
-    containers[download_count].ocre_container_data = Data;
-    ocre_component_send(&ocre_cs_component, &event);
-}
