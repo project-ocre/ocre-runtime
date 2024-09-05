@@ -1,0 +1,11 @@
+component: container_supervisor
+events:
+  - name: QUERY
+    type: query
+  - name: INSTALL
+    type: install
+  - name: UNINSTALL
+    type: uninstall
+  - name: APP_MANAGER_RESPONSE
+    type: app_manager_response
+# Any events not listed get a message type of "base_message"

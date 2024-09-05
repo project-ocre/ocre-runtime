@@ -16,7 +16,7 @@ int ocre_healthcheck_expiry(ocre_healthcheck *WDT) {
         return -1; // Error: Null pointer
     }
     if (WDT->enabled && (WDT->is_alive_cnt <= WDT->is_alive_cnt_last)) {
-        ocre_container_unresponsive();
+        containers[current_container_id].container_runtime_status = CONTAINER_STATUS_UNRESPONSIVE;
         WDT->is_alive_cnt = 0;
         WDT->is_alive_cnt_last = WDT->is_alive_cnt;
         return 1; // Health check failed, container is unresponsive
@@ -47,13 +47,11 @@ int ocre_healthcheck_reinit(ocre_healthcheck *WDT) {
     k_timer_init(&WDT->timer, ocre_healthcheck_expiry, NULL);
     return 0;
 }
-
 int ocre_healthcheck_restart(ocre_healthcheck *WDT) {
     WDT->is_alive_cnt = 0;
     WDT->is_alive_cnt_last = WDT->is_alive_cnt;
     k_timer_start(&WDT->timer, K_MSEC(WDT->timeout), K_NO_WAIT);
 }
-
 int ocre_healthcheck_start(ocre_healthcheck *WDT) {
     k_timer_start(&WDT->timer, K_MSEC(WDT->timeout), K_NO_WAIT);
 }

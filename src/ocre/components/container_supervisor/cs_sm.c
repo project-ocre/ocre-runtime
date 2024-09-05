@@ -10,7 +10,7 @@
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
 #include "cs_sm.h"
-#include "../../ocre/ocre_container_runtime/ocre_container_runtime.h"
+#include "ocre/ocre_container_runtime/ocre_container_runtime.h"
 
 // Define state machine and component
 struct ocre_component ocre_cs_component;
