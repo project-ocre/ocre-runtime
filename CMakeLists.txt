@@ -102,6 +102,7 @@ set(component_sources
   # Components
   src/components/container_supervisor/cs_main.c
   src/components/container_supervisor/cs_sm.c
+  src/components/container_supervisor/cs_sm_impl.c
  
   # Ocre APIs
   src/ocre/api/ocre_api.c
