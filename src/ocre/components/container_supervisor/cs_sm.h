@@ -15,6 +15,8 @@
 #include <ocre/ocre_container_runtime/ocre_container_runtime.h>
 #include <ocre/sm/sm.h>
 
+#define OCRE_CS_DEBUG_ON 1
+
 extern struct ocre_component ocre_cs_component;
 extern state_machine_t ocre_cs_state_machine; // TODO THis needs to get encapsulated into the
                                               // sm. it's only here so components can operate
@@ -39,8 +41,8 @@ enum OCRE_CS_EVENT {
     EVENT_DESTROY_CONTAINER,
     EVENT_RESTART_CONTAINER,
     EVENT_ERROR
-};
 
+};
 void start_ocre_cs_thread(ocre_cs_ctx *ctx);
 
 void destroy_ocre_cs_thread(void);

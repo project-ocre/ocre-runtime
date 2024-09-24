@@ -18,15 +18,18 @@
 #include "ocre_api.h"
 #include "../timer/ocre_timer.h"
 
-int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name) {
+int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name)
+{
     struct utsname info;
     wasm_module_inst_t module_inst = get_module_inst(exec_env);
 
-    if (!wasm_runtime_validate_native_addr(module_inst, name, sizeof(struct _ocre_posix_utsname))) {
+    if (!wasm_runtime_validate_native_addr(module_inst, name, sizeof(struct _ocre_posix_utsname)))
+    {
         return -1;
     }
 
-    if (uname(&info) != 0) {
+    if (uname(&info) != 0)
+    {
         return -1;
     }
 
