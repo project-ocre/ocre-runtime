@@ -81,11 +81,23 @@ endif ()
 set (WAMR_ROOT_DIR ${ZEPHYR_WASM_MICRO_RUNTIME_MODULE_DIR})
 include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 
+# Generate the messages header file
+set (OCRE_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
+set(MSG_INPUT_FILES ${OCRE_ROOT_DIR}/src/ocre/components/container_supervisor/component_supervisor.yaml )
+set(MSG_GENERATED_FILE ${CMAKE_CURRENT_LIST_DIR}/src/messaging/messages.g)
+
+add_custom_command(
+    OUTPUT ${MSG_GENERATED_FILE}
+    COMMAND ${PYTHON_EXECUTABLE} ${OCRE_ROOT_DIR}/tools/automsg ${MSG_INPUT_FILES} ${MSG_GENERATED_FILE}
+    DEPENDS ${MSG_INPUT_FILES}
+    COMMENT "Running Python script to generate ${MSG_GENERATED_FILE}"
+)
+add_custom_target(generate_messages DEPENDS ${MSG_GENERATED_FILE})
+
 
 zephyr_include_directories(
   src/
-  src/components/app_manager
-  src/components/device_manager
+  src/ocre
 )
 
 set(lib_sources
@@ -100,11 +112,13 @@ set(lib_sources
 
 set(component_sources
   # Components
-  src/components/container_supervisor/cs_main.c
-  src/components/container_supervisor/cs_sm.c
+  src/ocre/components/container_supervisor/cs_main.c
+  src/ocre/components/container_supervisor/cs_sm.c
+  src/ocre/components/container_supervisor/cs_sm_impl.c
  
   # Ocre APIs
   src/ocre/api/ocre_api.c
 ) 
 
 target_sources(app PRIVATE ${WAMR_RUNTIME_LIB_SOURCE} ${lib_sources} ${component_sources} src/main.c)
+add_dependencies(app generate_messages)

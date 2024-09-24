@@ -18,15 +18,15 @@ LOG_MODULE_REGISTER(ocre_cs_component, OCRE_LOG_LEVEL);
 K_THREAD_STACK_DEFINE(ocre_cs_stack, OCRE_CS_THREAD_STACK_SIZE);
 static struct k_thread ocre_cs_tid;
 
-static void ocre_cs_main(void *, void *, void *) {
-    int ret = _ocre_cs_run();
+static k_thread_entry_t ocre_cs_main(void *ctx, void *arg1, void *arg2) {
+    int ret = _ocre_cs_run(ctx);
     LOG_ERR("Exited Container Supervisor: %d", ret);
 }
 
 // Function to start the thread
-void start_ocre_cs_thread(void) {
-    k_thread_create(&ocre_cs_tid, ocre_cs_stack, OCRE_CS_THREAD_STACK_SIZE, ocre_cs_main, NULL, NULL, NULL, OCRE_CS_THREAD_PRIORITY, 0,
-                    K_NO_WAIT);
+void start_ocre_cs_thread(ocre_cs_ctx *ctx) {
+    k_thread_create(&ocre_cs_tid, ocre_cs_stack, OCRE_CS_THREAD_STACK_SIZE, ocre_cs_main, ctx, NULL, NULL,
+                    OCRE_CS_THREAD_PRIORITY, 0, K_NO_WAIT);
 }
 
 void destroy_ocre_cs_thread(void) {

@@ -32,7 +32,8 @@ There is a sample application in `./src/main.c` that will demonstrate how to use
 Project Ocre is a work in progress.  Here is a list of what is currently implemented and planned:
 - [X] Core container execution
 - [X] Timer support
-- [ ] Container Supervisor state machine
+- [X] Container Supervisor state machine
+- [ ] Ocre containerization image format
 - [ ] Inter container messaging
 - [ ] Networking APIs
 - [ ] Multi-threading
