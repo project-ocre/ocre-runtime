@@ -32,9 +32,7 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
 ocre_container_runtime_status_t ocre_container_runtime_init(ocre_cs_ctx *ctx, ocre_container_init_arguments_t *args)
 {
-
     // Zeroing the context
-
     CS_runtime_init(ctx, args);
 
     CS_ctx_init(ctx);
@@ -67,7 +65,6 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
             break;
         }
     }
-
     LOG_INF("Request create new container in slot:%d", *container_id);
     ctx->current_container_id = *container_id;
     struct ocre_message event = {.event = EVENT_CREATE_CONTAINER};
