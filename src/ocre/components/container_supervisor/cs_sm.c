@@ -70,13 +70,26 @@ static void runtime_running_run(void *o)
     case EVENT_CREATE_CONTAINER:
     {
         LOG_INF("EVENT_CREATE_CONTAINER");
-        CS_create_container(ctx, ctx->current_container_id);
-        LOG_INF("Created container in slot:%d", ctx->current_container_id);
+        if (CS_create_container(ctx, ctx->current_container_id) == CONTAINER_STATUS_CREATED)
+        {
+            LOG_INF("Created container in slot:%d", ctx->current_container_id);
+        }
+        else
+        {
+            LOG_INF("Failed to create container in slot:%d", ctx->current_container_id);
+        }
         break;
     }
     case EVENT_RUN_CONTAINER:
     {
-        CS_run_container(ctx, ctx->current_container_id);
+        if (CS_run_container(ctx, ctx->current_container_id) == CONTAINER_STATUS_RUNNING)
+        {
+            LOG_INF("Started container in slot:%d", ctx->current_container_id);
+        }
+        else
+        {
+            LOG_INF("Failed to run container in slot:%d", ctx->current_container_id);
+        }
         break;
     }
     case EVENT_STOP_CONTAINER:

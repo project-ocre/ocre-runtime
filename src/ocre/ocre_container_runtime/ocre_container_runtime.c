@@ -72,6 +72,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
     Data = *container_data;
     ctx->containers[*container_id].ocre_container_data = Data;
     ctx->download_count++;
+
     ocre_component_send(&ocre_cs_component, &event);
 }
 
@@ -83,6 +84,7 @@ ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, i
         LOG_ERR("Invalid container ID: %d", container_id);
         return CONTAINER_STATUS_ERROR;
     }
+
     LOG_INF("Request run container in slot:%d", container_id);
     struct ocre_message event = {.event = EVENT_RUN_CONTAINER};
     ctx->current_container_id = container_id;

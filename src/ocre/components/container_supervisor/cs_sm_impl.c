@@ -155,35 +155,44 @@ ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id)
 
 ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id)
 {
-    uint32_t argv[2];
-    argv[0] = 8;
-    /* Create an instance of the WASM module (WASM linear memory is ready) */
-    /* Lookup a WASM function by its name */
-    ctx->containers[container_id].ocre_runtime_arguments.func =
-        wasm_runtime_lookup_function(ctx->containers[container_id].ocre_runtime_arguments.module_inst, "on_init");
-    if (NULL == ctx->containers[container_id].ocre_runtime_arguments.func)
+    if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_CREATED)
     {
-        LOG_ERR("ERROR lookup function: ");
-    }
+        uint32_t argv[2];
+        argv[0] = 8;
+        /* Create an instance of the WASM module (WASM linear memory is ready) */
+        /* Lookup a WASM function by its name */
+        ctx->containers[container_id].ocre_runtime_arguments.func =
+            wasm_runtime_lookup_function(ctx->containers[container_id].ocre_runtime_arguments.module_inst, "on_init");
+        if (NULL == ctx->containers[container_id].ocre_runtime_arguments.func)
+        {
+            LOG_ERR("ERROR lookup function: ");
+        }
 
-    /* creat an execution environment to execute the WASM functions */
-    ctx->containers[container_id].ocre_runtime_arguments.exec_env =
-        wasm_runtime_create_exec_env(ctx->containers[container_id].ocre_runtime_arguments.module_inst,
-                                     ctx->containers[container_id].ocre_runtime_arguments.stack_size);
-    if (NULL == ctx->containers[container_id].ocre_runtime_arguments.exec_env)
+        /* creat an execution environment to execute the WASM functions */
+        ctx->containers[container_id].ocre_runtime_arguments.exec_env =
+            wasm_runtime_create_exec_env(ctx->containers[container_id].ocre_runtime_arguments.module_inst,
+                                         ctx->containers[container_id].ocre_runtime_arguments.stack_size);
+        if (NULL == ctx->containers[container_id].ocre_runtime_arguments.exec_env)
+        {
+            LOG_ERR("ERROR creating executive environment: ");
+        }
+
+        /* call the WASM function */
+        if (!wasm_runtime_call_wasm(ctx->containers[container_id].ocre_runtime_arguments.exec_env,
+                                    ctx->containers[container_id].ocre_runtime_arguments.func, 1, argv))
+        {
+            LOG_ERR("ERROR calling main:");
+        }
+
+        ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_RUNNING;
+        return CONTAINER_STATUS_RUNNING;
+    }
+    else
     {
-        LOG_ERR("ERROR creating executive environment: ");
+        LOG_ERR("Container (ID: %d), does not exist to run it", container_id);
+        ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_UNKNOWN;
+        return CONTAINER_STATUS_ERROR;
     }
-
-    /* call the WASM function */
-    if (!wasm_runtime_call_wasm(ctx->containers[container_id].ocre_runtime_arguments.exec_env,
-                                ctx->containers[container_id].ocre_runtime_arguments.func, 1, argv))
-    {
-        LOG_ERR("ERROR calling main:");
-    }
-
-    ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_RUNNING;
-    return CONTAINER_STATUS_RUNNING;
 }
 
 ocre_container_status_t CS_get_container_status(ocre_cs_ctx *ctx, int container_id)
