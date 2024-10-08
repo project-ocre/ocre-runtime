@@ -66,9 +66,10 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
         }
     }
     LOG_INF("Request create new container in slot:%d", *container_id);
-    ctx->current_container_id = *container_id;
+
     struct ocre_message event = {.event = EVENT_CREATE_CONTAINER};
     ocre_container_data_t Data;
+    event.containerId = *container_id;
     Data = *container_data;
     ctx->containers[*container_id].ocre_container_data = Data;
     ctx->download_count++;
@@ -87,7 +88,7 @@ ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, i
 
     LOG_INF("Request run container in slot:%d", container_id);
     struct ocre_message event = {.event = EVENT_RUN_CONTAINER};
-    ctx->current_container_id = container_id;
+    event.containerId = container_id;
     ocre_component_send(&ocre_cs_component, &event);
 }
 
@@ -112,7 +113,7 @@ ocre_container_status_t ocre_container_runtime_stop_container(ocre_cs_ctx *ctx, 
     }
     LOG_INF("Request stop container in slot:%d", container_id);
     struct ocre_message event = {.event = EVENT_STOP_CONTAINER};
-    ctx->current_container_id = container_id;
+    event.containerId = container_id;
     ocre_component_send(&ocre_cs_component, &event);
 }
 
@@ -126,7 +127,7 @@ ocre_container_status_t ocre_container_runtime_destroy_container(ocre_cs_ctx *ct
     }
     LOG_INF("Request destroy container in slot:%d", container_id);
     struct ocre_message event = {.event = EVENT_DESTROY_CONTAINER};
-    ctx->current_container_id = container_id;
+    event.containerId = container_id;
     ocre_component_send(&ocre_cs_component, &event);
 }
 
@@ -140,6 +141,6 @@ ocre_container_status_t ocre_container_runtime_restart_container(ocre_cs_ctx *ct
     }
     LOG_INF("Request restart container in slot:%d", container_id);
     struct ocre_message event = {.event = EVENT_RESTART_CONTAINER};
-    ctx->current_container_id = container_id;
+    event.containerId = container_id;
     ocre_component_send(&ocre_cs_component, &event);
 }

@@ -57,7 +57,7 @@ struct {message_name} {{
 ocre_message = """\
 struct ocre_message {{
   uint32_t event;
-
+  uint32_t containerId;
   union {{
 {message_unions}
   }} components;

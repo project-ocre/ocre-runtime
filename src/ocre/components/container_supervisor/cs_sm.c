@@ -70,41 +70,41 @@ static void runtime_running_run(void *o)
     case EVENT_CREATE_CONTAINER:
     {
         LOG_INF("EVENT_CREATE_CONTAINER");
-        if (CS_create_container(ctx, ctx->current_container_id) == CONTAINER_STATUS_CREATED)
+        if (CS_create_container(ctx, msg->containerId) == CONTAINER_STATUS_CREATED)
         {
-            LOG_INF("Created container in slot:%d", ctx->current_container_id);
+            LOG_INF("Created container in slot:%d", msg->containerId);
         }
         else
         {
-            LOG_INF("Failed to create container in slot:%d", ctx->current_container_id);
+            LOG_INF("Failed to create container in slot:%d", msg->containerId);
         }
         break;
     }
     case EVENT_RUN_CONTAINER:
     {
-        if (CS_run_container(ctx, ctx->current_container_id) == CONTAINER_STATUS_RUNNING)
+        if (CS_run_container(ctx, msg->containerId) == CONTAINER_STATUS_RUNNING)
         {
-            LOG_INF("Started container in slot:%d", ctx->current_container_id);
+            LOG_INF("Started container in slot:%d", msg->containerId);
         }
         else
         {
-            LOG_INF("Failed to run container in slot:%d", ctx->current_container_id);
+            LOG_INF("Failed to run container in slot:%d", msg->containerId);
         }
         break;
     }
     case EVENT_STOP_CONTAINER:
     {
-        CS_stop_container(ctx, ctx->current_container_id, callback);
+        CS_stop_container(ctx, msg->containerId, callback);
         break;
     }
     case EVENT_DESTROY_CONTAINER:
     {
-        CS_destroy_container(ctx, ctx->current_container_id, callback);
+        CS_destroy_container(ctx, msg->containerId, callback);
         break;
     }
     case EVENT_RESTART_CONTAINER:
     {
-        CS_restart_container(ctx, ctx->current_container_id, callback);
+        CS_restart_container(ctx, msg->containerId, callback);
         break;
     }
     case EVENT_CS_DESTROY:
