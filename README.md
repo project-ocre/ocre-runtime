@@ -37,4 +37,4 @@ Project Ocre is a work in progress.  Here is a list of what is currently impleme
 - [ ] Inter container messaging
 - [ ] Networking APIs
 - [ ] Multi-threading
-- [ ] WASI embedded APIs
+- [ ] Support for WASI embedded APIs
