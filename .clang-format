@@ -1,0 +1,24 @@
+# CLang format file
+#
+# See https://clang.llvm.org/docs/ClangFormatStyleOptions.html for more details
+
+---
+BasedOnStyle: LLVM
+AlignConsecutiveMacros: AcrossComments
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+BitFieldColonSpacing: After
+BreakBeforeBraces: Attach
+ColumnLimit: 120
+ConstructorInitializerIndentWidth: 8
+ContinuationIndentWidth: 8
+IndentCaseLabels: true
+IndentWidth: 4
+InsertBraces: true
+SpaceBeforeParens: ControlStatementsExceptControlMacros
+SortIncludes: Never
+#UseTab: ForContinuationAndIndentation

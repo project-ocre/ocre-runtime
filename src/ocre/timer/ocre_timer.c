@@ -27,6 +27,7 @@ int ocre_timer_delete(ocre_timer_t id) {
     }
 
     free(id);
+
     return 0;
 }
 
@@ -59,5 +60,6 @@ int ocre_timer_stop(ocre_timer_t id) {
 
 int ocre_timer_get_remaining(ocre_timer_t id) {
     struct k_timer_ocre *timer = (struct k_timer_ocre *)id;
+    
     return k_timer_remaining_get((&timer->timer));
 }
