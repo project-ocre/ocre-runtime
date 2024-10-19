@@ -36,14 +36,14 @@ typedef struct
 // Global array to keep track of sensor subscriptions
 static sensor_subscription_t sensor_subscriptions[MAX_SENSORS];
 
-ocre_sensor_api_status_t ocre_sensor_api_init(ocre_sensor_api_ctx_t *ctx)
+ocre_sensors_status_t ocre_sensor_api_init(ocre_sensors_ctx_t *ctx)
 {
     if (ctx == NULL)
     {
         return SENSOR_API_STATUS_ERROR;
     }
 
-    memset(ctx, 0, sizeof(ocre_sensor_api_ctx_t));
+    memset(ctx, 0, sizeof(ocre_sensors_ctx_t));
 
 #if OCRE_SENSOR_API_DEBUG_ON
     LOG_DBG("Initializing Ocre Sensor API");
@@ -54,7 +54,7 @@ ocre_sensor_api_status_t ocre_sensor_api_init(ocre_sensor_api_ctx_t *ctx)
     return SENSOR_API_STATUS_INITIALIZED;
 }
 
-ocre_sensor_api_status_t ocre_sensor_api_discover_sensors(ocre_sensor_api_ctx_t *ctx)
+ocre_sensors_status_t ocre_sensor_api_discover_sensors(ocre_sensors_ctx_t *ctx)
 {
     if (ctx == NULL)
     {
@@ -95,7 +95,7 @@ ocre_sensor_api_status_t ocre_sensor_api_discover_sensors(ocre_sensor_api_ctx_t 
     return SENSOR_API_STATUS_INITIALIZED;
 }
 
-ocre_sensor_api_status_t ocre_sensor_api_open_channel(ocre_sensor_api_ctx_t *ctx, ocre_sensor_handle_t *sensor_handle)
+ocre_sensors_status_t ocre_sensor_api_open_channel(ocre_sensors_ctx_t *ctx, ocre_sensor_handle_t *sensor_handle)
 {
     if (ctx == NULL || sensor_handle == NULL)
     {
@@ -123,8 +123,8 @@ ocre_sensor_api_status_t ocre_sensor_api_open_channel(ocre_sensor_api_ctx_t *ctx
     return SENSOR_API_STATUS_INITIALIZED;
 }
 
-ocre_sensor_api_status_t ocre_sensor_api_subscribe(
-    ocre_sensor_api_ctx_t *ctx,
+ocre_sensors_status_t ocre_sensor_api_subscribe(
+    ocre_sensors_ctx_t *ctx,
     ocre_sensor_handle_t sensor_handle,
     sensor_channel_t channel,
     enum sensor_trigger_type trigger_type,
@@ -210,8 +210,8 @@ ocre_sensor_api_status_t ocre_sensor_api_subscribe(
     return SENSOR_API_STATUS_INITIALIZED;
 }
 
-ocre_sensor_api_status_t ocre_sensor_api_subscribe(
-    ocre_sensor_api_ctx_t *ctx,
+ocre_sensors_status_t ocre_sensor_api_subscribe(
+    ocre_sensors_ctx_t *ctx,
     ocre_sensor_handle_t sensor_handle,
     sensor_channel_t channel,
     enum sensor_trigger_type trigger_type,
@@ -297,8 +297,8 @@ ocre_sensor_api_status_t ocre_sensor_api_subscribe(
     return SENSOR_API_STATUS_INITIALIZED;
 }
 
-ocre_sensor_api_status_t ocre_sensor_api_subscribe(
-    ocre_sensor_api_ctx_t *ctx,
+ocre_sensors_status_t ocre_sensor_api_subscribe(
+    ocre_sensors_ctx_t *ctx,
     ocre_sensor_handle_t sensor_handle,
     sensor_channel_t channel,
     enum sensor_trigger_type trigger_type,
@@ -440,8 +440,8 @@ static void sensor_trigger_handler(const struct device *dev, const struct sensor
     }
 }
 
-ocre_sensor_api_status_t ocre_sensor_api_read_data(
-    ocre_sensor_api_ctx_t *ctx,
+ocre_sensors_status_t ocre_sensor_api_read_data(
+    ocre_sensors_ctx_t *ctx,
     ocre_sensor_handle_t sensor_handle,
     sensor_channel_t channel,
     struct sensor_value *data)
@@ -477,8 +477,8 @@ ocre_sensor_api_status_t ocre_sensor_api_read_data(
     return SENSOR_API_STATUS_INITIALIZED;
 }
 
-ocre_sensor_api_status_t ocre_sensor_api_unsubscribe(
-    ocre_sensor_api_ctx_t *ctx,
+ocre_sensors_status_t ocre_sensor_api_unsubscribe(
+    ocre_sensors_ctx_t *ctx,
     ocre_sensor_handle_t sensor_handle,
     sensor_channel_t channel,
     int subscription_id)
@@ -535,7 +535,7 @@ ocre_sensor_api_status_t ocre_sensor_api_unsubscribe(
     return SENSOR_API_STATUS_INITIALIZED;
 }
 
-ocre_sensor_api_status_t ocre_sensor_api_cleanup(ocre_sensor_api_ctx_t *ctx)
+ocre_sensors_status_t ocre_sensor_api_cleanup(ocre_sensors_ctx_t *ctx)
 {
     if (ctx == NULL)
     {

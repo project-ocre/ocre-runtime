@@ -96,6 +96,8 @@ set(lib_sources
   src/ocre/container_healthcheck/ocre_container_healthcheck.c
   src/ocre/ocre_container_runtime/ocre_container_runtime.c
   src/ocre/component/component.c
+  src/ocre/ocre_sensors/ocre_sensor.c
+  src/ocre/ocre_sensors/rng_sensor.c
 )
 
 set(component_sources
