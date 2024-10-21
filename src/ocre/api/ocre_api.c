@@ -16,7 +16,7 @@
 #include "bh_platform.h"
 
 #include "ocre_api.h"
-#include "../timer/ocre_timer.h"
+#include "../ocre_timers/ocre_timer.h"
 
 int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name)
 {
