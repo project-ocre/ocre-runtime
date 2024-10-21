@@ -92,7 +92,7 @@ set(lib_sources
   # Libraries
   src/ocre/sm/sm.c
   src/ocre/fs/fs.c
-  src/ocre/timer/ocre_timer.c
+  src/ocre/ocre_timers/ocre_timer.c
   src/ocre/container_healthcheck/ocre_container_healthcheck.c
   src/ocre/ocre_container_runtime/ocre_container_runtime.c
   src/ocre/component/component.c
