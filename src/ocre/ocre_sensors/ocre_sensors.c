@@ -1,598 +1,184 @@
-// ocre_sensor_api.c
+/**
+ * @copyright Copyright © contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-#include "ocre_sensor_api.h"
-#include <zephyr/device.h>
-#include <zephyr/drivers/sensor.h>
+#include <zephyr/sensor.h>
 #include <zephyr/kernel.h>
-#include <string.h>
-#include <stdio.h>
 
-// Optional: Include logging for debugging
-#if OCRE_SENSOR_API_DEBUG_ON
-#include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(ocre_sensor_api, LOG_LEVEL_DBG);
-#endif
+#include <ocre/container_runtime.h>
+#include "ocre_sensors.h"
 
-#define MAX_SUBSCRIPTIONS_PER_SENSOR 10
-
-// Forward declarations
-static void sensor_trigger_handler(const struct device *dev, const struct sensor_trigger *trigger);
-
-typedef struct
+ocre_sensors_status_t ocre_sensors_init()
 {
-    ocre_sensor_trigger_cb callback;
-    void *ptr;
-    int subscription_id;
-    enum sensor_trigger_type trigger_type;
-} subscription_t;
-
-typedef struct
-{
-    ocre_sensor_handle_t handle;
-    subscription_t subscriptions[MAX_SUBSCRIPTIONS_PER_SENSOR];
-    int subscription_count;
-} sensor_subscription_t;
-
-// Global array to keep track of sensor subscriptions
-static sensor_subscription_t sensor_subscriptions[MAX_SENSORS];
-
-ocre_sensors_status_t ocre_sensor_api_init(ocre_sensors_ctx_t *ctx)
-{
-    if (ctx == NULL)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    memset(ctx, 0, sizeof(ocre_sensors_ctx_t));
-
-#if OCRE_SENSOR_API_DEBUG_ON
-    LOG_DBG("Initializing Ocre Sensor API");
-#endif
-
-    // Add the init here
-
+    // add ocre_sensors initialization
     return SENSOR_API_STATUS_INITIALIZED;
 }
 
-ocre_sensors_status_t ocre_sensor_api_discover_sensors(ocre_sensors_ctx_t *ctx)
+ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors, int *sensors_count)
 {
-    if (ctx == NULL)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
+    const struct device *dev;
+    int sensor_index = 0;
+    struct sensor_value value;
+    int channel_count = 0;
 
-    ctx->sensor_count = 0;
-
-    for (int i = 0; i < MAX_SENSORS; i++)
+    Z_DEVICE_FOREACH(sensor, dev)
     {
-        // Typically, sensors are defined in the device tree and can be iterated via device_get_next_binding
-        const struct device *dev = device_get_binding(CONFIG_SENSOR_NAME[i]);
-        if (dev && device_is_ready(dev))
+        if (!device_is_ready(dev))
         {
-            ocre_sensor_t *sensor = &ctx->sensors[ctx->sensor_count];
-            sensor->handle.id = ctx->sensor_count;
-            sensor->dev = (struct device *)dev;
-            sensor->num_channels = sensor_channel_get_supported_channels(dev, sensor->channels, MAX_SENSOR_CHANNELS);
-            sensor->container = NULL; // Initialize as needed
+            LOG_INF("Sensor device %s is not ready\n", dev->name);
+            continue;
+        }
 
-#if OCRE_SENSOR_API_DEBUG_ON
-            LOG_DBG("Discovered sensor %s with %d channels", dev->name, sensor->num_channels);
-#endif
+        sensors[sensor_index].handle.id = sensor_index;
+        sensors[sensor_index].handle.device_name = dev->name; // Set device name from the device tree
 
-            ctx->sensor_count++;
-            if (ctx->sensor_count >= MAX_SENSORS)
+        if (sensor_channel_get(dev, SENSOR_CHAN_ALL, &value) == 0)
+        {
+            if (sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, &value) == 0)
             {
-                break;
+                sensors[sensor_index].channels[channel_count++] = SENSOR_CHANNEL_ACCELERATION;
             }
-        }
-    }
-
-    if (ctx->sensor_count == 0)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    return SENSOR_API_STATUS_INITIALIZED;
-}
-
-ocre_sensors_status_t ocre_sensor_api_open_channel(ocre_sensors_ctx_t *ctx, ocre_sensor_handle_t *sensor_handle)
-{
-    if (ctx == NULL || sensor_handle == NULL)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    // Validate sensor_handle ID
-    if (sensor_handle->id < 0 || sensor_handle->id >= ctx->sensor_count)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    ocre_sensor_t *sensor = &ctx->sensors[sensor_handle->id];
-
-#if OCRE_SENSOR_API_DEBUG_ON
-    LOG_DBG("Opening channel for sensor ID %d (%s)", sensor->handle.id, sensor->dev->name);
-#endif
-
-    // Initialize the sensor if needed
-    if (sensor_sample_fetch(sensor->dev) < 0)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    return SENSOR_API_STATUS_INITIALIZED;
-}
-
-ocre_sensors_status_t ocre_sensor_api_subscribe(
-    ocre_sensors_ctx_t *ctx,
-    ocre_sensor_handle_t sensor_handle,
-    sensor_channel_t channel,
-    enum sensor_trigger_type trigger_type,
-    ocre_sensor_trigger_cb callback,
-    int *subscription_id)
-{
-    if (ctx == NULL || callback == NULL || subscription_id == NULL)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    // Validate sensor_handle ID
-    if (sensor_handle.id < 0 || sensor_handle.id >= ctx->sensor_count)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    ocre_sensor_t *sensor = &ctx->sensors[sensor_handle.id];
-    const struct device *dev = sensor->dev;
-
-    // Find the subscription slot
-    sensor_subscription_t *sub = NULL;
-    for (int i = 0; i < MAX_SENSORS; i++)
-    {
-        if (sensor_subscriptions[i].handle.id == sensor_handle.id)
-        {
-            sub = &sensor_subscriptions[i];
-            break;
-        }
-    }
-
-    if (sub == NULL)
-    {
-        // Find an empty slot
-        for (int i = 0; i < MAX_SENSORS; i++)
-        {
-            if (sensor_subscriptions[i].handle.id == -1)
-            { // Assuming -1 indicates unused
-                sensor_subscriptions[i].handle.id = sensor_handle.id;
-                sub = &sensor_subscriptions[i];
-                break;
-            }
-        }
-    }
-
-    if (sub == NULL)
-    {
-        return SENSOR_API_STATUS_ERROR; // No available subscription slots
-    }
-
-    if (sub->subscription_count >= MAX_SUBSCRIPTIONS_PER_SENSOR)
-    {
-        return SENSOR_API_STATUS_ERROR; // Exceeded max subscriptions
-    }
-
-    // Assign a unique subscription ID
-    int new_subscription_id = sub->subscription_count;
-
-    // Set up the trigger
-    struct sensor_trigger trigger = {
-        .type = trigger_type,
-        .chan = channel,
-    };
-
-    // Assign the callback
-    sub->subscriptions[sub->subscription_count].callback = callback;
-    sub->subscriptions[sub->subscription_count].ptr = NULL; // User can pass data via 'ptr' if needed
-    sub->subscriptions[sub->subscription_count].subscription_id = new_subscription_id;
-    sub->subscriptions[sub->subscription_count].trigger_type = trigger_type;
-
-    if (sensor_trigger_set(dev, &trigger, sensor_trigger_handler) < 0)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    *subscription_id = new_subscription_id;
-    sub->subscription_count++;
-
-#if OCRE_SENSOR_API_DEBUG_ON
-    LOG_DBG("Subscribed to sensor ID %d channel %d with subscription ID %d", sensor_handle.id, channel, new_subscription_id);
-#endif
-
-    return SENSOR_API_STATUS_INITIALIZED;
-}
-
-ocre_sensors_status_t ocre_sensor_api_subscribe(
-    ocre_sensors_ctx_t *ctx,
-    ocre_sensor_handle_t sensor_handle,
-    sensor_channel_t channel,
-    enum sensor_trigger_type trigger_type,
-    ocre_sensor_trigger_cb callback,
-    int *subscription_id)
-{
-    if (ctx == NULL || callback == NULL || subscription_id == NULL)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    // Validate sensor_handle ID
-    if (sensor_handle.id < 0 || sensor_handle.id >= ctx->sensor_count)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    ocre_sensor_t *sensor = &ctx->sensors[sensor_handle.id];
-    const struct device *dev = sensor->dev;
-
-    // Find the subscription slot
-    sensor_subscription_t *sub = NULL;
-    for (int i = 0; i < MAX_SENSORS; i++)
-    {
-        if (sensor_subscriptions[i].handle.id == sensor_handle.id)
-        {
-            sub = &sensor_subscriptions[i];
-            break;
-        }
-    }
-
-    if (sub == NULL)
-    {
-        // Find an empty slot
-        for (int i = 0; i < MAX_SENSORS; i++)
-        {
-            if (sensor_subscriptions[i].handle.id == -1)
-            { // Assuming -1 indicates unused
-                sensor_subscriptions[i].handle.id = sensor_handle.id;
-                sub = &sensor_subscriptions[i];
-                break;
-            }
-        }
-    }
-
-    if (sub == NULL)
-    {
-        return SENSOR_API_STATUS_ERROR; // No available subscription slots
-    }
-
-    if (sub->subscription_count >= MAX_SUBSCRIPTIONS_PER_SENSOR)
-    {
-        return SENSOR_API_STATUS_ERROR; // Exceeded max subscriptions
-    }
-
-    // Assign a unique subscription ID
-    int new_subscription_id = sub->subscription_count;
-
-    // Set up the trigger
-    struct sensor_trigger trigger = {
-        .type = trigger_type,
-        .chan = channel,
-    };
-
-    // Assign the callback
-    sub->subscriptions[sub->subscription_count].callback = callback;
-    sub->subscriptions[sub->subscription_count].ptr = NULL; // User can pass data via 'ptr' if needed
-    sub->subscriptions[sub->subscription_count].subscription_id = new_subscription_id;
-    sub->subscriptions[sub->subscription_count].trigger_type = trigger_type;
-
-    if (sensor_trigger_set(dev, &trigger, sensor_trigger_handler) < 0)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    *subscription_id = new_subscription_id;
-    sub->subscription_count++;
-
-#if OCRE_SENSOR_API_DEBUG_ON
-    LOG_DBG("Subscribed to sensor ID %d channel %d with subscription ID %d", sensor_handle.id, channel, new_subscription_id);
-#endif
-
-    return SENSOR_API_STATUS_INITIALIZED;
-}
-
-ocre_sensors_status_t ocre_sensor_api_subscribe(
-    ocre_sensors_ctx_t *ctx,
-    ocre_sensor_handle_t sensor_handle,
-    sensor_channel_t channel,
-    enum sensor_trigger_type trigger_type,
-    ocre_sensor_trigger_cb callback,
-    int *subscription_id)
-{
-    if (ctx == NULL || callback == NULL || subscription_id == NULL)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    // Validate sensor_handle ID
-    if (sensor_handle.id < 0 || sensor_handle.id >= ctx->sensor_count)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    ocre_sensor_t *sensor = &ctx->sensors[sensor_handle.id];
-    const struct device *dev = sensor->dev;
-
-    // Find the subscription slot
-    sensor_subscription_t *sub = NULL;
-    for (int i = 0; i < MAX_SENSORS; i++)
-    {
-        if (sensor_subscriptions[i].handle.id == sensor_handle.id)
-        {
-            sub = &sensor_subscriptions[i];
-            break;
-        }
-    }
-
-    if (sub == NULL)
-    {
-        // Find an empty slot
-        for (int i = 0; i < MAX_SENSORS; i++)
-        {
-            if (sensor_subscriptions[i].handle.id == -1)
-            { // Assuming -1 indicates unused
-                sensor_subscriptions[i].handle.id = sensor_handle.id;
-                sub = &sensor_subscriptions[i];
-                break;
-            }
-        }
-    }
-
-    if (sub == NULL)
-    {
-        return SENSOR_API_STATUS_ERROR; // No available subscription slots
-    }
-
-    if (sub->subscription_count >= MAX_SUBSCRIPTIONS_PER_SENSOR)
-    {
-        return SENSOR_API_STATUS_ERROR; // Exceeded max subscriptions
-    }
-
-    // Assign a unique subscription ID
-    int new_subscription_id = sub->subscription_count;
-
-    // Set up the trigger
-    struct sensor_trigger trigger = {
-        .type = trigger_type,
-        .chan = channel,
-    };
-
-    // Assign the callback
-    sub->subscriptions[sub->subscription_count].callback = callback;
-    sub->subscriptions[sub->subscription_count].ptr = NULL; // User can pass data via 'ptr' if needed
-    sub->subscriptions[sub->subscription_count].subscription_id = new_subscription_id;
-    sub->subscriptions[sub->subscription_count].trigger_type = trigger_type;
-
-    if (sensor_trigger_set(dev, &trigger, sensor_trigger_handler) < 0)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    *subscription_id = new_subscription_id;
-    sub->subscription_count++;
-
-#if OCRE_SENSOR_API_DEBUG_ON
-    LOG_DBG("Subscribed to sensor ID %d channel %d with subscription ID %d", sensor_handle.id, channel, new_subscription_id);
-#endif
-
-    return SENSOR_API_STATUS_INITIALIZED;
-}
-
-static void sensor_trigger_handler(const struct device *dev, const struct sensor_trigger *trigger)
-{
-    // Find the sensor handle based on the device
-    int sensor_id = -1;
-    for (int i = 0; i < MAX_SENSORS; i++)
-    {
-        if (sensor_subscriptions[i].handle.id != -1 &&
-            sensor_subscriptions[i].handle.id < MAX_SENSORS &&
-            sensor_subscriptions[i].handle.id == i && // Adjust based on actual mapping
-            device_get_binding(CONFIG_SENSOR_NAME[i]) == dev)
-        {
-            sensor_id = sensor_subscriptions[i].handle.id;
-            break;
-        }
-    }
-
-    if (sensor_id == -1)
-    {
-#if OCRE_SENSOR_API_DEBUG_ON
-        LOG_DBG("Received trigger from unknown sensor device %s", dev->name);
-#endif
-        return;
-    }
-
-    sensor_subscription_t *sub = NULL;
-    for (int i = 0; i < MAX_SENSORS; i++)
-    {
-        if (sensor_subscriptions[i].handle.id == sensor_id)
-        {
-            sub = &sensor_subscriptions[i];
-            break;
-        }
-    }
-
-    if (sub == NULL)
-    {
-        return;
-    }
-
-    // Iterate through subscriptions and invoke callbacks
-    for (int i = 0; i < sub->subscription_count; i++)
-    {
-        if (sub->subscriptions[i].trigger_type == trigger->type &&
-            sub->subscriptions[i].trigger_type == trigger->chan)
-        { // Adjust condition as needed
-            if (sub->subscriptions[i].callback)
+            if (sensor_channel_get(dev, SENSOR_CHAN_GYRO_XYZ, &value) == 0)
             {
-                struct sensor_value data;
-                sensor_sample_fetch(dev);
-                sensor_channel_get(dev, trigger->chan, &data);
-                sub->subscriptions[i].callback(sub->handle, trigger->chan, &data, sub->subscriptions[i].ptr);
+                sensors[sensor_index].channels[channel_count++] = SENSOR_CHANNEL_GYRO;
+            }
+            if (sensor_channel_get(dev, SENSOR_CHAN_MAGN_XYZ, &value) == 0)
+            {
+                sensors[sensor_index].channels[channel_count++] = SENSOR_CHANNEL_MAGNETIC_FIELD;
+            }
+            if (sensor_channel_get(dev, SENSOR_CHAN_LIGHT, &value) == 0)
+            {
+                sensors[sensor_index].channels[channel_count++] = SENSOR_CHANNEL_LIGHT;
+            }
+            if (sensor_channel_get(dev, SENSOR_CHAN_PRESS, &value) == 0)
+            {
+                sensors[sensor_index].channels[channel_count++] = SENSOR_CHANNEL_PRESSURE;
+            }
+            if (sensor_channel_get(dev, SENSOR_CHAN_TEMP, &value) == 0)
+            {
+                sensors[sensor_index].channels[channel_count++] = SENSOR_CHANNEL_TEMPERATURE;
             }
         }
+
+        sensors[sensor_index].num_channels = channel_count;
+
+        sensor_index++;
     }
+
+    *sensors_count = sensor_index;
+
+    // no sensors found
+    if (sensor_index == 0)
+    {
+        return SENSOR_API_STATUS_ERROR;
+    }
+
+    return SENSOR_API_STATUS_INITIALIZED;
 }
 
-ocre_sensors_status_t ocre_sensor_api_read_data(
-    ocre_sensors_ctx_t *ctx,
-    ocre_sensor_handle_t sensor_handle,
-    sensor_channel_t channel,
-    struct sensor_value *data)
+ocre_sensors_status_t ocre_sensors_open_channel(ocre_sensor_handle_t *sensor_handle)
 {
-    if (ctx == NULL || data == NULL)
+    const struct device *dev = device_get_binding(sensor_handle->device_name);
+
+    if (!dev)
     {
+        LOG_INF("Failed to open sensor channel for device %s", sensor_handle->device_name);
         return SENSOR_API_STATUS_ERROR;
     }
 
-    // Validate sensor_handle ID
-    if (sensor_handle.id < 0 || sensor_handle.id >= ctx->sensor_count)
+    LOG_INF("Sensor device %s is ready and opened", sensor_handle->device_name);
+    sensor_handle->sensor_device = dev;
+    return SENSOR_API_STATUS_CHANNEL_OPENED;
+}
+
+ocre_sensors_sample_t sensor_read_sample(ocre_sensor_handle_t *sensor_handle)
+{
+    ocre_sensors_sample_t sample;
+    const struct device *dev = device_get_binding(sensor_handle->device_name);
+
+    if (!dev)
     {
-        return SENSOR_API_STATUS_ERROR;
+        LOG_INF("Failed to read from sensor %d\n", sensor_handle->id);
+        return sample; // return empty sample on error
     }
-
-    ocre_sensor_t *sensor = &ctx->sensors[sensor_handle.id];
-    const struct device *dev = sensor->dev;
-
-#if OCRE_SENSOR_API_DEBUG_ON
-    LOG_DBG("Reading data from sensor ID %d channel %d", sensor_handle.id, channel);
-#endif
 
     if (sensor_sample_fetch(dev) < 0)
     {
-        return SENSOR_API_STATUS_ERROR;
+        LOG_INF("Failed to fetch sensor sample\n");
+        return sample; // return empty sample on error
     }
 
-    if (sensor_channel_get(dev, channel, data) < 0)
+    struct sensor_value sensor_val;
+    if (sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, &sensor_val) == 0)
     {
-        return SENSOR_API_STATUS_ERROR;
+        sample.value.integer = sensor_val.val1;
+        sample.value.floating = sensor_val.val2;
     }
 
-    return SENSOR_API_STATUS_INITIALIZED;
+    return sample;
 }
 
-ocre_sensors_status_t ocre_sensor_api_unsubscribe(
-    ocre_sensors_ctx_t *ctx,
-    ocre_sensor_handle_t sensor_handle,
-    sensor_channel_t channel,
-    int subscription_id)
+ocre_sensor_value_t sensor_get_channel(ocre_sensors_sample_t sample, sensor_channel_t channel)
 {
-    if (ctx == NULL)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    // Validate sensor_handle ID
-    if (sensor_handle.id < 0 || sensor_handle.id >= ctx->sensor_count)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    sensor_subscription_t *sub = NULL;
-    for (int i = 0; i < MAX_SENSORS; i++)
-    {
-        if (sensor_subscriptions[i].handle.id == sensor_handle.id)
-        {
-            sub = &sensor_subscriptions[i];
-            break;
-        }
-    }
-
-    if (sub == NULL || subscription_id < 0 || subscription_id >= sub->subscription_count)
-    {
-        return SENSOR_API_STATUS_ERROR;
-    }
-
-    // Remove the subscription
-    for (int i = subscription_id; i < sub->subscription_count - 1; i++)
-    {
-        sub->subscriptions[i] = sub->subscriptions[i + 1];
-    }
-    sub->subscription_count--;
-
-    // If no more subscriptions, unset the trigger
-    if (sub->subscription_count == 0)
-    {
-        ocre_sensor_t *sensor = &ctx->sensors[sensor_handle.id];
-        struct sensor_trigger trigger = {
-            .type = SENSOR_TRIG_DATA_READY,
-            .chan = SENSOR_CHAN_ALL,
-        };
-        sensor_trigger_set(sensor->dev, &trigger, NULL); // Unset trigger
-        sensor_subscriptions[i].handle.id = -1;          // Mark as unused
-    }
-
-#if OCRE_SENSOR_API_DEBUG_ON
-    LOG_DBG("Unsubscribed from sensor ID %d subscription ID %d", sensor_handle.id, subscription_id);
-#endif
-
-    return SENSOR_API_STATUS_INITIALIZED;
+    ocre_sensor_value_t value;
+    value.integer = sample.value.integer;
+    value.floating = sample.value.floating;
+    return value;
 }
 
-ocre_sensors_status_t ocre_sensor_api_cleanup(ocre_sensors_ctx_t *ctx)
+ocre_sensors_status_t ocre_sensors_set_trigger(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel, enum sensor_trigger_type trigger_type, ocre_sensor_trigger_cb callback, int *subscription_id)
 {
-    if (ctx == NULL)
+    const struct device *dev = device_get_binding(sensor_handle.device_name);
+
+    if (!dev)
     {
         return SENSOR_API_STATUS_ERROR;
     }
 
-#if OCRE_SENSOR_API_DEBUG_ON
-    LOG_DBG("Cleaning up Ocre Sensor API");
-#endif
+    struct sensor_trigger trig = {
+        .type = trigger_type,
+        .chan = channel,
+    };
 
-    // Unsubscribe all sensors
-    for (int i = 0; i < ctx->sensor_count; i++)
+    if (sensor_trigger_set(dev, &trig, (sensor_trigger_handler_t)callback) != 0)
     {
-        sensor_subscription_t *sub = &sensor_subscriptions[i];
-        if (sub->handle.id != -1)
-        {
-            ocre_sensor_t *sensor = &ctx->sensors[sub->handle.id];
-            struct sensor_trigger trigger = {
-                .type = SENSOR_TRIG_DATA_READY,
-                .chan = SENSOR_CHAN_ALL,
-            };
-            sensor_trigger_set(sensor->dev, &trigger, NULL); // Unset all triggers
-            sub->handle.id = -1;
-            sub->subscription_count = 0;
-        }
+        LOG_INF("Failed to set sensor trigger");
+        return SENSOR_API_STATUS_ERROR;
     }
 
-    ctx->sensor_count = 0;
+    *subscription_id = sensor_handle->id;
 
-    // Additional cleanup steps can be added here
-
-    return SENSOR_API_STATUS_INITIALIZED;
+    return SENSOR_API_STATUS_OKEY;
 }
 
-#define SENSOR_CHAN_FIRST 0
-#define SENSOR_CHAN_LAST 51
-
-static int sensor_channel_get_supported_channels(const struct device *dev, sensor_channel_t *channels, int max_channels)
+ocre_sensors_status_t ocre_sensors_clear_trigger(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel, int subscription_id)
 {
-    if (dev == NULL || channels == NULL)
+    const struct device *dev = device_get_binding(sensor_handle.device_name);
+
+    if (!dev)
     {
-        return 0;
+        return SENSOR_API_STATUS_ERROR;
     }
 
-    int count = 0;
-    for (int i = SENSOR_CHAN_FIRST; i <= SENSOR_CHAN_LAST; i++)
+    struct sensor_trigger trig = {
+        .chan = channel,
+    };
+
+    if (sensor_trigger_set(dev, &trig, NULL) != 0)
     {
-        struct sensor_value value;
-        if (sensor_channel_get(dev, i, &value) == 0)
-        {
-            channels[count++] = (sensor_channel_t)i;
-            if (count >= max_channels)
-            {
-                break;
-            }
-        }
+        LOG_INF("Failed to clear sensor trigger");
+        return SENSOR_API_STATUS_ERROR;
     }
 
-    return count;
+    return SENSOR_API_STATUS_OKEY;
 }
+
+ocre_sensors_status_t ocre_sensors_cleanup()
+{
+    return SENSOR_API_STATUS_UNINITIALIZED;
+}
+
+/* OCRE_SENSORS_C */

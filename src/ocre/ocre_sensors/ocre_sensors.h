@@ -14,7 +14,7 @@
 #include <ocre/container_runtime.h>
 
 /* Debug flag for sensor API (0: OFF, 1: ON) */
-#define OCRE_SENSOR_API_DEBUG_ON 0
+#define OCRE_SENSOR_API_DEBUG_ON 1
 
 /* Static maximum number of sensors supported (used when debugging is enabled) */
 #if OCRE_SENSOR_API_DEBUG_ON
@@ -28,7 +28,9 @@
  */
 typedef struct ocre_sensor_handle_t
 {
-    int id; ///< Unique identifier for the sensor.
+    int id;
+    const char *device_name;
+    struct device sensor_device;
 } ocre_sensor_handle_t;
 
 /** TO DO update this considering all posible and needed status
@@ -36,9 +38,12 @@ typedef struct ocre_sensor_handle_t
  */
 typedef enum
 {
-    SENSOR_API_STATUS_UNKNOWN,     ///< Status is unknown.
-    SENSOR_API_STATUS_INITIALIZED, ///< API has been initialized.
-    SENSOR_API_STATUS_ERROR        ///< An error occurred with the sensor API.
+    SENSOR_API_STATUS_UNKNOWN,        ///< Status is unknown.
+    SENSOR_API_STATUS_INITIALIZED,    ///< API has been initialized.
+    SENSOR_API_STATUS_CHANNEL_OPENED, ///< Channel has been opened .
+    SENSOR_API_STATUS_OKEY,
+    SENSOR_API_STATUS_UNINITIALIZED,
+    SENSOR_API_STATUS_ERROR ///< An error occurred with the sensor API.
 } ocre_sensors_status_t;
 
 /**
@@ -63,10 +68,9 @@ typedef enum
  */
 typedef struct ocre_sensor_t
 {
-    ocre_sensor_handle_t handle; ///< Sensor handle
-    int num_channels;            ///< Number of supported channels + TO DO Set it when we discover this
-    // TO DO it should be data struct of channels wtih num_channels size
-    sensor_channel_t channels[]; ///< Supported channels
+    ocre_sensor_handle_t handle;             ///< Sensor handle
+    int num_channels;                        ///< Number of supported channels + TO DO Set it when we discover this
+    sensor_channel_t channels[num_channels]; ///< Supported channels
 } ocre_sensor_t;
 
 /**
@@ -85,15 +89,6 @@ typedef struct ocre_sensors_sample_t
 {
     ocre_sensor_value_t value;
 } ocre_sensors_sample_t;
-
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-typedef struct ocre_sensors_ctx_t
-{
-    int sensor_count; ///< Number of sensors discovered + TO DO Set it when we discover this
-    // TO DO it should be data struct of sensors wtih sensor_count size
-    ocre_sensor_t sensors; ///< Array of sensor instances
-} ocre_sensors_ctx_t;
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 /**
  * @brief Callback type for sensor triggers
@@ -122,7 +117,7 @@ ocre_sensors_status_t ocre_sensors_init();
  * @param sensors Pointer to the sensor list to set the discovered info about available sensors
  * @return Status of sensors envroinment
  */
-ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors);
+ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors, int *sensors_count);
 
 /**
  * @brief Opens a sensor channel.
