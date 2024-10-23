@@ -79,7 +79,6 @@ To build and flash for a physical device, follow these steps:
 
 4. After flashing, restart/reset your board to run the application.
 
-
 # Current Status
 
 Project Ocre is a work in progress. Here is a list of what is currently implemented and planned:
@@ -92,3 +91,14 @@ Project Ocre is a work in progress. Here is a list of what is currently implemen
 - [ ] Networking APIs
 - [ ] Multi-threading
 - [ ] Support for WASI embedded APIs
+
+## Further Information
+For more detailed information about Ocre, please check out the docs at https://docs.project-ocre.org. Ocre documentation covers:
+
+* Detailed architecture of the Ocre runtime
+* Creating and managing Ocre containers
+* Integration guides and examples
+* API reference and specifications
+* Troubleshooting guides and common solutions
+
+If you're new to Ocre, we recommend starting with our Overview and Quick Start guides in the documentation.
