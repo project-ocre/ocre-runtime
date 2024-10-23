@@ -11,7 +11,6 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
-#include <ocre/ocre_container_runtime/ocre_container_runtime.h>
 
 // Internal Data structures for runtime
 static char wamr_heap_buf[CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE] = {0};
@@ -172,6 +171,7 @@ ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id) {
 
         if (NULL == ctx->containers[container_id].ocre_runtime_arguments.func) {
             LOG_ERR("ERROR lookup function: ");
+            return CONTAINER_STATUS_ERROR;
         }
 
         /* creat an execution environment to execute the WASM functions */
@@ -181,12 +181,14 @@ ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id) {
 
         if (NULL == ctx->containers[container_id].ocre_runtime_arguments.exec_env) {
             LOG_ERR("ERROR creating executive environment: ");
+            return CONTAINER_STATUS_ERROR;
         }
 
         /* call the WASM function */
         if (!wasm_runtime_call_wasm(ctx->containers[container_id].ocre_runtime_arguments.exec_env,
                                     ctx->containers[container_id].ocre_runtime_arguments.func, 1, argv)) {
             LOG_ERR("ERROR calling main:");
+            return CONTAINER_STATUS_ERROR;
         }
 
         ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_RUNNING;
@@ -232,6 +234,7 @@ ocre_container_status_t CS_destroy_container(ocre_cs_ctx *ctx, int container_id,
     }
 
     wasm_runtime_unload(ctx->containers[container_id].ocre_runtime_arguments.module);
+    free(ctx->containers[container_id].ocre_runtime_arguments.buffer);
     ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_DESTROYED;
     ctx->current_container_id--;
 

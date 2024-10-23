@@ -84,6 +84,6 @@ int on_ocre_healthcheck(ocre_healthcheck *WDT);
  *
  * @return 1 if health check failed, 0 otherwise.
  */
-int ocre_healthcheck_expiry(ocre_healthcheck *WDT);
+int ocre_healthcheck_expiry(struct k_timer *timer, ocre_healthcheck *WDT);
 
 #endif
