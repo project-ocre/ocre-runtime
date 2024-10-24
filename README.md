@@ -79,9 +79,8 @@ To build and flash for a physical device, follow these steps:
 
 4. After flashing, restart/reset your board to run the application.
 
-## Current Status
-
-For the latest updates on the project's progress and upcoming features, please refer to the [Project Ocre Roadmap](https://lf-edge.atlassian.net/wiki/spaces/OCRE/pages/116490256/Project+Roadmap) page on our Wiki.
-
-## Further Information
-For more detailed information about Ocre, please check out the docs at https://docs.project-ocre.org.
+## More Info
+* **[Website](https://lfedge.org/projects/ocre/)**: For a high-level overview of the Ocre project, and its goals visit our website.
+* **[Docs](https://docs.project-ocre.org/)**: For more detailed information about Ocre, visit Ocre docs.
+* **[Wiki](https://lf-edge.atlassian.net/wiki/spaces/OCRE/overview?homepageId=14909442)**: For a full project overview, FAQs, project roadmap, and governance information, visit the Ocre Wiki.
+* **[Slack](https://lfedge.slack.com/archives/C07F190CC3X)**: If you need support, or simply want to discuss all things Ocre head on over to our Slack channel (`#ocre`) on LFEdge's Slack org.
