@@ -78,6 +78,7 @@
 				"type": "pickString",
 				"options": [
 					"native_sim",
+					"nucleo_h723zg",
 				],
 				"default": "native_sim",
 				"description": "See https://docs.zephyrproject.org/latest/boards/index.html"
@@ -96,6 +97,20 @@
 	"launch": {
 		"version": "0.2.0",
 		"configurations": [
+			{
+				"name": "Cortex Debug - ST-LINK",
+				"cwd": "${workspaceFolder}",
+				"executable": "${workspaceFolder}/build/zephyr/zephyr.elf",
+				"request": "launch",
+				"type": "cortex-debug",
+				"runToEntryPoint": "main",
+				"servertype": "stlink",
+				"device": "STM32H7xx",  // Changed for NUCLEO-H723ZG
+				"interface": "swd",
+				"showDevDebugOutput": "none",
+				"v1": false,
+				"stm32cubeprogrammer": ""
+			},
 			{
 				"name": "(gdb) Launch",
 				"type": "cppdbg",
