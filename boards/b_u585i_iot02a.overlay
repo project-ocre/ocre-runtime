@@ -5,11 +5,10 @@
 		compatible = "microchip,enc28j60";
 		int-gpios = <&gpioc 1 GPIO_ACTIVE_LOW>;
 		spi-max-frequency = <10000000>;
-		local-mac-address = [ 00 80 00 01 02 03  ];
+		local-mac-address = [ 00 80 00 01 02 03 ];
 		full-duplex;
 	};
 };
-
 
 &flash0 {
 	partitions {
@@ -19,4 +18,5 @@
 			reg = <0x00100000 DT_SIZE_K(256)>;
 		};
 	};
+
 };
