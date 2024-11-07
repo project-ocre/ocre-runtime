@@ -35,8 +35,8 @@ int main(int argc, char *argv[]) {
         ocre_container_runtime_cb callback;
 
         ocre_container_data.heap_size = 0;
-        strncpy(&ocre_container_data.name, "Hello World", strlen("Hello World"));
-        strncpy(&ocre_container_data.sha256, container_filename, strlen(container_filename));
+        snprintf(ocre_container_data.name, sizeof(ocre_container_data.name), "Hello World");
+        snprintf(ocre_container_data.sha256, sizeof(ocre_container_data.sha256), "%s", container_filename);
         ocre_container_data.timers = 0;
         ocre_container_data.watchdog_interval = 0;
         ocre_container_runtime_create_container(&ctx, &ocre_container_data, &container_ID, callback);

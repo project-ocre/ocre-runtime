@@ -79,6 +79,7 @@
 				"options": [
 					"native_sim",
 					"nucleo_h723zg",
+					"b_u585i_iot02a",
 				],
 				"default": "native_sim",
 				"description": "See https://docs.zephyrproject.org/latest/boards/index.html"
