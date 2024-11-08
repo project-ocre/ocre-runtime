@@ -10,7 +10,7 @@ on:
       - main
 jobs:
   build-and-test:
-    runs-on: zephyr-large-runner
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
       options: --user root
