@@ -28,7 +28,7 @@ jobs:
 
     - name: Debug python location
       run: |
-      which python
+        which python
 
     - name: Setup Zephyr project
       uses: zephyrproject-rtos/action-zephyr-setup@v1
