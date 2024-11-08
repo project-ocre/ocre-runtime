@@ -1,6 +1,8 @@
 ![Ocre logo](ocre_logo.jpg "Ocre")
 # Ocre
+[![License](https://img.shields.io/github/license/project-ocre/ocre-runtime?color=blue)](LICENSE)
 [![slack](https://img.shields.io/badge/slack-ocre-brightgreen.svg?logo=slack)](https://lfedge.slack.com/archives/C07F190CC3X)
+[![Stars](https://img.shields.io/github/stars/project-ocre/ocre-runtime?style=social)](Stars)
 
 Ocre is a container runtime for constrained devices. It leverages [WebAssembly](https://www.webassembly.org) and [Zephyr](https://www.zephyrproject.org/) to support OCI-type application containers in a footprint up to 2,000 times smaller than traditional Linux-based container runtimes. Our mission is to modernize the embedded applications by making it as easy to develop and securely deploy apps on constrained edge devices as it is in the cloud.
 
@@ -55,6 +57,10 @@ Run the following command:
 ```
 $ ./build/zephyr/zephyr.exe
 ```
+
+---
+## License
+Distributed under the Apache License 2.0. See [LICENSE](https://github.com/project-ocre/ocre-runtime/blob/main/LICENSE) for more information.
 
 ---
 ## More Info
