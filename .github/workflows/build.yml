@@ -26,10 +26,15 @@ jobs:
       with:
         python-version: 3.11
 
+    - name: Debug python location
+      run: |
+      which python
+
     - name: Setup Zephyr project
       uses: zephyrproject-rtos/action-zephyr-setup@v1
       with:
         app-path: application
+        sdk-version: 0.16.8
 
     - name: Build Zephyr application
       run: |
