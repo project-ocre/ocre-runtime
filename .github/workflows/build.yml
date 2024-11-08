@@ -12,7 +12,6 @@ jobs:
   build-and-test:
     runs-on: zephyr-large-runner
     container:
-      # Build using Zephyr 3.7.0 LTS (v0.26-branch)
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
       options: --user root
 
