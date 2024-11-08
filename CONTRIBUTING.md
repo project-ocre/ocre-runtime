@@ -24,17 +24,23 @@ Technical Steering Committee):
 * [Branding guidelines](http://www.apache.org/foundation/marks/responsibility.html)
 * [Voting](https://www.apache.org/foundation/voting.html)
 
-As was noted above, Ocre governance is conducted by the TSC which you can find more information about using the links below.
+As was noted above, Ocre governance is conducted by the TSC, which is currently
+composed of the following members:
+
+* Stephen Berard <stephen@atym.io>
+* Knox Lively <knox@atym.io>
+
+## Important Links
 
 * You can reach the Ocre TSC at [ocre-tsc@lists.lfedge.org](mailto:ocre-tsc@lists.lfedge.org).
 
-* You can signup for the [ocre-tsc mailing list](https://lists.lfedge.org/g/Ocre-TSC)
+* Join the Ocre [TSC mailing list](https://lists.lfedge.org/g/Ocre-TSC)
 
-* You can susbscribe to the [ocre-tsc Calendar](https://zoom-lfx.platform.linuxfoundation.org/meetings/ocre?view=month).
+* Subscribe to the Ocre [TSC Calendar](https://zoom-lfx.platform.linuxfoundation.org/meetings/ocre?view=month)
 
-* You can subscribe to the ocre slack channel ([#ocre](https://lfedge.slack.com/archives/C07F190CC3X)) on LFEdge's Slack Org.
+* Join the Ocre [Slack Channel](https://lfedge.slack.com/archives/C07F190CC3X)
 
-* You can sign up for the [ocre wiki](https://wiki.lfedge.org/display/ocre)
+* Sign up for the Ocre [Wiki](https://wiki.lfedge.org/display/ocre)
 
 ## Providing feedback via GitHub issues
 
