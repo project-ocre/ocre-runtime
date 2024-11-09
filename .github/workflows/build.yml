@@ -37,7 +37,7 @@ jobs:
         run: |
           echo "free space"
           df -h /
-
+          pwd
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
         with:
