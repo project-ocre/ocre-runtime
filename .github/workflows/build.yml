@@ -30,8 +30,8 @@ jobs:
       # Needed to free up space as Zephyr takes up a lot of space and default runners don't have much disk space.
       - name: Disk clean 
         run: |
-          sudo chmod -R 777 /_t/CodeQL
-          sudo rm -rf /_t/CodeQL
+          sudo chmod -R 777 /__t/CodeQL
+          sudo rm -rf /__t/CodeQL
       
       - name: Check disk space
         run: |
