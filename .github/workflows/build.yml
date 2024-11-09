@@ -25,17 +25,17 @@ jobs:
       - name: Check disk space
         run: |
           echo "free space"
-          df -h
+          df -h /
       
-      - name: clean 
+      - name: List top 30 directories by size
         run: |
-          sudo apt-get autoremove && sudo apt-get clean
-          df -h
+          echo "Top 30 directories by size:"
+          du -h / 2>/dev/null | sort -rh | head -n 30
       
       - name: Check disk space
         run: |
           echo "free space"
-          df -h
+          df -h /
 
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
