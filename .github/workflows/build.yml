@@ -16,43 +16,67 @@ jobs:
      options: --user root
    
    steps:
-   - name: Checkout
-     uses: actions/checkout@v4
-     with:
-       path: application
+     - name: Checkout
+       uses: actions/checkout@v4
+       with:
+         path: application
 
-   # Need to clean disk space for Zephyr, otherwise we'll have use a hosted runner.
-   - name: Free Disk Space
-     uses: endersonmenezes/free-disk-space@v2
-     with:
-       # This might remove tools that are actually needed if set to "true", but will free about 6 GB otherwise.
-       remove_tool_cache: false 
-       remove_android: true
-       remove_dotnet: true
-       remove_haskell: true
-       remove_swap: true
-       remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox postgresql* temurin-* *llvm* mysql* dotnet-sdk-*"
-       remove_packages_one_command: true
-       remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/share/gradle* /usr/share/maven* /usr/share/glade* /usr/local/lib/node_modules /usr/local/share/chromium /usr/local/share/powershell"
-       testing: false
+     - name: Run cleanup script
+       run: |
+         # Show disk usage before cleanup
+         echo "Disk usage before cleanup:"
+         du -h / | sort -hr | head -n 20
 
-   - name: Setup Zephyr project
-     uses: zephyrproject-rtos/action-zephyr-setup@v1
-     with:
-       app-path: application
-       sdk-version: 0.16.8
+         # Remove unnecessary packages
+         echo "Removing packages..."
+         sudo apt-get update
+         sudo apt-get remove -y azure-cli google-cloud-cli microsoft-edge-stable \
+                              google-chrome-stable firefox postgresql* temurin-* \
+                              *llvm* mysql* dotnet-sdk-* || true
+         sudo apt-get autoremove -y
+         sudo apt-get clean
 
-   - name: Build Zephyr application
-     run: |
-       west build --pristine -b native_sim ./application -d build  -- -DMODULE_EXT_ROOT=`pwd`/application
-     working-directory: .
+         # Delete specified directories
+         echo "Removing directories..."
+         sudo rm -rf /usr/share/swift /usr/share/miniconda /usr/share/az* \
+                    /usr/share/dotnet* /usr/share/gradle* /usr/share/maven* \
+                    /usr/share/glade* /usr/local/lib/node_modules \
+                    /usr/local/share/chromium /usr/local/share/powershell
 
-   - name: Check build status
-     run: |
-       if [ $? -eq 0 ]; then
-         echo "Zephyr build succeeded"
-         exit 0
-       else
-         echo "Zephyr build failed"
-         exit 1
-       fi
+         # Clean up Android tools (SDK, NDK)
+         echo "Removing Android SDK/NDK..."
+         sudo rm -rf /usr/local/lib/android /usr/local/share/android \
+                    /usr/lib/android /usr/share/android* /opt/android* \
+                    $HOME/Android /usr/local/android*
+
+         # Clean up Haskell tools
+         echo "Removing Haskell tools..."
+         sudo rm -rf /usr/local/bin/stack /usr/local/share/stack \
+                    /usr/local/lib/ghc* $HOME/.stack $HOME/.ghcup \
+                    /usr/local/share/ghc* /usr/share/ghc*
+
+         # Show disk usage after cleanup
+         echo "Disk usage after cleanup:"
+         du -h / | sort -hr | head -n 20
+
+     # Need to clean disk space for Zephyr, otherwise we'll have use a hosted runner.
+     - name: Setup Zephyr project
+       uses: zephyrproject-rtos/action-zephyr-setup@v1
+       with:
+         app-path: application
+         sdk-version: 0.16.8
+
+     - name: Build Zephyr application
+       run: |
+         west build --pristine -b native_sim ./application -d build  -- -DMODULE_EXT_ROOT=`pwd`/application
+       working-directory: .
+
+     - name: Check build status
+       run: |
+         if [ $? -eq 0 ]; then
+           echo "Zephyr build succeeded"
+           exit 0
+         else
+           echo "Zephyr build failed"
+           exit 1
+         fi
