@@ -32,7 +32,7 @@ jobs:
         with:
           root-reserve-mb: 512            # Space to leave free on root filesystem
           temp-reserve-mb: 100           # Space to leave free on temp filesystem
-          swap-size-mb: 1024             # Amount of swap space to create
+          #swap-size-mb: 1024             # Amount of swap space to create
           # Cleanup options
           remove-dotnet: 'true'          # Remove .NET runtime and libraries
           remove-android: 'true'        # Remove Android SDKs and Tools
