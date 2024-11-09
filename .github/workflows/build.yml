@@ -30,10 +30,6 @@ jobs:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 512            # Space to leave free on root filesystem
-          temp-reserve-mb: 100           # Space to leave free on temp filesystem
-          #swap-size-mb: 1024             # Amount of swap space to create
-          # Cleanup options
           remove-dotnet: 'true'          # Remove .NET runtime and libraries
           remove-android: 'true'        # Remove Android SDKs and Tools
           remove-haskell: 'true'        # Remove GHC (Haskell) artifacts
