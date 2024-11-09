@@ -1,56 +1,58 @@
 # Build and test the ocre-runtime using the `native_sim` target.
 name: Build 
-
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+ push:
+   branches:
+     - main
+ pull_request:
+   branches:
+     - main
+
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
-      options: --user root
+ build-and-test:
+   runs-on: ubuntu-latest
+   container:
+     image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+     options: --user root
+   
+   steps:
+   - name: Checkout
+     uses: actions/checkout@v4
+     with:
+       path: application
 
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        path: application
+   # Need to clean disk space for Zephyr, otherwise we'll have use a hosted runner.
+   - name: Free Disk Space
+     uses: endersonmenezes/free-disk-space@v2
+     with:
+       # This might remove tools that are actually needed if set to "true", but will free about 6 GB otherwise.
+       remove_tool_cache: false 
+       remove_android: true
+       remove_dotnet: true
+       remove_haskell: true
+       remove_swap: true
+       remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox postgresql* temurin-* *llvm* mysql* dotnet-sdk-*"
+       remove_packages_one_command: true
+       remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/share/gradle* /usr/share/maven* /usr/share/glade* /usr/local/lib/node_modules /usr/local/share/chromium /usr/local/share/powershell"
+       testing: false
 
-      # Need to clean disk space for Zephyr, otherwise we'll have use a hosted runner.
-    - name: Free Disk Space
-      uses: jlumbroso/free-disk-space@main
-      with:
-        android: true
-        dotnet: true
-        haskell: true
-        swap-storage: true
-        large-packages: true
-        # this might remove tools that are actually needed, if set to "true" but frees about 6 GB
-        tool-cache: false
-        docker-images: false
+   - name: Setup Zephyr project
+     uses: zephyrproject-rtos/action-zephyr-setup@v1
+     with:
+       app-path: application
+       sdk-version: 0.16.8
 
-    - name: Setup Zephyr project
-      uses: zephyrproject-rtos/action-zephyr-setup@v1
-      with:
-        app-path: application
-        sdk-version: 0.16.8
+   - name: Build Zephyr application
+     run: |
+       west build --pristine -b native_sim ./application -d build  -- -DMODULE_EXT_ROOT=`pwd`/application
+     working-directory: .
 
-    - name: Build Zephyr application
-      run: |
-        west build --pristine -b native_sim ./application -d build  -- -DMODULE_EXT_ROOT=`pwd`/application
-      working-directory: .
-
-    - name: Check build status
-      run: |
-        if [ $? -eq 0 ]; then
-          echo "Zephyr build succeeded"
-          exit 0
-        else
-          echo "Zephyr build failed"
-          exit 1
-        fi
+   - name: Check build status
+     run: |
+       if [ $? -eq 0 ]; then
+         echo "Zephyr build succeeded"
+         exit 0
+       else
+         echo "Zephyr build failed"
+         exit 1
+       fi
