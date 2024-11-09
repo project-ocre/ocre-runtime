@@ -21,15 +21,6 @@ jobs:
       with:
         path: application
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.11
-
-    - name: Debug python location
-      run: |
-        which python
-
     - name: Setup Zephyr project
       uses: zephyrproject-rtos/action-zephyr-setup@v1
       with:
