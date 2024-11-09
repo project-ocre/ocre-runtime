@@ -46,7 +46,7 @@ jobs:
 
       - name: Build Zephyr application
         run: |
-          west build --pristine -b native_sim $(pwd)/application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+          west build --pristine -b native_sim $(pwd) -d build -- -DMODULE_EXT_ROOT=$(pwd)
         working-directory: application
 
       - name: Check build status
