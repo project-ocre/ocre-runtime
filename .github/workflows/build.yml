@@ -22,22 +22,19 @@ jobs:
         with:
           path: application
 
-      - name: Check disk space 
+      - name: Check disk space
         run: |
-          echo "Free space:"
+          echo "free space"
           df -h
-
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          remove-dotnet: 'true'          # Remove .NET runtime and libraries
-          remove-android: 'true'        # Remove Android SDKs and Tools
-          remove-haskell: 'true'        # Remove GHC (Haskell) artifacts
-          remove-codeql: 'true'         # Remove CodeQL Action Bundles
-
-      - name: Check disk space 
+      
+      - name: clean 
         run: |
-          echo "Free space:"
+          sudo apt-get autoremove && sudo apt-get clean
+          df -h
+      
+      - name: Check disk space
+        run: |
+          echo "free space"
           df -h
 
       - name: Setup Zephyr project
