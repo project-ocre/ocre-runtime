@@ -56,3 +56,4 @@ jobs:
           else
             echo "Zephyr build failed"
             exit 1
+          fi
