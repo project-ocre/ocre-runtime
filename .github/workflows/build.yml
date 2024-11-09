@@ -26,11 +26,11 @@ jobs:
         run: |
           echo "free space"
           df -h /
-      
-      - name: List top 30 directories by size
+     
+      # Needed to free up space as Zephyr takes up a lot of space and default runners don't have much disk space.
+      - name: Disk clean 
         run: |
-          echo "Top 30 directories by size:"
-          du -h / 2>/dev/null | sort -rh | head -n 30
+          sudo rm -rf /_t/CodeQL
       
       - name: Check disk space
         run: |
