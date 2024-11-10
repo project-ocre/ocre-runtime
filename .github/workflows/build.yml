@@ -13,6 +13,7 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     container:
+      # Use Zephry 3.7 LTS (v0.26-branch)
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
       options: --user root
 
@@ -22,12 +23,11 @@ jobs:
         with:
           path: application
 
-      # Needed to free up space as Zephyr takes up a lot of space and default runners don't have much disk space.
+      # Free up space as Zephyr takes up a lot of space and default runners don't have much disk space.
       - name: Disk cleanup
         run: |
-          sudo chmod -R 777 /__t/CodeQL
-          sudo rm -rf /__t/CodeQL
-      
+          sudo rm -rf /__t/CodeQL /root/.rustup*
+
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
         with:
@@ -36,8 +36,7 @@ jobs:
 
       - name: Build Zephyr application
         run: |
-          west build --pristine -b native_sim $(pwd) -d build -- -DMODULE_EXT_ROOT=$(pwd)
-        working-directory: application
+          west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
 
       - name: Check build status
         run: |
