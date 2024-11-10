@@ -26,9 +26,7 @@ jobs:
       # Free up space as Zephyr takes up a lot of space and default runners don't have much disk space.
       - name: Disk cleanup
         run: |
-          df -h /
           sudo rm -rf /__t/CodeQL /root/.rustup*
-          df -h /
 
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
@@ -38,8 +36,7 @@ jobs:
 
       - name: Build Zephyr application
         run: |
-          west build --pristine -b native_sim $(pwd) -d build -- -DMODULE_EXT_ROOT=$(pwd)
-        working-directory: application
+          west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
 
       - name: Check build status
         run: |
