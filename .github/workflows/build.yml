@@ -8,40 +8,42 @@ on:
   pull_request:
     branches:
       - main
+
 jobs:
   build-and-test:
-    runs-on: zephyr-large-runner
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
       options: --user root
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        path: application
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: application
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.11
+      # Needed to free up space as Zephyr takes up a lot of space and default runners don't have much disk space.
+      - name: Disk cleanup
+        run: |
+          sudo chmod -R 777 /__t/CodeQL
+          sudo rm -rf /__t/CodeQL
+      
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: application
+          sdk-version: 0.16.8
 
-    - name: Setup Zephyr project
-      uses: zephyrproject-rtos/action-zephyr-setup@v1
-      with:
-        app-path: application
+      - name: Build Zephyr application
+        run: |
+          west build --pristine -b native_sim $(pwd) -d build -- -DMODULE_EXT_ROOT=$(pwd)
+        working-directory: application
 
-    - name: Build Zephyr application
-      run: |
-        west build --pristine -b native_sim ./application -d build  -- -DMODULE_EXT_ROOT=`pwd`/application
-      working-directory: .
-
-    - name: Check build status
-      run: |
-        if [ $? -eq 0 ]; then
-          echo "Zephyr build succeeded"
-          exit 0
-        else
-          echo "Zephyr build failed"
-          exit 1
-        fi
+      - name: Check build status
+        run: |
+          if [ $? -eq 0 ]; then
+            echo "Zephyr build succeeded"
+          else
+            echo "Zephyr build failed"
+            exit 1
+          fi
