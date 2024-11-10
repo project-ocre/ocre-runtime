@@ -22,22 +22,12 @@ jobs:
         with:
           path: application
 
-      - name: Check disk space
-        run: |
-          echo "free space"
-          df -h /
-     
       # Needed to free up space as Zephyr takes up a lot of space and default runners don't have much disk space.
-      - name: Disk clean 
+      - name: Disk cleanup
         run: |
           sudo chmod -R 777 /__t/CodeQL
           sudo rm -rf /__t/CodeQL
       
-      - name: Check disk space
-        run: |
-          echo "free space"
-          df -h /
-          pwd
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
         with:
