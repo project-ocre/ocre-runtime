@@ -57,7 +57,7 @@ ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors, int 
             {
                 sensors[sensor_index].channels[channel_count++] = SENSOR_CHANNEL_PRESSURE;
             }
-            if (sensor_channel_get(dev, SENSOR_CHAN_TEMP, &value) == 0)
+            if (sensor_channel_get(dev, SENSOR_CHAN_GAUGE_TEMP, &value) == 0)
             {
                 sensors[sensor_index].channels[channel_count++] = SENSOR_CHANNEL_TEMPERATURE;
             }

@@ -8,10 +8,10 @@
 #ifndef OCRE_SENSORS_H
 #define OCRE_SENSORS_H
 
-#include <zephyr/sensor.h>
+// #include <zephyr/sensor.h>
 #include <zephyr/kernel.h>
 
-#include <ocre/container_runtime.h>
+#include "../ocre_container_runtime/ocre_container_runtime.h"
 
 /* Debug flag for sensor API (0: OFF, 1: ON) */
 #define OCRE_SENSOR_API_DEBUG_ON 1
@@ -68,9 +68,9 @@ typedef enum
  */
 typedef struct ocre_sensor_t
 {
-    ocre_sensor_handle_t handle;             ///< Sensor handle
-    int num_channels;                        ///< Number of supported channels + TO DO Set it when we discover this
-    sensor_channel_t channels[num_channels]; ///< Supported channels
+    ocre_sensor_handle_t handle; ///< Sensor handle
+    int num_channels;            ///< Number of supported channels + TO DO Set it when we discover this
+    sensor_channel_t channels[]; ///< Supported channels
 } ocre_sensor_t;
 
 /**
