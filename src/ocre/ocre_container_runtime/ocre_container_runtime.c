@@ -5,34 +5,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <ocre/ocre.h>
+#ifdef UNIT_TESTING
+#include "../../application/tests/utests_ocre_container_runtime/stubs/components/container_supervisor/cs_sm_impl.h"
+#include "../../application/tests/utests_ocre_container_runtime/stubs/components/container_supervisor/cs_sm.h"
+#include "../../application/tests/utests_ocre_container_runtime/stubs/wasm/wasm.h"
+#include "../../application/tests/utests_ocre_container_runtime/stubs/ocre/fs/fs.h"
+#else
 #include <zephyr/logging/log.h>
-#include <stdlib.h>
-#include <string.h>
 #include <zephyr/device.h>
-#include <zephyr/fs/fs.h>
-#include <zephyr/kernel.h>
-
-// WAMR includes
-#include "../api/ocre_api.h"
-
 #include <ocre/ocre.h>
-#include <zephyr/logging/log.h>
-LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
-
-#include <zephyr/fs/fs.h>
-#include <zephyr/kernel.h>
-#include <stdio.h>
-
-#include <ocre/fs/fs.h>
-#include <ocre/sm/sm.h>
-#include "ocre_container_runtime.h"
-
-#include "../components/container_supervisor/cs_sm.h"
 #include "../components/container_supervisor/cs_sm.h"
 #include "../components/container_supervisor/cs_sm_impl.h"
+// WAMR includes
+#include "../api/ocre_api.h"
+#endif
 
-#include "../container_healthcheck/ocre_container_healthcheck.h"
+#include <stdlib.h>
+#include <string.h>
+
+LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
+
+#include "ocre_container_runtime.h"
 
 ocre_container_runtime_status_t ocre_container_runtime_init(ocre_cs_ctx *ctx, ocre_container_init_arguments_t *args) {
     // Zeroing the context
@@ -68,7 +61,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
     int i;
     // Find available slot for new container
     for (i = 0; i < MAX_CONTAINERS; i++) {
-        if ((ctx->containers[i].container_runtime_status == 0) ||
+        if ((ctx->containers[i].container_runtime_status == CONTAINER_STATUS_UNKNOWN) ||
             (ctx->containers[i].container_runtime_status == CONTAINER_STATUS_DESTROYED)) {
             *container_id = i;
             break;
