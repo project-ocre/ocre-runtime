@@ -16,7 +16,6 @@
 #include <ocre/ocre.h>
 #include "../components/container_supervisor/cs_sm.h"
 #include "../components/container_supervisor/cs_sm_impl.h"
-
 // WAMR includes
 #include "../api/ocre_api.h"
 #endif
