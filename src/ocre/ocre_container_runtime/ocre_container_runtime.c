@@ -55,15 +55,22 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
                                                                 int *container_id, ocre_container_runtime_cb callback)
 {
     int i;
+    uint8_t validity_flag = false;
     // Find available slot for new container
     for (i = 0; i < MAX_CONTAINERS; i++)
     {
-        if ((ctx->containers[i].container_runtime_status == 0) ||
+        if ((ctx->containers[i].container_runtime_status == CONTAINER_STATUS_UNKNOWN) ||
             (ctx->containers[i].container_runtime_status == CONTAINER_STATUS_DESTROYED))
         {
             *container_id = i;
+            validity_flag = true;
             break;
         }
+    }
+    if (validity_flag == false)
+    {
+        LOG_ERR("No available slots, unable to create container");
+        return CONTAINER_STATUS_ERROR;
     }
     LOG_INF("Request create new container in slot:%d", *container_id);
 
