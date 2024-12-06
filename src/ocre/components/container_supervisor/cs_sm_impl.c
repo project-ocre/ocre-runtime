@@ -5,7 +5,6 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
-#include <ocre/ocre_container_runtime/ocre_container_runtime.h>
 
 // Internal Data structures for runtime
 static char filepath[FILE_PATH_MAX];
@@ -103,8 +102,7 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 
 ocre_container_runtime_status_t CS_runtime_destroy(void)
 {
-    wasm_runtime_destroy();
-    destroy_ocre_cs_thread();
+    //
     return RUNTIME_STATUS_DESTROYED;
 }
 
@@ -229,6 +227,7 @@ ocre_container_status_t CS_destroy_container(ocre_cs_ctx *ctx, int container_id,
         return CONTAINER_STATUS_ERROR;
     }
     wasm_runtime_unload(ctx->containers[container_id].ocre_runtime_arguments.module);
+    free(ctx->containers[container_id].ocre_runtime_arguments.buffer);
     ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_DESTROYED;
     ctx->current_container_id--;
     return CONTAINER_STATUS_DESTROYED;
