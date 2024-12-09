@@ -9,8 +9,8 @@
 #define OCRE_CONTAINER_RUNTIME_H
 
 #ifdef UNIT_TESTING
-#include "../../application/tests/utests_ocre_container_runtime/stubs/container_healthcheck/ocre_container_healthcheck.h"
-#include "../../application/tests/utests_ocre_container_runtime/stubs/k_sem/k_sem.h"
+#include "../../application/tests/ocre_container_runtime/stubs/container_healthcheck/ocre_container_healthcheck.h"
+#include "../../application/tests/ocre_container_runtime/stubs/k_sem/k_sem.h"
 #else
 #include <zephyr/fs/fs.h>
 #include <zephyr/kernel.h>
