@@ -6,10 +6,10 @@
  */
 
 #ifdef UNIT_TESTING
-#include "../../application/tests/utests_ocre_container_runtime/stubs/components/container_supervisor/cs_sm_impl.h"
-#include "../../application/tests/utests_ocre_container_runtime/stubs/components/container_supervisor/cs_sm.h"
-#include "../../application/tests/utests_ocre_container_runtime/stubs/wasm/wasm.h"
-#include "../../application/tests/utests_ocre_container_runtime/stubs/ocre/fs/fs.h"
+#include "../../application/tests/ocre_container_runtime/stubs/components/container_supervisor/cs_sm_impl.h"
+#include "../../application/tests/ocre_container_runtime/stubs/components/container_supervisor/cs_sm.h"
+#include "../../application/tests/ocre_container_runtime/stubs/wasm/wasm.h"
+#include "../../application/tests/ocre_container_runtime/stubs/ocre/fs/fs.h"
 #else
 #include <zephyr/logging/log.h>
 #include <zephyr/device.h>
