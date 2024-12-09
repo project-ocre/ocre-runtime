@@ -61,7 +61,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
     int i;
     // Find available slot for new container
     for (i = 0; i < MAX_CONTAINERS; i++) {
-        if ((ctx->containers[i].container_runtime_status == CONTAINER_STATUS_UNKNOWN) ||
+        if ((ctx->containers[i].container_runtime_status == 0) ||
             (ctx->containers[i].container_runtime_status == CONTAINER_STATUS_DESTROYED)) {
             *container_id = i;
             break;
