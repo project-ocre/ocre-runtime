@@ -232,7 +232,15 @@ ocre_container_status_t CS_destroy_container(ocre_cs_ctx *ctx, int container_id,
     wasm_runtime_unload(ctx->containers[container_id].ocre_runtime_arguments.module);
     free(ctx->containers[container_id].ocre_runtime_arguments.buffer);
     ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_DESTROYED;
-    ctx->current_container_id--;
+
+    if (ctx->current_container_id > 0)
+    {
+        ctx->current_container_id--;
+    }
+    else
+    {
+        ;
+    }
     return CONTAINER_STATUS_DESTROYED;
 }
 
