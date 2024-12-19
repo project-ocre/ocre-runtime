@@ -79,8 +79,9 @@ that may be out of scope for the project.
 
 Not sure if that typo is worth a pull request? Found a bug and know how to fix
 it? Do it! We will appreciate it. We are always thrilled to receive pull requests.
-We do our best to process them quickly. If your pull request is not accepted on
-the first try, don't get discouraged!
+We do our best to process them quickly. When creating your PR, please tag relevant 
+maintainers from our [MAINTAINERS.md](https://github.com/project-ocre/ocre-runtime/blob/main/MAINTAINERS.md) file. 
+If your pull request is not accepted on the first try, don't get discouraged!
 
 ### Commit Messages
 
