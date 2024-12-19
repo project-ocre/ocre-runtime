@@ -4,7 +4,7 @@ This page lists all active maintainers (also known as committers) of the [Ocre P
 
 For governance guidelines and information on becoming a committer/maintainer, see the [Ocre Wiki](https://lf-edge.atlassian.net/wiki/spaces/OCRE/overview). For general contribution guidelines, refer to [CONTRIBUTING.md](https://github.com/project-ocre/ocre-runtime/blob/master/CONTRIBUTING.md).
 
-## Active Maintainers (in alphabetical order)
+## Active Maintainers
 | Name | GitHub Username | Email |
 |------|-------|-----------|
 | Stephen Berard | @sberard | stephen@atym.io |
