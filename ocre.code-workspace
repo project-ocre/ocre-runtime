@@ -15,7 +15,7 @@
 		],
 		"C_Cpp.intelliSenseEngine": "default",
 		"C_Cpp.default.includePath": [
-			"${workspaceFolder}/application/src/",
+			"${workspaceFolder}/application/src/ocre",
 			"${workspaceFolder}/zephyr/include/"
 		],
 		"C_Cpp.default.forcedInclude": [
@@ -41,7 +41,14 @@
 			"iwasm_sm.h": "c",
 			"*.h": "c",
 			"*.c": "c",
-			"*.g": "c"
+			"*.g": "c",
+			"*.tcc": "c",
+			"system_error": "c",
+			"array": "c",
+			"functional": "c",
+			"tuple": "c",
+			"type_traits": "c",
+			"utility": "c"
 		},
 		"editor.formatOnType": true,
 	},

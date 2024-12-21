@@ -6,6 +6,7 @@
  */
 
 #include "ocre_timer.h"
+#include <stdlib.h>
 
 ocre_timer_t ocre_timer_create(ocre_timer_callback_t callback) {
     struct k_timer_ocre *timer = malloc(sizeof(struct k_timer_ocre));
@@ -60,6 +61,6 @@ int ocre_timer_stop(ocre_timer_t id) {
 
 int ocre_timer_get_remaining(ocre_timer_t id) {
     struct k_timer_ocre *timer = (struct k_timer_ocre *)id;
-    
+
     return k_timer_remaining_get((&timer->timer));
 }

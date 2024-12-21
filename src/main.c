@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 void create_sample_container(char *file_name) {
     struct fs_file_t f;
     static char file_path[64];
-    snprintf(&file_path, 64, "/lfs/ocre/images/%s.bin", file_name);
+    snprintf((char *)&file_path, 64, "/lfs/ocre/images/%s.bin", file_name);
     int res;
 
     fs_file_t_init(&f);

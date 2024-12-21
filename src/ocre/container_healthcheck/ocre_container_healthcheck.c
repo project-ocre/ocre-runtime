@@ -10,11 +10,9 @@
 
 // this function is cyclic called by WDT->timer
 int ocre_healthcheck_expiry(ocre_healthcheck *WDT) {
-
     if (WDT == NULL) {
         return -1; // Error: Null pointer
     }
-
     if (WDT->enabled && (WDT->is_alive_cnt <= WDT->is_alive_cnt_last)) {
         // TODOA:-- containers[current_container_id].container_runtime_status = CONTAINER_STATUS_UNRESPONSIVE;
         WDT->is_alive_cnt = 0;
@@ -28,7 +26,6 @@ int ocre_healthcheck_expiry(ocre_healthcheck *WDT) {
 }
 
 int ocre_healthcheck_init(ocre_healthcheck *WDT, int timeout) {
-
     if (WDT == NULL) {
         return -1; // Error: Null pointer
     }
@@ -43,7 +40,6 @@ int ocre_healthcheck_init(ocre_healthcheck *WDT, int timeout) {
 }
 
 int ocre_healthcheck_reinit(ocre_healthcheck *WDT) {
-    
     if (WDT == NULL) {
         return -1; // Error: Null pointer
     }
@@ -55,7 +51,6 @@ int ocre_healthcheck_reinit(ocre_healthcheck *WDT) {
 
     return 0;
 }
-
 int ocre_healthcheck_restart(ocre_healthcheck *WDT) {
     WDT->is_alive_cnt = 0;
     WDT->is_alive_cnt_last = WDT->is_alive_cnt;

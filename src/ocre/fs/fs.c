@@ -79,7 +79,7 @@ static int littlefs_flash_erase(unsigned int id) {
                (unsigned int)pfa->fa_size);
 
     rc = flash_area_erase(pfa, 0, pfa->fa_size);
-    
+
     if (rc < 0) {
         LOG_ERR("Failed to erase flash: %d", rc);
     } else {

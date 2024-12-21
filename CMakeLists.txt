@@ -82,7 +82,7 @@ set (WAMR_ROOT_DIR ${ZEPHYR_WASM_MICRO_RUNTIME_MODULE_DIR})
 include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 
 # Generate the messages header file
-set (OCRE_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
+set(OCRE_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(MSG_INPUT_FILES ${OCRE_ROOT_DIR}/src/ocre/components/container_supervisor/component_supervisor.yaml )
 set(MSG_GENERATED_FILE ${CMAKE_CURRENT_LIST_DIR}/src/messaging/messages.g)
 
@@ -94,7 +94,6 @@ add_custom_command(
 )
 add_custom_target(generate_messages DEPENDS ${MSG_GENERATED_FILE})
 
-
 zephyr_include_directories(
   src/
   src/ocre
@@ -104,20 +103,31 @@ set(lib_sources
   # Libraries
   src/ocre/sm/sm.c
   src/ocre/fs/fs.c
-  src/ocre/timer/ocre_timer.c
+  src/ocre/ocre_timers/ocre_timer.c
   src/ocre/container_healthcheck/ocre_container_healthcheck.c
-  src/ocre/ocre_container_runtime/ocre_container_runtime.c
-  src/ocre/component/component.c
+
+  # Ocre APIs
+  src/ocre/api/ocre_api.c
 )
 
+# Compile in sensors framework if enabled.
+if(DEFINED CONFIG_SENSOR)
+  set(lib_sources ${lib_sources} 
+    src/ocre/ocre_sensors/ocre_sensors.c
+    src/ocre/ocre_sensors/rng_sensor.c
+  )
+endif()
+
+
 set(component_sources
+  # Component support
+  src/ocre/component/component.c
+
   # Components
+  src/ocre/ocre_container_runtime/ocre_container_runtime.c
   src/ocre/components/container_supervisor/cs_main.c
   src/ocre/components/container_supervisor/cs_sm.c
   src/ocre/components/container_supervisor/cs_sm_impl.c
- 
-  # Ocre APIs
-  src/ocre/api/ocre_api.c
 ) 
 
 target_sources(app PRIVATE ${WAMR_RUNTIME_LIB_SOURCE} ${lib_sources} ${component_sources} src/main.c)
