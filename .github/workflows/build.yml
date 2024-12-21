@@ -1,0 +1,48 @@
+# Build and test the ocre-runtime using the `native_sim` target.
+name: Build 
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    container:
+      # Use Zephry 3.7 LTS (v0.26-branch)
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+      options: --user root
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: application
+
+      # Free up space as Zephyr takes up a lot of space and default runners don't have much disk space.
+      - name: Disk cleanup
+        run: |
+          sudo rm -rf /__t/CodeQL /root/.rustup*
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: application
+          sdk-version: 0.16.8
+
+      - name: Build Zephyr application
+        run: |
+          west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+
+      - name: Check build status
+        run: |
+          if [ $? -eq 0 ]; then
+            echo "Zephyr build succeeded"
+          else
+            echo "Zephyr build failed"
+            exit 1
+          fi

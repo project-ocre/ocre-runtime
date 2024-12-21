@@ -15,7 +15,7 @@
 		],
 		"C_Cpp.intelliSenseEngine": "default",
 		"C_Cpp.default.includePath": [
-			"${workspaceFolder}/application/src/",
+			"${workspaceFolder}/application/src/ocre",
 			"${workspaceFolder}/zephyr/include/"
 		],
 		"C_Cpp.default.forcedInclude": [
@@ -34,8 +34,21 @@
 		// Kconfig
 		"kconfig.root": "${workspaceFolder}/application/Kconfig",
 		"files.associations": {
+			"net_private.h": "c",
+			"socket.h": "c",
+			"tls_internal.h": "c",
+			"sockets_internal.h": "c",
+			"iwasm_sm.h": "c",
 			"*.h": "c",
-			"*.c": "c"
+			"*.c": "c",
+			"*.g": "c",
+			"*.tcc": "c",
+			"system_error": "c",
+			"array": "c",
+			"functional": "c",
+			"tuple": "c",
+			"type_traits": "c",
+			"utility": "c"
 		},
 		"editor.formatOnType": true,
 	},
@@ -72,6 +85,8 @@
 				"type": "pickString",
 				"options": [
 					"native_sim",
+					"nucleo_h723zg",
+					"b_u585i_iot02a",
 				],
 				"default": "native_sim",
 				"description": "See https://docs.zephyrproject.org/latest/boards/index.html"
@@ -90,6 +105,20 @@
 	"launch": {
 		"version": "0.2.0",
 		"configurations": [
+			{
+				"name": "Cortex Debug - ST-LINK",
+				"cwd": "${workspaceFolder}",
+				"executable": "${workspaceFolder}/build/zephyr/zephyr.elf",
+				"request": "launch",
+				"type": "cortex-debug",
+				"runToEntryPoint": "main",
+				"servertype": "stlink",
+				"device": "STM32H7xx",  // Changed for NUCLEO-H723ZG
+				"interface": "swd",
+				"showDevDebugOutput": "none",
+				"v1": false,
+				"stm32cubeprogrammer": ""
+			},
 			{
 				"name": "(gdb) Launch",
 				"type": "cppdbg",

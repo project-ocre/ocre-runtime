@@ -18,7 +18,6 @@ LOG_MODULE_REGISTER(filesystem, OCRE_LOG_LEVEL);
 #include <zephyr/storage/flash_map.h>
 #include "fs.h"
 
-
 #define MAX_PATH_LEN LFS_NAME_MAX
 
 #ifdef CONFIG_SHELL
@@ -48,10 +47,10 @@ static int lsdir(const char *path) {
     }
 
     for (;;) {
-        // Verify fs_readdir() 
+        // Verify fs_readdir()
         res = fs_readdir(&dirp, &entry);
 
-        // entry.name[0] == 0 means end-of-dir 
+        // entry.name[0] == 0 means end-of-dir
         if (res || entry.name[0] == 0) {
             if (res < 0) {
                 LOG_ERR("Error reading dir [%d]\n", res);
@@ -60,7 +59,7 @@ static int lsdir(const char *path) {
         }
     }
 
-    // Verify fs_closedir() 
+    // Verify fs_closedir()
     fs_closedir(&dirp);
 
     return res;
@@ -80,14 +79,18 @@ static int littlefs_flash_erase(unsigned int id) {
                (unsigned int)pfa->fa_size);
 
     rc = flash_area_erase(pfa, 0, pfa->fa_size);
+
     if (rc < 0) {
         LOG_ERR("Failed to erase flash: %d", rc);
     } else {
         LOG_INF("Successfully erased flash");
     }
+
     flash_area_close(pfa);
+
     return rc;
 }
+
 #define PARTITION_NODE DT_NODELABEL(lfs1)
 
 #if DT_NODE_EXISTS(PARTITION_NODE)
@@ -135,6 +138,7 @@ static struct fs_mount_t __mp = {
         .fs_data = &lfsfs,
         .flags = FS_MOUNT_FLAG_USE_DISK_ACCESS,
 };
+
 struct fs_mount_t *mp = &__mp;
 
 static int littlefs_mount(struct fs_mount_t *mp) {
@@ -147,7 +151,6 @@ static int littlefs_mount(struct fs_mount_t *mp) {
     return fs_mount(mp);
 }
 #endif /* CONFIG_APP_LITTLEFS_STORAGE_BLK_SDMMC */
-
 
 void ocre_app_storage_init() {
     struct fs_dirent entry;

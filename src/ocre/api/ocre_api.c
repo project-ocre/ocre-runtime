@@ -5,6 +5,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <sys/utsname.h>
 #include <string.h>
@@ -18,50 +20,47 @@
 #include "../ocre_timers/ocre_timer.h"
 #include "../ocre_sensors/ocre_sensors.h"
 
-int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name)
-{
+int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name) {
     struct utsname info;
     wasm_module_inst_t module_inst = get_module_inst(exec_env);
 
-    if (!wasm_runtime_validate_native_addr(module_inst, name, sizeof(struct _ocre_posix_utsname)))
-    {
+    if (!wasm_runtime_validate_native_addr(module_inst, name, sizeof(struct _ocre_posix_utsname))) {
         return -1;
     }
 
-    if (uname(&info) != 0)
-    {
+    if (uname(&info) != 0) {
         return -1;
     }
 
     memset(name, 0, sizeof(struct _ocre_posix_utsname));
 
-    sprintf(name->sysname, "%s (%s)", OCRE_SYSTEM_NAME, info.sysname);
-    sprintf(name->release, "%s (%s)", APP_VERSION_STRING, info.release);
-    sprintf(name->version, "%s", info.version);
+    snprintf(name->sysname, OCRE_API_POSIX_BUF_SIZE, "%s (%s)", OCRE_SYSTEM_NAME, info.sysname);
+    snprintf(name->release, OCRE_API_POSIX_BUF_SIZE, "%s (%s)", APP_VERSION_STRING, info.release);
+    snprintf(name->version, OCRE_API_POSIX_BUF_SIZE, "%s", info.version);
 
 // ARM Processors are special cased as they are so popular
 #ifdef CONFIG_ARM
 #ifdef CONFIG_CPU_CORTEX_M0
-    strcpy(name->machine, "ARM Cortex-M0");
+    strlcat(name->machine, "ARM Cortex-M0", OCRE_API_POSIX_BUF_SIZE);
 #elif CONFIG_CPU_CORTEX_M3
-    strcpy(name->machine, "ARM Cortex-M3");
+    strlcat(name->machine, "ARM Cortex-M3", OCRE_API_POSIX_BUF_SIZE);
 #elif CONFIG_CPU_CORTEX_M4
-    strcpy(name->machine, "ARM Cortex-M4");
+    strlcat(name->machine, "ARM Cortex-M4", OCRE_API_POSIX_BUF_SIZE);
 #elif CONFIG_CPU_CORTEX_M7
-    strcpy(name->machine, "ARM Cortex-M7");
+    strlcat(name->machine, "ARM Cortex-M7", OCRE_API_POSIX_BUF_SIZE);
 #elif CONFIG_CPU_CORTEX_M33
-    strcpy(name->machine, "ARM Cortex-M33");
+    strlcat(name->machine, "ARM Cortex-M33", OCRE_API_POSIX_BUF_SIZE);
 #elif CONFIG_CPU_CORTEX_M23
-    strcpy(name->machine, "ARM Cortex-M23");
+    strlcat(name->machine, "ARM Cortex-M23", OCRE_API_POSIX_BUF_SIZE);
 #elif CONFIG_CPU_CORTEX_M55
-    strcpy(name->machine, "ARM Cortex-M55");
+    strlcat(name->machine, "ARM Cortex-M55", OCRE_API_POSIX_BUF_SIZE);
 #endif
 #else
     // Other processors, use value returned from uname()
-    strcpy(name->machine, info.machine);
+    strlcat(name->machine, info.machine, OCRE_API_POSIX_BUF_SIZE);
 #endif
 
-    strcpy(name->nodename, info.nodename);
+    strlcat(name->nodename, info.nodename, OCRE_API_POSIX_BUF_SIZE);
 
     return 0;
 }
