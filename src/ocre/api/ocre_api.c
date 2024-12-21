@@ -4,6 +4,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #define _GNU_SOURCE
 
 #include <stdio.h>
@@ -16,7 +17,8 @@
 #include "bh_platform.h"
 
 #include "ocre_api.h"
-#include "../timer/ocre_timer.h"
+#include "../ocre_timers/ocre_timer.h"
+#include "../ocre_sensors/ocre_sensors.h"
 
 int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name) {
     struct utsname info;

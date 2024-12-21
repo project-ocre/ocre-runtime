@@ -1,0 +1,16 @@
+# custom,rng-sensor.yaml
+
+title: Custom RNG Sensor
+
+description: |
+  This is a custom RNG sensor device binding for generating random numbers.
+
+compatible: "custom,rng-sensor"
+
+include: base.yaml
+
+properties:
+  label:
+    type: string
+    required: true
+    description: Label for the sensor device.

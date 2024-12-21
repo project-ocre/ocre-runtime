@@ -15,8 +15,10 @@
 #include <ocre/ocre_container_runtime/ocre_container_runtime.h>
 #include <ocre/sm/sm.h>
 
+#define OCRE_CS_DEBUG_ON 0
+
 extern struct ocre_component ocre_cs_component;
-extern state_machine_t ocre_cs_state_machine; // TODO THis needs to get encapsulated into the
+extern state_machine_t ocre_cs_state_machine; // TODO This needs to get encapsulated into the
                                               // sm. it's only here so components can operate
                                               // timers. timers need to be encapsulated.
 
@@ -40,23 +42,10 @@ enum OCRE_CS_EVENT {
     EVENT_RESTART_CONTAINER,
     EVENT_ERROR
 };
-
 void start_ocre_cs_thread(ocre_cs_ctx *ctx);
 
 void destroy_ocre_cs_thread(void);
 
 int _ocre_cs_run();
-
-#ifdef CONFIG_OCRE_TRACE_CS_STATE_MACHINE
-#define OCRE_SM_TRACE_ENTER() printk(" ====> [%s]\n", __func__)
-#else
-#define OCRE_SM_TRACE_ENTER() // Do nothing
-#endif
-
-#ifdef CONFIG_OCRE_TRACE_CS_STATE_MACHINE
-#define OCRE_SM_TRACE_EXIT() printk("<====  [%s]\n", __func__)
-#else
-#define OCRE_SM_TRACE_EXIT() // Do nothing
-#endif
 
 #endif

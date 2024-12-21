@@ -55,4 +55,12 @@ source "subsys/logging/Kconfig.template.log_config"
 
 endif
 
+config RNG_SENSOR
+    bool "RNG Sensor"
+    default n
+    depends on SENSOR
+    help
+      Enable support for the custom RNG sensor.
+
+
 endmenu

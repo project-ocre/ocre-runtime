@@ -10,8 +10,6 @@
 
 #include <zephyr/logging/log.h>
 
-#define CONFIG_OCRE_LOG_DEBUG 1
-
 #if CONFIG_OCRE_LOG_DEBUG
 #define OCRE_LOG_LEVEL LOG_LEVEL_DBG
 #else
