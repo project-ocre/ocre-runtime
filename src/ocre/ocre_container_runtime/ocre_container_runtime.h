@@ -8,22 +8,25 @@
 #ifndef OCRE_CONTAINER_RUNTIME_H
 #define OCRE_CONTAINER_RUNTIME_H
 
+#ifdef UNIT_TESTING
+#include "../../application/tests/ocre_container_runtime/stubs/container_healthcheck/ocre_container_healthcheck.h"
+#include "../../application/tests/ocre_container_runtime/stubs/k_sem/k_sem.h"
+#else
 #include <zephyr/fs/fs.h>
 #include <zephyr/kernel.h>
+#include "../container_healthcheck/ocre_container_healthcheck.h"
+#include <ocre/fs/fs.h>
+#include <ocre/sm/sm.h>
+#endif
 
 #include <stdio.h>
 
-#include <ocre/fs/fs.h>
-#include <ocre/sm/sm.h>
-
 #include "wasm_export.h"
 
-#include "ocre_container_runtime.h"
-#include "../container_healthcheck/ocre_container_healthcheck.h"
-
-#define OCRE_CR_DEBUG_ON 0   // Debug flag for container runtime (0: OFF, 1: ON)
-#define MAX_CONTAINERS   10  // Maximum number of containers supported by the runtime !!! Can be configurable
-#define FILE_PATH_MAX    256 // Maximum file path length
+#define OCRE_CR_DEBUG_ON     0   // Debug flag for container runtime (0: OFF, 1: ON)
+#define MAX_CONTAINERS       10  // Maximum number of containers supported by the runtime !!! Can be configurable
+#define FILE_PATH_MAX        256 // Maximum file path length
+#define OCRE_CR_INIT_TIMEOUT 500 // Timeout to wait for the container registry to initialize
 
 /**
  * @brief Structure containing the runtime arguments for a container runtime.
