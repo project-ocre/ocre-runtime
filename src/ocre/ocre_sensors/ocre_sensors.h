@@ -114,7 +114,7 @@ ocre_sensors_status_t ocre_sensors_init();
  * @param sensors_count counter to save all number of all found sensors
  * @return Status of sensors envroinment
  */
-ocre_sensors_status_t ocre_sensors_discover_sensors(struct device *dev, ocre_sensor_t *sensors, int *sensors_count);
+ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors, int *sensors_count);
 /**
  * @brief Opens a sensor channel.
  *

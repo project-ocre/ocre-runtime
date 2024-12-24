@@ -62,15 +62,25 @@ int device_logger_callback(const struct device *dev, void *user_data) {
     return sensor_index;
 }
 
-ocre_sensors_status_t ocre_sensors_discover_sensors(struct device *dev, ocre_sensor_t *sensors, int *sensors_count) {
+ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors, int *sensors_count) {
+    const struct device *dev; // Pointer to the array of devices
+    size_t device_count;
+
+    // find all devices
+    device_count = z_device_get_all_static(&dev);
+
+    if (device_count == 0) {
+        LOG_ERR("No devices found/n");
+        return SENSOR_API_STATUS_ERROR;
+    }
+
     if (!device_is_ready(dev)) {
         LOG_ERR("Device %s is not ready\n", dev->name);
         return SENSOR_API_STATUS_ERROR;
     }
-    *sensors_count = device_supported_foreach(dev, device_logger_callback, sensors);
-    // no sensors found
-    if (sensors_count == 0) {
-        return SENSOR_API_STATUS_ERROR;
+    // for each device find all sensors
+    for (int i = 0; i < device_count; i++) {
+        *sensors_count = device_supported_foreach(dev, device_logger_callback, sensors);
     }
     return SENSOR_API_STATUS_INITIALIZED;
 }
