@@ -78,6 +78,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
     ctx->download_count++;
 
     ocre_component_send(&ocre_cs_component, &event);
+    return CONTAINER_STATUS_CREATED;
 }
 
 ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, int container_id,
@@ -91,6 +92,7 @@ ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, i
     struct ocre_message event = {.event = EVENT_RUN_CONTAINER};
     event.containerId = container_id;
     ocre_component_send(&ocre_cs_component, &event);
+    return CONTAINER_STATUS_RUNNING;
 }
 
 ocre_container_status_t ocre_container_runtime_get_container_status(ocre_cs_ctx *ctx, int container_id) {
@@ -112,6 +114,7 @@ ocre_container_status_t ocre_container_runtime_stop_container(ocre_cs_ctx *ctx, 
     struct ocre_message event = {.event = EVENT_STOP_CONTAINER};
     event.containerId = container_id;
     ocre_component_send(&ocre_cs_component, &event);
+    return CONTAINER_STATUS_STOPPED;
 }
 
 ocre_container_status_t ocre_container_runtime_destroy_container(ocre_cs_ctx *ctx, int container_id,
@@ -124,6 +127,7 @@ ocre_container_status_t ocre_container_runtime_destroy_container(ocre_cs_ctx *ct
     struct ocre_message event = {.event = EVENT_DESTROY_CONTAINER};
     event.containerId = container_id;
     ocre_component_send(&ocre_cs_component, &event);
+    return CONTAINER_STATUS_DESTROYED;
 }
 
 ocre_container_status_t ocre_container_runtime_restart_container(ocre_cs_ctx *ctx, int container_id,
@@ -136,4 +140,5 @@ ocre_container_status_t ocre_container_runtime_restart_container(ocre_cs_ctx *ct
     struct ocre_message event = {.event = EVENT_RESTART_CONTAINER};
     event.containerId = container_id;
     ocre_component_send(&ocre_cs_component, &event);
+    return ctx->containers[container_id].container_runtime_status;
 }

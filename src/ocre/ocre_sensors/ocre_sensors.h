@@ -110,10 +110,11 @@ ocre_sensors_status_t ocre_sensors_init();
  * This function enumerates all available sensors and populates the sensor API context.
  *
  * @param sensors Pointer to the sensor list to set the discovered info about available sensors
+ * @param dev Pointer to a device of interest will be used as the set of devices to visit.
+ * @param sensors_count counter to save all number of all found sensors
  * @return Status of sensors envroinment
  */
 ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors, int *sensors_count);
-
 /**
  * @brief Opens a sensor channel.
  *
@@ -122,7 +123,8 @@ ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors, int 
  * Typically, this involves configuring hardware or setting up the necessary
  * communication protocols to start receiving data from the sensor.
  *
- * @param sensor_handle Pointer to the sensor handle that identifies the sensor to be opened.
+ * @param sensor_handle Pointer to the sensor handle that identifies the sensor to be
+ * opened.
  * @return 0 on success, or a negative value on error.
  *         Returns an error code if the sensor channel could not be opened.
  */

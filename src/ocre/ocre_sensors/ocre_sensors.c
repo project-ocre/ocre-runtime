@@ -25,7 +25,7 @@ int device_logger_callback(const struct device *dev, void *user_data) {
     int channel_count = 0;
     struct sensor_value value;
 
-    dev = device_get_binding(sensors[sensor_index].handle.device_name);
+    // dev = device_get_binding(sensors[sensor_index].handle.device_name);
     if (!device_is_ready(dev)) {
         LOG_INF("Sensor device %s is not ready\n", dev->name);
         return -1; // Negative return indicates error and stops the iteration
@@ -33,6 +33,7 @@ int device_logger_callback(const struct device *dev, void *user_data) {
 
     sensors[sensor_index].handle.id = sensor_index;
     sensors[sensor_index].handle.device_name = dev->name; // Set device name from the device tree
+    sensors[sensor_index].handle.sensor_device = *dev;
 
     if (sensor_channel_get(dev, SENSOR_CHAN_ALL, &value) == 0) {
         if (sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, &value) == 0) {
@@ -62,14 +63,25 @@ int device_logger_callback(const struct device *dev, void *user_data) {
 }
 
 ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors, int *sensors_count) {
-    const struct device *dev;
+    const struct device *dev; // Pointer to the array of devices
+    size_t device_count;
 
-    *sensors_count = device_supported_foreach(dev, device_logger_callback, sensors);
-    // no sensors found
-    if (sensors_count == 0) {
+    // find all devices
+    device_count = z_device_get_all_static(&dev);
+
+    if (device_count == 0) {
+        LOG_ERR("No devices found/n");
         return SENSOR_API_STATUS_ERROR;
     }
 
+    if (!device_is_ready(dev)) {
+        LOG_ERR("Device %s is not ready\n", dev->name);
+        return SENSOR_API_STATUS_ERROR;
+    }
+    // for each device find all sensors
+    for (int i = 0; i < device_count; i++) {
+        *sensors_count = device_supported_foreach(dev, device_logger_callback, sensors);
+    }
     return SENSOR_API_STATUS_INITIALIZED;
 }
 

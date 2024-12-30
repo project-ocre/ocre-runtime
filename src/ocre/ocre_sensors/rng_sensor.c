@@ -6,7 +6,7 @@
 #define DT_DRV_COMPAT custom_rng_sensor
 
 /* Define the sensor channels */
-static enum sensor_channel rng_sensor_channels[] = {
+static enum sensor_channel rng_sensor_channels[] __attribute__((unused)) = {
         SENSOR_CHAN_CUSTOM + 1, /* Define a custom channel */
 };
 
