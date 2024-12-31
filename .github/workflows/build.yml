@@ -23,11 +23,6 @@ jobs:
         with:
           path: application
 
-      # Free up space as Zephyr takes up a lot of space and default runners don't have much disk space.
-      - name: Disk cleanup
-        run: |
-          sudo rm -rf /__t/CodeQL /root/.rustup*
-
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
         with:
