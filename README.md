@@ -18,28 +18,40 @@ The application in `./src/main.c` demonstrates basic Ocre runtime usage by writi
 
 Complete the [Install dependencies](https://docs.zephyrproject.org/3.7.0/develop/getting_started/index.html#install-dependencies) and the [Install the Zephyr SDK](https://docs.zephyrproject.org/3.7.0/develop/getting_started/index.html#install-the-zephyr-sdk) sections for your host operating system from the Zephyr (v3.7.0) [Getting Started Guide](https://docs.zephyrproject.org/3.7.0/develop/getting_started/index.html#getting-started-guide). 
 
-2. **Install WEST**
+2. Create a Virtual Python Environment (`venv`)
+
+```
+mkdir runtime && cd runtime
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+**Note:** You may need to install the `python3-venv` package (or equivalent) on your host system beforehand.
+
+3. **Install WEST**
 
 Install the [west](https://docs.zephyrproject.org/latest/develop/west/index.html) CLI tool, which is needed to build, run and manage Zephyr applications.
 
 ```
-$ pip install west
+pip install west
 ```
 
-3. **Initialize the workspace**
+4. **Initialize the workspace**
 
-This will checkout the project code and configure the Zephyr workspace.
+This will checkout the Ocre runtime code and initalize the workspace.
 ```
-$ mkdir runtime
-
-$ cd runtime
-
-$ west init -m git@github.com:project-ocre/ocre-runtime.git
-
-$ west update
+west init -m git@github.com:project-ocre/ocre-runtime.git
 ```
 
-4. **Install Additional Zephyr (pip) requirements**
+5. **Update West**
+
+Next, we need to update the workspace with the latest Zephyr and WASM Micro Runtime code.
+
+```
+west update
+```
+
+6. **Install Additional Zephyr (pip) requirements**
 
 In order to build the Ocre runtime properly, you'll need to install a few remaining requirements for Zephyr.
 
@@ -47,17 +59,17 @@ In order to build the Ocre runtime properly, you'll need to install a few remain
 pip install -r zephyr/scripts/requirements.txt
 ```
 
-5. **Build the application**
+7. **Build the application**
 
 The following will build the firmware for the *virtual*, `native_sim` target which will allow you to run the Ocre runtime on a simulated device, rather than a physical board.
 ```
-$ west build -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=`pwd`/application
+west build -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=`pwd`/application
 ```
-6. **Run the application**
+8. **Run the application**
 
 Run the following command:
 ```
-$ ./build/zephyr/zephyr.exe
+./build/zephyr/zephyr.exe
 ```
 
 ---
