@@ -8,7 +8,7 @@
 #include <ocre/ocre.h>
 #include <zephyr/logging/log.h>
 #include <stdlib.h>
-#include <malloc.h>
+//#include <malloc.h>
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
 #include "cs_sm.h"
@@ -32,7 +32,7 @@ static int load_binary_to_buffer_fs(ocre_cs_ctx *ctx, int container_id, ocre_con
     }
 
     ctx->containers[container_id].ocre_runtime_arguments.size = entry.size;
-    ctx->containers[container_id].ocre_runtime_arguments.buffer = (char *)malloc(entry.size * sizeof(char));
+    ctx->containers[container_id].ocre_runtime_arguments.buffer = (char *)k_malloc(entry.size * sizeof(char));
     if (ctx->containers[container_id].ocre_runtime_arguments.buffer == NULL) {
         LOG_ERR("Failed to allocate memory for container binary.");
         return -ENOMEM;
@@ -151,39 +151,36 @@ ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id) 
 }
 
 ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id) {
+
     if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_CREATED) {
         uint32_t argv[2];
         argv[0] = 8;
-        /* Create an instance of the WASM module (WASM linear memory is ready) */
-        /* Lookup a WASM function by its name */
-        ctx->containers[container_id].ocre_runtime_arguments.func = wasm_runtime_lookup_function(
-                ctx->containers[container_id].ocre_runtime_arguments.module_inst, "on_init");
-        if (NULL == ctx->containers[container_id].ocre_runtime_arguments.func) {
-            LOG_ERR("ERROR lookup function: ");
-            return CONTAINER_STATUS_ERROR;
-        }
-
-        /* creat an execution environment to execute the WASM functions */
+        int main_result = 0;
+        
+        /* Create an execution environment to execute the WASM functions */
         ctx->containers[container_id].ocre_runtime_arguments.exec_env =
                 wasm_runtime_create_exec_env(ctx->containers[container_id].ocre_runtime_arguments.module_inst,
                                              ctx->containers[container_id].ocre_runtime_arguments.stack_size);
+
         if (NULL == ctx->containers[container_id].ocre_runtime_arguments.exec_env) {
             LOG_ERR("ERROR creating executive environment: ");
-            return CONTAINER_STATUS_ERROR;
         }
 
         /* call the WASM function */
-        if (!wasm_runtime_call_wasm(ctx->containers[container_id].ocre_runtime_arguments.exec_env,
-                                    ctx->containers[container_id].ocre_runtime_arguments.func, 1, argv)) {
-            LOG_ERR("ERROR calling main:");
-            return CONTAINER_STATUS_ERROR;
+        if (wasm_application_execute_main(ctx->containers[container_id].ocre_runtime_arguments.module_inst, 0, NULL)) {
+           //s main_result = wasm_runtime_get_wasi_exit_code(ctx->containers[container_id].ocre_runtime_arguments.module_inst);
+        } else {
+            LOG_ERR("ERROR calling main: %s",  wasm_runtime_get_exception(ctx->containers[container_id].ocre_runtime_arguments.module_inst));
         }
 
         ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_RUNNING;
+
         return CONTAINER_STATUS_RUNNING;
     } else {
         LOG_ERR("Container (ID: %d), does not exist to run it", container_id);
+
         ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_UNKNOWN;
+
         return CONTAINER_STATUS_ERROR;
     }
 }
