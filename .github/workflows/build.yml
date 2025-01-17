@@ -15,7 +15,7 @@ jobs:
     container:
       # Use Zephry 3.7 LTS (v0.26-branch)
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
-      options: --user root --pull always
+      options: --user root --pull=always
 
     steps:
       - name: Checkout
