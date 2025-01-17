@@ -18,6 +18,15 @@ jobs:
       options: --user root
 
     steps:
+      - name: Remove .west directory if it exists
+        run: |
+          if [ -d "/__w/ocre-runtime/ocre-runtime/.west" ]; then
+            echo "Removing .west directory..."
+            sudo rm -rf /__w/ocre-runtime/ocre-runtime/.west
+          else
+            echo ".west directory does not exist, skipping removal."
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
