@@ -23,23 +23,6 @@ jobs:
         with:
           path: application
 
-      # Ensure the target directory exists before continuing
-      - name: Ensure target directory exists
-        run: |
-          echo "Ensuring /__w/ocre-runtime/ocre-runtime exists..."
-          sudo mkdir -p /__w/ocre-runtime/ocre-runtime
-
-      # Cleanup workspace directory after checkout
-      - name: Cleanup workspace directory
-        run: |
-          echo "Cleaning up workspace..."
-          if [ -d "/__w/ocre-runtime" ]; then
-            echo "Removing ocre-runtime workspace..."
-            sudo rm -rf /__w/ocre-runtime
-          else
-            echo "ocre-runtime workspace does not exist. Skipping cleanup."
-          fi
-
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
         with:
