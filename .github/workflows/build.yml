@@ -33,9 +33,11 @@ jobs:
         run: |
           west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
 
+  cleanup-docker:
+    runs-on: zephyr-xlarge-runner
+    if: always()
+    steps:
       - name: Cleanup Docker Resources
-        # Purge Docker containers and resources, runs regardless of job status.
-        if: always()
         run: |
           echo "Cleaning up Docker resources..."
           docker system prune --all --force --volumes
