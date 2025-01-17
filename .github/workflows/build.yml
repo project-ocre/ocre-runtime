@@ -15,7 +15,7 @@ jobs:
     container:
       # Use Zephry 3.7 LTS (v0.26-branch)
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
-      options: --user root
+      options: --user root --no-cache
 
     steps:
       - name: Checkout
@@ -32,12 +32,3 @@ jobs:
       - name: Build Zephyr application
         run: |
           west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
-
-  cleanup-docker:
-    runs-on: zephyr-xlarge-runner
-    if: always()
-    steps:
-      - name: Cleanup Docker Resources
-        run: |
-          echo "Cleaning up Docker resources..."
-          docker system prune --all --force --volumes
