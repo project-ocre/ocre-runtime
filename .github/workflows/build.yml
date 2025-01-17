@@ -23,11 +23,15 @@ jobs:
         with:
           path: application
 
-      # Needed for our self-hosted runner, otherwise `west init` will fail in next step.
+      # Needed for our self-hosted runner, otherwise `west init` will fail in the next step.
       - name: Clean up .west and workspace files
         run: |
-          echo "Cleaning up workspace files..."
-          sudo rm -rf /__w/*  # Clean up all workspace files (if desired)
+          if [ -d "/__w/ocre-runtime" ]; then
+            echo "Removing ocre-runtime workspace..."
+            sudo rm -rf /__w/ocre*
+          else
+            echo "ocre-runtime workspace does not exist. Skipping cleanup."
+          fi
 
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
