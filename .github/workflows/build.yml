@@ -32,12 +32,3 @@ jobs:
       - name: Build Zephyr application
         run: |
           west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
-
-      - name: Check build status
-        run: |
-          if [ $? -eq 0 ]; then
-            echo "Zephyr build succeeded"
-          else
-            echo "Zephyr build failed"
-            exit 1
-          fi
