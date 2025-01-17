@@ -18,13 +18,16 @@ jobs:
       options: --user root
 
     steps:
-      - name: Remove cached image
-        run: docker rmi ghcr.io/zephyrproject-rtos/ci:v0.26-branch || true
-        
       - name: Checkout
         uses: actions/checkout@v4
         with:
           path: application
+
+      # Needed for our self-hosted runner, otherwise `west init` will fail in next step.
+      - name: Clean up .west and workspace files
+        run: |
+          echo "Cleaning up workspace files..."
+          sudo rm -rf /__w/*  # Clean up all workspace files (if desired)
 
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
