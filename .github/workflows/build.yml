@@ -18,20 +18,21 @@ jobs:
       options: --user root
 
     steps:
-      # Needed for our self-hosted runner, otherwise `west init` will fail in the next step.
-      - name: Clean up .west and workspace files
-        run: |
-          if [ -d "/__w/ocre-runtime" ]; then
-            echo "Removing ocre-runtime workspace..."
-            sudo rm -rf /__w/ocre*
-          else
-            echo "ocre-runtime workspace does not exist. Skipping cleanup."
-          fi
-          
       - name: Checkout
         uses: actions/checkout@v4
         with:
           path: application
+
+      # Cleanup workspace directory after checkout
+      - name: Cleanup workspace directory
+        run: |
+          echo "Cleaning up workspace..."
+          if [ -d "/__w/ocre-runtime" ]; then
+            echo "Removing ocre-runtime workspace..."
+            sudo rm -rf /__w/ocre-runtime/*
+          else
+            echo "ocre-runtime workspace does not exist. Skipping cleanup."
+          fi
 
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
