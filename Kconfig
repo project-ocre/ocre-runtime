@@ -1,25 +1,22 @@
 menu "Project Ocre options"
 
-source "Kconfig.zephyr"
+#source "Kconfig.zephyr"
 
 config OCRE
 	bool "Project Ocre"
 	default y
+  help
+	  Enable the Project Ocre runtime.
 
-  select WAMR
-
+  select PRINTK
+  select EVENTS
+  select EVENTFD
   select FLASH
   select FLASH_MAP
   select FLASH_PAGE_LAYOUT
   select FILE_SYSTEM
   select FILE_SYSTEM_LITTLEFS
   select REBOOT
-
-  select PRINTK
-
-  select SMF
-  select SMF_ANCESTOR_SUPPORT
-  select SMF_INITIAL_TRANSITION
 
   select SETTINGS
   select SETTINGS_RUNTIME
@@ -29,17 +26,30 @@ config OCRE
   select NET_CONNECTION_MANAGER
   select NET_UDP
 
-  select EVENTS
-  select EVENTFD
+  select SMF
+  select SMF_ANCESTOR_SUPPORT
+  select SMF_INITIAL_TRANSITION
 
-  help
-	  Enable the Project Ocre runtime.
+  # Enable the WASM Micro Runtime
+  select WAMR
 
 config OCRE_WAMR_HEAP_BUFFER_SIZE
   int "WAMR heap buffer size in bytes"
-  default 204800
+  default 32768
   help
     A static memory allocation for WAMR to use as a heap.
+
+config OCRE_CONTAINER_DEFAULT_HEAP_SIZE
+  int "Default value for the container heap size"
+  default 4096
+  help
+    The default value used for a container's heap size.
+
+config OCRE_CONTAINER_DEFAULT_STACK_SIZE
+  int "Default value for the container stack size"
+  default 2048
+  help
+    The default value used for a container's stack size.
 
 config OCRE_LOG_DEBUG
   bool "Debug logging"

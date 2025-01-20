@@ -10,6 +10,7 @@
 #include <stdlib.h>
 //#include <malloc.h>
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
+#include <autoconf.h>
 
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
@@ -32,7 +33,7 @@ static int load_binary_to_buffer_fs(ocre_cs_ctx *ctx, int container_id, ocre_con
     }
 
     ctx->containers[container_id].ocre_runtime_arguments.size = entry.size;
-    ctx->containers[container_id].ocre_runtime_arguments.buffer = (char *)k_malloc(entry.size * sizeof(char));
+    ctx->containers[container_id].ocre_runtime_arguments.buffer = (char *) malloc(entry.size * sizeof(char));
     if (ctx->containers[container_id].ocre_runtime_arguments.buffer == NULL) {
         LOG_ERR("Failed to allocate memory for container binary.");
         return -ENOMEM;
@@ -70,8 +71,8 @@ int CS_ctx_init(ocre_cs_ctx *ctx) {
 
     for (int i = 0; i < MAX_CONTAINERS; i++) {
         ctx->containers[i].container_runtime_status = CONTAINER_STATUS_UNKNOWN;
-        ctx->containers[i].ocre_container_data.heap_size = 2048;
-        ctx->containers[i].ocre_container_data.stack_size = 2048;
+        ctx->containers[i].ocre_container_data.heap_size = CONFIG_OCRE_CONTAINER_DEFAULT_HEAP_SIZE;
+        ctx->containers[i].ocre_container_data.stack_size = CONFIG_OCRE_CONTAINER_DEFAULT_STACK_SIZE;
         memset(ctx->containers[i].ocre_container_data.name, 0, sizeof(ctx->containers[i].ocre_container_data.name));
         memset(ctx->containers[i].ocre_container_data.sha256, 0, sizeof(ctx->containers[i].ocre_container_data.sha256));
         ctx->containers[i].ocre_container_data.timers = 0;
@@ -114,8 +115,8 @@ ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id) 
             ctx->containers[container_id].ocre_container_data.stack_size;
     ctx->containers[container_id].ocre_runtime_arguments.heap_size =
             ctx->containers[container_id].ocre_container_data.heap_size;
-    ctx->containers[container_id].ocre_runtime_arguments.stack_size = 2048;
-    ctx->containers[container_id].ocre_runtime_arguments.heap_size = 2048;
+    ctx->containers[container_id].ocre_runtime_arguments.stack_size = 16384;
+    ctx->containers[container_id].ocre_runtime_arguments.heap_size = 16384;
     int ret = load_binary_to_buffer_fs(ctx, container_id, &ctx->containers[container_id].ocre_container_data);
     if (ret < 0) {
         LOG_ERR("Failed to load binary to buffer: %d", ret);
@@ -131,6 +132,7 @@ ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id) 
                               ctx->containers[container_id].ocre_runtime_arguments.size,
                               ctx->containers[container_id].ocre_runtime_arguments.error_buf,
                               sizeof(ctx->containers[container_id].ocre_runtime_arguments.error_buf));
+
     if (!ctx->containers[container_id].ocre_runtime_arguments.module) {
         LOG_ERR("Failed to load WASM module: %s", ctx->containers[container_id].ocre_runtime_arguments.error_buf);
         return CONTAINER_STATUS_ERROR;
