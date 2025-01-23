@@ -18,10 +18,8 @@ jobs:
       options: --user root
 
     steps:
-      - name: Cleanup build folder
-        run: |
-          rm -rf ./* || true
-          rm -rf ./.??* || true
+      - name: Cleanup workspace
+        uses: eviden-actions/clean-self-hosted-runner@v1
 
       - name: Checkout
         uses: actions/checkout@v4
