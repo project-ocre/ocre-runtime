@@ -68,7 +68,7 @@ void create_sample_container(char *file_name) {
     int res;
 
     fs_file_t_init(&f);
-    res = fs_open(&f, file_path, FS_O_CREATE | FS_O_RDWR, FS_O_TRUNC);
+    res = fs_open(&f, file_path, FS_O_CREATE | FS_O_RDWR);
 
     unsigned char wasm_binary[] = {
             0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x01, 0x3C, 0x0A, 0x60, 0x03, 0x7F, 0x7F, 0x7F, 0x01, 0x7F,
