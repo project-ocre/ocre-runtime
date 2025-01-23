@@ -8,7 +8,7 @@
 #include <ocre/ocre.h>
 #include <zephyr/logging/log.h>
 #include <stdlib.h>
-//#include <malloc.h>
+// #include <malloc.h>
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include <autoconf.h>
 
@@ -33,7 +33,7 @@ static int load_binary_to_buffer_fs(ocre_cs_ctx *ctx, int container_id, ocre_con
     }
 
     ctx->containers[container_id].ocre_runtime_arguments.size = entry.size;
-    ctx->containers[container_id].ocre_runtime_arguments.buffer = (char *) malloc(entry.size * sizeof(char));
+    ctx->containers[container_id].ocre_runtime_arguments.buffer = (char *)malloc(entry.size * sizeof(char));
     if (ctx->containers[container_id].ocre_runtime_arguments.buffer == NULL) {
         LOG_ERR("Failed to allocate memory for container binary.");
         return -ENOMEM;
@@ -158,7 +158,7 @@ ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id) {
         uint32_t argv[2];
         argv[0] = 8;
         int main_result = 0;
-        
+
         /* Create an execution environment to execute the WASM functions */
         ctx->containers[container_id].ocre_runtime_arguments.exec_env =
                 wasm_runtime_create_exec_env(ctx->containers[container_id].ocre_runtime_arguments.module_inst,
@@ -170,9 +170,11 @@ ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id) {
 
         /* call the WASM function */
         if (wasm_application_execute_main(ctx->containers[container_id].ocre_runtime_arguments.module_inst, 0, NULL)) {
-           //s main_result = wasm_runtime_get_wasi_exit_code(ctx->containers[container_id].ocre_runtime_arguments.module_inst);
+            // s main_result =
+            // wasm_runtime_get_wasi_exit_code(ctx->containers[container_id].ocre_runtime_arguments.module_inst);
         } else {
-            LOG_ERR("ERROR calling main: %s",  wasm_runtime_get_exception(ctx->containers[container_id].ocre_runtime_arguments.module_inst));
+            LOG_ERR("ERROR calling main: %s",
+                    wasm_runtime_get_exception(ctx->containers[container_id].ocre_runtime_arguments.module_inst));
         }
 
         ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_RUNNING;
@@ -201,10 +203,14 @@ ocre_container_status_t CS_stop_container(ocre_cs_ctx *ctx, int container_id, oc
         LOG_ERR("Invalid container ID: %d", container_id);
         return CONTAINER_STATUS_ERROR;
     }
-
-    wasm_runtime_deinstantiate(ctx->containers[container_id].ocre_runtime_arguments.module_inst);
-    ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_STOPPED;
-    return CONTAINER_STATUS_STOPPED;
+    if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_RUNNING) {
+        wasm_runtime_deinstantiate(ctx->containers[container_id].ocre_runtime_arguments.module_inst);
+        ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_STOPPED;
+        return CONTAINER_STATUS_STOPPED;
+    } else {
+        LOG_ERR("Container %d, is not running to stop it", container_id);
+    }
+    return ctx->containers[container_id].container_runtime_status;
 }
 
 ocre_container_status_t CS_destroy_container(ocre_cs_ctx *ctx, int container_id, ocre_container_runtime_cb callback) {
