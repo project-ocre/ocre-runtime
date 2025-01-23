@@ -26,3 +26,21 @@
         };
     };
 };
+
+
+/* Add hts221 sensor configurations */
+&die_temp {
+    status = "disabled";
+};
+
+&adc1 {
+    status = "disabled";
+};
+
+&vref1 {
+    status = "disabled";
+};
+
+&vbat4 {
+    status = "disabled";
+};
