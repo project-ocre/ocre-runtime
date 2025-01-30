@@ -1,4 +1,4 @@
-# Build and test the ocre-runtime using the `native_sim` target.
+# Build and test the ocre-runtime using the `native_sim` target and b_u585i_iot02a board.
 name: Build 
 
 on:
@@ -32,6 +32,15 @@ jobs:
           app-path: application
           sdk-version: 0.16.8
 
-      - name: Build Zephyr application
+      - name: Build native_sim
         run: |
           west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+
+      - name: Build and Flash b_u585i_iot02a
+        if: success() # Only runs if native_sim build succeeds
+        run: |
+          # Clean build directory and build for physical target
+          west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+          
+          # Flash to the board
+          west flash
