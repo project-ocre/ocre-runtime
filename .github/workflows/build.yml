@@ -2,45 +2,47 @@
 name: Build 
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+ push:
+   branches:
+     - main
+ pull_request:
+   branches:
+     - main
 
 jobs:
-  build-and-test:
-    runs-on: zephyr-xlarge-runner
-    container:
-      # Use Zephry 3.7 LTS (v0.26-branch)
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
-      options: --user root
+ build-and-test:
+   runs-on: zephyr-xlarge-runner
+   container:
+     # Use Zephry 3.7 LTS (v0.26-branch)
+     image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+     options: --user root
 
-    steps:
-      - name: Cleanup workspace
-        uses: eviden-actions/clean-self-hosted-runner@v1
+   steps:
+     # Core build steps that run everywhere
+     - name: Cleanup workspace
+       uses: eviden-actions/clean-self-hosted-runner@v1
 
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          path: application
+     - name: Checkout
+       uses: actions/checkout@v4
+       with:
+         path: application
 
-      - name: Setup Zephyr project
-        uses: zephyrproject-rtos/action-zephyr-setup@v1
-        with:
-          app-path: application
-          sdk-version: 0.16.8
+     - name: Setup Zephyr project
+       uses: zephyrproject-rtos/action-zephyr-setup@v1
+       with:
+         app-path: application
+         sdk-version: 0.16.8
 
-      - name: Build native_sim
-        run: |
-          west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+     - name: Build native_sim
+       run: |
+         west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
 
-      - name: Build and Flash b_u585i_iot02a
-        if: success() # Only runs if native_sim build succeeds
-        run: |
-          # Clean build directory and build for physical target
-          west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
-          
-          # Flash to the board
-          west flash
+     # Physical board operations
+     - name: Build and Flash b_u585i_iot02a
+       if: success() && runner.environment == 'self-hosted'
+       run: |
+         # Clean build directory and build for physical target
+         west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+         
+         # Flash to the board
+         west flash
