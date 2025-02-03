@@ -112,10 +112,9 @@ ocre_container_runtime_status_t CS_runtime_destroy(void) {
 // Container functions
 
 ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id) {
-    if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_CREATED) {
-        LOG_ERR("Cannot create container again container with ID: %d, already exists", container_id);
-        return RUNTIME_STATUS_ERROR;
-    } else {
+    if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_DESTROYED ||
+        ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_UNKNOWN) {
+
         ctx->containers[container_id].ocre_runtime_arguments.stack_size =
                 ctx->containers[container_id].ocre_container_data.stack_size;
         ctx->containers[container_id].ocre_runtime_arguments.heap_size =
@@ -156,12 +155,16 @@ ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id) 
         ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_CREATED;
         LOG_WRN("Created container:%d", container_id);
         return ctx->containers[container_id].container_runtime_status;
+    } else {
+        LOG_ERR("Cannot create container again container with ID: %d, already exists", container_id);
+        return RUNTIME_STATUS_ERROR;
     }
 }
 
 ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id) {
 
-    if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_CREATED) {
+    if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_CREATED ||
+        ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_STOPPED) {
         uint32_t argv[2];
         argv[0] = 8;
         int main_result = 0;
@@ -193,7 +196,7 @@ ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id) {
         return CONTAINER_STATUS_RUNNING;
     } else {
         LOG_ERR("Container (ID: %d), does not exist to run it", container_id);
-        ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_UNKNOWN;
+        ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_ERROR;
         return CONTAINER_STATUS_ERROR;
     }
 }
@@ -218,7 +221,10 @@ ocre_container_status_t CS_stop_container(ocre_cs_ctx *ctx, int container_id, oc
         LOG_WRN("Stoped container:%d", container_id);
         return CONTAINER_STATUS_STOPPED;
     } else {
+
         LOG_ERR("Container %d, is not running to stop it", container_id);
+        ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_ERROR;
+        return CONTAINER_STATUS_ERROR;
     }
     return ctx->containers[container_id].container_runtime_status;
 }
