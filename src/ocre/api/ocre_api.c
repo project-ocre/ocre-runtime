@@ -66,16 +66,25 @@ int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name
 }
 
 // Ocre Runtime API
-NativeSymbol ocre_api_table[] = {
+NativeSymbol ocre_api_table[14] = {
         {"uname", _ocre_posix_uname, "(*)i", NULL},
+
+        // Sensor API
         {"ocre_sensors_init", ocre_sensors_init, "()i", NULL},
-        {"ocre_sensors_discover_sensors", ocre_sensors_discover_sensors, "(**i)i", NULL},
+        {"ocre_sensors_discover_sensors", ocre_sensors_discover_sensors, "(*i)i", NULL},
         {"ocre_sensors_open_channel", ocre_sensors_open_channel, "(*i)i", NULL},
         {"sensor_read_sample", sensor_read_sample, "(*i)i", NULL},
         {"sensor_get_channel", sensor_get_channel, "(ii)i", NULL},
         {"ocre_sensors_set_trigger", ocre_sensors_set_trigger, "(*ii*i)i", NULL},
         {"ocre_sensors_clear_trigger", ocre_sensors_clear_trigger, "(*ii)i", NULL},
         {"ocre_sensors_cleanup", ocre_sensors_cleanup, "()i", NULL},
+
+        // Timer API
+        {"ocre_timer_create", ocre_timer_create, "(*i)*", NULL},
+        {"ocre_timer_delete", ocre_timer_delete, "(*i)i", NULL},
+        {"ocre_timer_start", ocre_timer_start, "(*ii)i", NULL},
+        {"ocre_timer_stop", ocre_timer_stop, "(*i)i", NULL},
+        {"ocre_timer_get_remaining", ocre_timer_get_remaining, "(*i)i", NULL},
 };
 
 int ocre_api_table_size = sizeof(ocre_api_table) / sizeof(NativeSymbol);

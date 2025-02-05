@@ -12,6 +12,7 @@
 // #include <malloc.h>
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include <autoconf.h>
+#include "../../../../../wasm-micro-runtime/core/iwasm/include/lib_export.h"
 
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
@@ -98,6 +99,11 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 
     if (!wasm_runtime_full_init(&init_args)) {
         LOG_ERR("Failed to initialize the WASM runtime");
+        return RUNTIME_STATUS_ERROR;
+    }
+    int n_native_symbols = 14;
+    if (!wasm_runtime_register_natives("env", ocre_api_table, n_native_symbols)) {
+        LOG_ERR("Failed to register the API's");
         return RUNTIME_STATUS_ERROR;
     }
 
