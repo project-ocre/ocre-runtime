@@ -8,7 +8,7 @@
 #include "ocre_timer.h"
 #include <stdlib.h>
 
-ocre_timer_t ocre_timer_create(ocre_timer_callback_t callback) {
+ocre_timer_t ocre_timer_create(void) {
     struct k_timer_ocre *timer = malloc(sizeof(struct k_timer_ocre));
 
     if (!timer) {
