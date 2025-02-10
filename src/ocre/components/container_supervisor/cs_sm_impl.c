@@ -101,7 +101,7 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
         LOG_ERR("Failed to initialize the WASM runtime");
         return RUNTIME_STATUS_ERROR;
     }
-    int n_native_symbols = 14;
+    int n_native_symbols = ocre_api_table_size;
     if (!wasm_runtime_register_natives("env", ocre_api_table, n_native_symbols)) {
         LOG_ERR("Failed to register the API's");
         return RUNTIME_STATUS_ERROR;

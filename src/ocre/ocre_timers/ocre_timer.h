@@ -1,74 +1,74 @@
-/**
- * @copyright Copyright © contributors to Project Ocre,
- * which has been established as Project Ocre a Series of LF Projects, LLC
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
 #ifndef OCRE_TIMER_H
 #define OCRE_TIMER_H
 
-#include <errno.h>
 #include <stdbool.h>
-
-#include <zephyr/kernel.h>
-
-typedef struct k_timer_ocre {
-    /*Here can be added all the other variables needed for timers*/
-    /*Zephyr kernel timer */
-    struct k_timer timer;
-} k_timer_ocre;
-
-typedef void *ocre_timer_t;
-
-typedef void (*ocre_timer_callback_t)(ocre_timer_t timer);
+#include "wasm_export.h"
 
 /**
- * Creates a timer.
- *
- * @param callback Funcation callback to run when time expires
- *
- * @return Handle to the timer
+ * @brief Maximum number of timers that can be active simultaneously
  */
-ocre_timer_t ocre_timer_create(ocre_timer_callback_t callback);
+#define MAX_TIMERS 5
 
 /**
- * Deletes a timer
+ * @typedef ocre_timer_t
+ * @brief Timer identifier type
+ */
+typedef int ocre_timer_t;
+
+/**
+ * @brief Creates a timer with the specified ID
  *
- * @param id Handle to the timer to be deleted.
+ * @param id Timer identifier (must be between 1 and MAX_TIMERS)
+ * @return 0 on success, -1 on error with errno set
+ * @retval EINVAL Invalid timer ID
+ * @retval EEXIST Timer ID already in use
+ */
+int ocre_timer_create(ocre_timer_t id);
+
+/**
+ * @brief Deletes a timer
  *
- * @return 0 on success, -1 on failure with errno set.
+ *
+ * @param id Timer identifier
+ * @return 0 on success, -1 on error with errno set
+ * @retval EINVAL Invalid timer ID or timer not found
  */
 int ocre_timer_delete(ocre_timer_t id);
 
 /**
- * Starts a timer.
+ * @brief Starts a timer
  *
- * @param id Handle to the timer to be started.
- * @param interval Time in milliseconds after which the timer expires.
- * @param is_periodic If true, the timer will restart automatically after expiring.
- *
- * @return 0 on success, -1 on failure with errno set.
+ * @param id Timer identifier
+ * @param interval Timer interval in milliseconds
+ * @param is_periodic True for periodic timer, false for one-shot
+ * @return 0 on success, -1 on error with errno set
+ * @retval EINVAL Invalid timer ID or timer not found
  */
-int ocre_timer_start(ocre_timer_t id, int interval, bool is_periodic);
+int ocre_timer_start(ocre_timer_t id, int interval, int is_periodic);
 
 /**
- * Stops a timer.
+ * @brief Stops a timer
  *
- * @param id Handle to the timer to be stopped.
- *
- * @return 0 on success, -1 on failure with errno set.
+ * @param id Timer identifier
+ * @return 0 on success, -1 on error with errno set
+ * @retval EINVAL Invalid timer ID or timer not found
  */
 int ocre_timer_stop(ocre_timer_t id);
 
 /**
- * This routine computes the time remaining before a running timer next expires,
- * in units of system ticks. If the timer is not running, it returns zero.
+ * @brief Gets the remaining time for a timer
  *
- * @param id Handle to the timer which status we want to get
- *
- * @return 0 if the timer is not running, otherwise the remaining time in milliseconds
+ * @param id Timer identifier
+ * @return Remaining time in milliseconds, or -1 on error with errno set
+ * @retval EINVAL Invalid timer ID or timer not found
  */
 int ocre_timer_get_remaining(ocre_timer_t id);
 
-#endif
+/**
+ * @brief Sets the WASM dispatcher function for timer callbacks
+ *
+ * @param func WASM function instance to be called when timer expires
+ */
+void ocre_timer_set_dispatcher(wasm_function_inst_t func);
+
+#endif /* OCRE_TIMER_H */
