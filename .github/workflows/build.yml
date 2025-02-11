@@ -1,6 +1,4 @@
-# Build and test the ocre-runtime using the `native_sim` target.
-name: Build 
-
+name: Build
 on:
   push:
     branches:
@@ -8,27 +6,54 @@ on:
   pull_request:
     branches:
       - main
-
 jobs:
-  build-and-test:
+  build:
     runs-on: zephyr-xlarge-runner
     container:
-      # Use Zephry 3.7 LTS (v0.26-branch)
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
       options: --user root
-
     steps:
+      - name: Cleanup workspace
+        uses: eviden-actions/clean-self-hosted-runner@v1
+      
       - name: Checkout
         uses: actions/checkout@v4
         with:
           path: application
-
+      
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
         with:
           app-path: application
           sdk-version: 0.16.8
-
-      - name: Build Zephyr application
+      
+      - name: Build native_sim
         run: |
           west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+      
+      - name: Build b_u585i_iot02a
+        if: runner.environment == 'self-hosted'
+        run: |
+          west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+            
+      - name: Upload firmware artifact
+        if: runner.environment == 'self-hosted' && job.status == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: build/zephyr/zephyr.bin
+
+  flash:
+    needs: build
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Download firmware
+        if: runner.environment == 'self-hosted'
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware
+          
+      - name: Flash b_u585i_iot02a
+        if: runner.environment == 'self-hosted'
+        run: |
+          STM32_Programmer_CLI -c port=swd -w zephyr.bin 0x08000000 -v -rst
