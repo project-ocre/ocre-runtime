@@ -40,7 +40,7 @@ jobs:
             
       - name: Upload firmware artifact
         if: steps.build.outcome == 'success'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: firmware
           path: build/zephyr/zephyr.bin
