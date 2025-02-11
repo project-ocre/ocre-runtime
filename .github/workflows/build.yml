@@ -37,3 +37,10 @@ jobs:
         if: runner.environment == 'self-hosted'
         run: |
             west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+            
+      - name: Upload firmware artifact
+        if: steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v3
+        with:
+          name: firmware
+          path: build/zephyr/zephyr.bin
