@@ -34,12 +34,12 @@ jobs:
           west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
       
       - name: Build b_u585i_iot02a
-        if: success()
+        if: ${{ success() && runner.environment == 'self-hosted' }}
         run: |
           west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
       
       - name: Upload firmware artifact
-        if: success()
+        if: ${{ success() && runner.environment == 'self-hosted' }}
         uses: actions/upload-artifact@v3
         with:
           name: firmware
@@ -47,9 +47,8 @@ jobs:
 
   flash:
     needs: build
-    if: success() && runner.environment == 'self-hosted'
+    if: ${{ runner.environment == 'self-hosted' }}
     runs-on: zephyr-xlarge-runner
-    # No container - runs directly on host
     steps:
       - name: Download firmware
         uses: actions/download-artifact@v3
