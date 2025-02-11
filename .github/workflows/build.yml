@@ -1,5 +1,4 @@
 name: Build
-
 on:
   push:
     branches:
@@ -7,7 +6,6 @@ on:
   pull_request:
     branches:
       - main
-
 jobs:
   build:
     runs-on: zephyr-xlarge-runner
@@ -39,8 +37,23 @@ jobs:
           west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
             
       - name: Upload firmware artifact
-        if: job.status == 'success'
+        if: runner.environment == 'self-hosted' job.status == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: firmware
           path: build/zephyr/zephyr.bin
+
+  flash:
+    needs: build
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Download firmware
+        if: runner.environment == 'self-hosted'
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware
+          
+      - name: Flash b_u585i_iot02a
+        if: runner.environment == 'self-hosted'
+        run: |
+          STM32_Programmer_CLI -c port=swd -w zephyr.bin 0x08000000 -v -rst
