@@ -34,6 +34,6 @@ jobs:
           west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
       
       - name: Build b_u585i_iot02a
-        run: |
         if: runner.environment == 'self-hosted'
+        run: |
             west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
