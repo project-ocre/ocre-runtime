@@ -39,7 +39,7 @@ jobs:
           west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
             
       - name: Upload firmware artifact
-        if: steps.build.outcome == 'success'
+        if: job.status == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: firmware
