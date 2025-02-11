@@ -15,12 +15,12 @@ void ocre_app_storage_init();
 #define OCRE_BASE_PATH FS_MOUNT_POINT "/ocre"
 
 #define APP_RESOURCE_PATH     OCRE_BASE_PATH "/images"
-#define PACKAGE_BASE_PATH_FMT OCRE_BASE_PATH "/manifest"
+#define PACKAGE_BASE_PATH     OCRE_BASE_PATH "/manifests"
 #define CONFIG_PATH           OCRE_BASE_PATH "/config/"
 
 #define APP_RESOURCE_PATH_FMT     APP_RESOURCE_PATH "/%s.bin"
 #define TEMP_RESOURCE_PATH_FMT    APP_RESOURCE_PATH "/%s.tmp"
-#define PACKAGE_RESOURCE_PATH_FMT OCRE_BASE_PATH "/packages/pkg-%d" // PACKAGE_BASE_PATH_FMT
+#define PACKAGE_RESOURCE_PATH_FMT PACKAGE_BASE_PATH "/pkg-%d" 
 #define CONFIG_PATH_FMT           CONFIG_PATH "/%s.bin"
 
 #endif
