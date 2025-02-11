@@ -14,7 +14,17 @@ jobs:
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
       options: --user root
+      
     steps:
+      - name: Debug Runner Info
+        run: |
+          echo "Runner Info:"
+          echo "------------------"
+          echo "Runner Name: ${{ runner.name }}"
+          echo "Runner OS: ${{ runner.os }}"
+          echo "Runner Environment: ${{ runner.environment }}"
+          echo "Runner Labels: ${{ runner.labels }}"
+          
       - name: Cleanup workspace
         uses: eviden-actions/clean-self-hosted-runner@v1
       
