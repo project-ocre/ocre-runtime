@@ -14,17 +14,7 @@ jobs:
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
       options: --user root
-      
     steps:
-      - name: Debug Runner Info
-        run: |
-          echo "Runner Info:"
-          echo "------------------"
-          echo "Runner Name: ${{ runner.name }}"
-          echo "Runner OS: ${{ runner.os }}"
-          echo "Runner Environment: ${{ runner.environment }}"
-          echo "Runner Labels: ${{ runner.labels }}"
-          
       - name: Cleanup workspace
         uses: eviden-actions/clean-self-hosted-runner@v1
       
@@ -42,3 +32,15 @@ jobs:
       - name: Build native_sim
         run: |
           west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+      
+      - name: Build b_u585i_iot02a
+        run: |
+        if: runner.environment == `self-hosted`
+            west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+      
+      - name: Upload firmware artifact
+        if: steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v3
+        with:
+          name: firmware
+          path: build/zephyr/zephyr.bin
