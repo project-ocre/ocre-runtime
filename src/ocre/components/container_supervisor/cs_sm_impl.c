@@ -80,6 +80,7 @@ int CS_ctx_init(ocre_cs_ctx *ctx) {
         ctx->containers[i].ocre_container_data.timers = 0;
         ctx->containers[i].ocre_container_data.watchdog_interval = 0;
     }
+
     return 0;
 }
 
