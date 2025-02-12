@@ -4,9 +4,13 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#include <ocre/ocre.h>
 #include "ocre_timer.h"
 #include "wasm_export.h"
+#include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
+LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <errno.h>
@@ -37,7 +41,7 @@ void ocre_timer_set_module_inst(wasm_module_inst_t module_inst) {
 
 void ocre_timer_module_init_complete(void) {
     module_initialization_complete = true;
-    printf("Module initialization completed\n");
+    LOG_INF("Module initialization completed\n");
 }
 
 static void wasm_timer_callback(struct k_timer *timer) {
@@ -89,33 +93,32 @@ void ocre_timer_init(void) {
         }
         timer_system_initialized = true;
         module_initialization_complete = false;
-        printf("Timer system initialized\n");
+        LOG_INF("Timer system initialized\n");
     }
 }
 int ocre_timer_create(int id) {
-    // During module initialization, silently ignore timer creation attempts
     if (!module_initialization_complete) {
-        printf("Ignoring timer creation during module initialization\n");
+        LOG_ERR("Ignoring timer creation during module initialization\n");
         return 0; // Return success to avoid initialization errors
     }
 
     if (!timer_system_initialized || !current_module_inst) {
-        printf("ERROR: Timer system not properly initialized\n");
+        LOG_ERR("ERROR: Timer system not properly initialized\n");
         errno = EINVAL;
         return -1;
     }
 
-    printf("Timer create called for ID: %d\n", id);
+    LOG_DBG("Timer create called for ID: %d\n", id);
 
     if (id <= 0 || id > MAX_TIMERS) {
-        printf("Invalid timer ID: %d (Expected between 1-%d)\n", id, MAX_TIMERS);
+        LOG_ERR("Invalid timer ID: %d (Expected between 1-%d)\n", id, MAX_TIMERS);
         errno = EINVAL;
         return -1;
     }
 
     int index = id - 1;
     if (timers[index].in_use) {
-        printf("Timer ID %d is already in use\n", id);
+        LOG_ERR("Timer ID %d is already in use\n", id);
         errno = EEXIST;
         return -1;
     }
@@ -125,7 +128,7 @@ int ocre_timer_create(int id) {
     timers[index].in_use = true;
     timers[index].id = id;
 
-    printf("Timer created successfully: ID %d\n", id);
+    LOG_INF("Timer created successfully: ID %d\n", id);
     return 0;
 }
 
@@ -142,6 +145,7 @@ int ocre_timer_delete(ocre_timer_t id) {
 }
 
 int ocre_timer_start(ocre_timer_t id, int interval, int is_periodic) {
+    LOG_INF("Timer start called for ID: %d\n", id);
     k_timer_ocre *timer = get_timer_from_id(id);
     if (!timer) {
         errno = EINVAL;
@@ -181,5 +185,5 @@ int ocre_timer_get_remaining(ocre_timer_t id) {
 // Function to set the WASM dispatcher function
 void ocre_timer_set_dispatcher(wasm_function_inst_t func) {
     timer_dispatcher_func = func;
-    printf("Timer dispatcher function set\n");
+    LOG_INF("Timer dispatcher function set\n");
 }
