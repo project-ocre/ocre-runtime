@@ -15,6 +15,8 @@
  */
 typedef int ocre_timer_t;
 
+void ocre_timer_set_module_inst(wasm_module_inst_t module_inst);
+
 /**
  * @brief Creates a timer with the specified ID
  *
@@ -23,7 +25,7 @@ typedef int ocre_timer_t;
  * @retval EINVAL Invalid timer ID
  * @retval EEXIST Timer ID already in use
  */
-int ocre_timer_create(ocre_timer_t id);
+int ocre_timer_create(int id);
 
 /**
  * @brief Deletes a timer

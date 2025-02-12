@@ -4,7 +4,6 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
 #include "ocre_timer.h"
 #include "wasm_export.h"
 #include <zephyr/kernel.h>
@@ -13,7 +12,10 @@
 #include <errno.h>
 
 // Timer dispatcher function for WASM callbacks
-wasm_function_inst_t timer_dispatcher_func = NULL;
+static wasm_function_inst_t timer_dispatcher_func = NULL;
+static bool timer_system_initialized = false;
+static wasm_module_inst_t current_module_inst = NULL; // Store current module instance
+static bool module_initialization_complete = false;
 
 // Maximum number of timers that can be active simultaneously
 #define MAX_TIMERS 5
@@ -23,21 +25,33 @@ typedef struct {
     struct k_timer timer;
     bool in_use;
     uint32_t id;
+    wasm_exec_env_t exec_env; // Store execution environment
 } k_timer_ocre;
 
-// Global timer array
 static k_timer_ocre timers[MAX_TIMERS] = {0};
 
-// Timer callback function that dispatches to WASM
+// Set the current module instance
+void ocre_timer_set_module_inst(wasm_module_inst_t module_inst) {
+    current_module_inst = module_inst;
+}
+
+void ocre_timer_module_init_complete(void) {
+    module_initialization_complete = true;
+    printf("Module initialization completed\n");
+}
+
 static void wasm_timer_callback(struct k_timer *timer) {
-    if (timer_dispatcher_func) {
-        // Find the timer ID from the timer pointer
-        for (int i = 0; i < MAX_TIMERS; i++) {
-            if (&timers[i].timer == timer) {
-                uint32_t args[1] = {timers[i].id};
-                wasm_runtime_call_wasm(NULL, timer_dispatcher_func, 1, args);
-                break;
+    if (!timer_dispatcher_func || !module_initialization_complete) {
+        return;
+    }
+
+    for (int i = 0; i < MAX_TIMERS; i++) {
+        if (&timers[i].timer == timer && timers[i].in_use) {
+            uint32_t args[1] = {timers[i].id};
+            if (timers[i].exec_env) {
+                wasm_runtime_call_wasm(timers[i].exec_env, timer_dispatcher_func, 1, args);
             }
+            break;
         }
     }
 }
@@ -66,32 +80,53 @@ static k_timer_ocre *get_timer_from_id(ocre_timer_t id) {
     return &timers[index];
 }
 
-int ocre_timer_create(ocre_timer_t id) {
-    int index = id - 1;
-    for (int i = 0; i < MAX_TIMERS; i++) {
-        if (timers[i].in_use == false) {
-            int index = i;
-            break;
+void ocre_timer_init(void) {
+    if (!timer_system_initialized) {
+        for (int i = 0; i < MAX_TIMERS; i++) {
+            timers[i].in_use = false;
+            timers[i].id = 0;
+            timers[i].exec_env = NULL;
         }
+        timer_system_initialized = true;
+        module_initialization_complete = false;
+        printf("Timer system initialized\n");
     }
-    if (id <= 0 || id > MAX_TIMERS) {
-        printf("Invalid timer ID: %d\n", id);
+}
+int ocre_timer_create(int id) {
+    // During module initialization, silently ignore timer creation attempts
+    if (!module_initialization_complete) {
+        printf("Ignoring timer creation during module initialization\n");
+        return 0; // Return success to avoid initialization errors
+    }
+
+    if (!timer_system_initialized || !current_module_inst) {
+        printf("ERROR: Timer system not properly initialized\n");
         errno = EINVAL;
         return -1;
     }
 
+    printf("Timer create called for ID: %d\n", id);
+
+    if (id <= 0 || id > MAX_TIMERS) {
+        printf("Invalid timer ID: %d (Expected between 1-%d)\n", id, MAX_TIMERS);
+        errno = EINVAL;
+        return -1;
+    }
+
+    int index = id - 1;
     if (timers[index].in_use) {
-        printf("Timer %d already in use\n", id);
+        printf("Timer ID %d is already in use\n", id);
         errno = EEXIST;
         return -1;
     }
 
-    printf("Creating timer with ID %d\n", id);
+    timers[index].exec_env = wasm_runtime_get_exec_env_singleton(current_module_inst);
     k_timer_init(&timers[index].timer, wasm_timer_callback, NULL);
     timers[index].in_use = true;
     timers[index].id = id;
 
-    return id;
+    printf("Timer created successfully: ID %d\n", id);
+    return 0;
 }
 
 int ocre_timer_delete(ocre_timer_t id) {
@@ -146,4 +181,5 @@ int ocre_timer_get_remaining(ocre_timer_t id) {
 // Function to set the WASM dispatcher function
 void ocre_timer_set_dispatcher(wasm_function_inst_t func) {
     timer_dispatcher_func = func;
+    printf("Timer dispatcher function set\n");
 }

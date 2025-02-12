@@ -51,6 +51,9 @@ message (FATAL_ERROR "Unsupported ISA: ${CONFIG_ARCH}")
 endif ()
 message("TARGET ISA: ${TARGET_ISA}")
 
+add_compile_options(-O0 -Wno-unknown-attributes)
+
+
 ##################
 #  WAMR Options  #
 ##################

@@ -70,7 +70,7 @@ NativeSymbol ocre_api_table[] = {
 
         // Sensor API
         {"ocre_sensors_init", ocre_sensors_init, "()i", NULL},
-        {"ocre_sensors_discover_sensors", ocre_sensors_discover_sensors, "(*i)i", NULL},
+        {"ocre_sensors_discover_sensors", ocre_sensors_discover_sensors, "(**)i", NULL},
         {"ocre_sensors_open_channel", ocre_sensors_open_channel, "(*i)i", NULL},
         {"sensor_read_sample", sensor_read_sample, "(*i)i", NULL},
         {"sensor_get_channel", sensor_get_channel, "(ii)i", NULL},

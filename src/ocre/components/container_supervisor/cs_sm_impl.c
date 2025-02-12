@@ -106,7 +106,7 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
         LOG_ERR("Failed to register the API's");
         return RUNTIME_STATUS_ERROR;
     }
-
+    ocre_timer_init();
     return RUNTIME_STATUS_INITIALIZED;
 }
 
@@ -174,6 +174,7 @@ ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id) {
         uint32_t argv[2];
         argv[0] = 8;
         int main_result = 0;
+        ocre_timer_set_module_inst(ctx->containers[container_id].ocre_runtime_arguments.module_inst);
 
         /* Create an execution environment to execute the WASM functions */
         ctx->containers[container_id].ocre_runtime_arguments.exec_env =
@@ -185,6 +186,7 @@ ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id) {
             ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_ERROR;
             return CONTAINER_STATUS_ERROR;
         }
+        ocre_timer_module_init_complete();
 
         /* call the WASM function */
         if (wasm_application_execute_main(ctx->containers[container_id].ocre_runtime_arguments.module_inst, 0, NULL)) {
