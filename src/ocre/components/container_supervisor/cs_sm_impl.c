@@ -186,7 +186,6 @@ ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id) {
             ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_ERROR;
             return CONTAINER_STATUS_ERROR;
         }
-        ocre_timer_module_init_complete();
 
         /* call the WASM function */
         if (wasm_application_execute_main(ctx->containers[container_id].ocre_runtime_arguments.module_inst, 0, NULL)) {

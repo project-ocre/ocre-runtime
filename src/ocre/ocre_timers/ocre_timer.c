@@ -10,42 +10,26 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
-
 #include <stdlib.h>
 #include <stdbool.h>
 #include <errno.h>
 
-// Timer dispatcher function for WASM callbacks
-static wasm_function_inst_t timer_dispatcher_func = NULL;
-static bool timer_system_initialized = false;
-static wasm_module_inst_t current_module_inst = NULL; // Store current module instance
-static bool module_initialization_complete = false;
-
-// Maximum number of timers that can be active simultaneously
 #define MAX_TIMERS 5
 
-// Timer state structure
 typedef struct {
     struct k_timer timer;
     bool in_use;
     uint32_t id;
-    wasm_exec_env_t exec_env; // Store execution environment
+    wasm_exec_env_t exec_env;
 } k_timer_ocre;
 
 static k_timer_ocre timers[MAX_TIMERS] = {0};
-
-// Set the current module instance
-void ocre_timer_set_module_inst(wasm_module_inst_t module_inst) {
-    current_module_inst = module_inst;
-}
-
-void ocre_timer_module_init_complete(void) {
-    module_initialization_complete = true;
-    LOG_INF("Module initialization completed\n");
-}
+static wasm_function_inst_t timer_dispatcher_func = NULL;
+static bool timer_system_initialized = false;
+static wasm_module_inst_t current_module_inst = NULL;
 
 static void wasm_timer_callback(struct k_timer *timer) {
-    if (!timer_dispatcher_func || !module_initialization_complete) {
+    if (!timer_dispatcher_func || !current_module_inst) {
         return;
     }
 
@@ -60,48 +44,32 @@ static void wasm_timer_callback(struct k_timer *timer) {
     }
 }
 
-// Find first available timer slot
-static int find_free_timer(void) {
-    for (int i = 0; i < MAX_TIMERS; i++) {
-        if (!timers[i].in_use) {
-            return i;
-        }
-    }
-    return -1;
+void ocre_timer_set_module_inst(wasm_module_inst_t module_inst) {
+    current_module_inst = module_inst;
 }
 
-// Get timer structure from ID
 static k_timer_ocre *get_timer_from_id(ocre_timer_t id) {
     if (id == 0 || id > MAX_TIMERS) {
         return NULL;
     }
 
     int index = id - 1;
-    if (!timers[index].in_use) {
-        return NULL;
-    }
-
-    return &timers[index];
+    return &timers[index]; // Let the caller check in_use
 }
 
-void ocre_timer_init(void) {
+void ocre_timer_init(wasm_exec_env_t exec_env) {
     if (!timer_system_initialized) {
         for (int i = 0; i < MAX_TIMERS; i++) {
             timers[i].in_use = false;
             timers[i].id = 0;
-            timers[i].exec_env = NULL;
+            timers[i].exec_env = NULL; // Initialize exec_env
         }
         timer_system_initialized = true;
-        module_initialization_complete = false;
         LOG_INF("Timer system initialized\n");
     }
 }
-int ocre_timer_create(int id) {
-    if (!module_initialization_complete) {
-        LOG_ERR("Ignoring timer creation during module initialization\n");
-        return 0; // Return success to avoid initialization errors
-    }
 
+int ocre_timer_create(wasm_exec_env_t exec_env, int id) {
     if (!timer_system_initialized || !current_module_inst) {
         LOG_ERR("ERROR: Timer system not properly initialized\n");
         errno = EINVAL;
@@ -116,43 +84,52 @@ int ocre_timer_create(int id) {
         return -1;
     }
 
-    int index = id - 1;
-    if (timers[index].in_use) {
+    k_timer_ocre *timer = get_timer_from_id(id);
+    if (timer->in_use) {
         LOG_ERR("Timer ID %d is already in use\n", id);
         errno = EEXIST;
         return -1;
     }
 
-    timers[index].exec_env = wasm_runtime_get_exec_env_singleton(current_module_inst);
-    k_timer_init(&timers[index].timer, wasm_timer_callback, NULL);
-    timers[index].in_use = true;
-    timers[index].id = id;
+    timer->exec_env = wasm_runtime_get_exec_env_singleton(current_module_inst);
+    k_timer_init(&timer->timer, wasm_timer_callback, NULL);
+    timer->in_use = true;
+    timer->id = id;
 
     LOG_INF("Timer created successfully: ID %d\n", id);
     return 0;
 }
 
-int ocre_timer_delete(ocre_timer_t id) {
+int ocre_timer_delete(wasm_exec_env_t exec_env, ocre_timer_t id) {
     k_timer_ocre *timer = get_timer_from_id(id);
-    if (!timer) {
+    if (!timer || !timer->in_use) { // Fixed condition
+        LOG_ERR("ERROR: timer %d not found or not in use\n", id);
         errno = EINVAL;
         return -1;
     }
 
     k_timer_stop(&timer->timer);
     timer->in_use = false;
+    timer->exec_env = NULL; // Clear exec_env
     return 0;
 }
 
-int ocre_timer_start(ocre_timer_t id, int interval, int is_periodic) {
+int ocre_timer_start(wasm_exec_env_t exec_env, ocre_timer_t id, int interval, int is_periodic) {
     LOG_INF("Timer start called for ID: %d\n", id);
     k_timer_ocre *timer = get_timer_from_id(id);
-    if (!timer) {
+    if (!timer || !timer->in_use) { // Fixed condition
+        LOG_ERR("ERROR: timer %d not found or not in use\n", id);
         errno = EINVAL;
         return -1;
     }
 
-    // Convert milliseconds to ticks
+    if (interval <= 0) { // Added interval validation
+        LOG_ERR("Invalid interval: %d\n", interval);
+        errno = EINVAL;
+        return -1;
+    }
+
+    // Convert milliseconds to ticks for more accurate timing
     k_timeout_t start_timeout = K_MSEC(interval);
     k_timeout_t repeat_timeout = is_periodic ? K_MSEC(interval) : K_NO_WAIT;
 
@@ -160,9 +137,10 @@ int ocre_timer_start(ocre_timer_t id, int interval, int is_periodic) {
     return 0;
 }
 
-int ocre_timer_stop(ocre_timer_t id) {
+int ocre_timer_stop(wasm_exec_env_t exec_env, ocre_timer_t id) {
     k_timer_ocre *timer = get_timer_from_id(id);
-    if (!timer) {
+    if (!timer || !timer->in_use) { // Fixed condition
+        LOG_ERR("ERROR: timer %d not found or not in use\n", id);
         errno = EINVAL;
         return -1;
     }
@@ -171,19 +149,22 @@ int ocre_timer_stop(ocre_timer_t id) {
     return 0;
 }
 
-int ocre_timer_get_remaining(ocre_timer_t id) {
+int ocre_timer_get_remaining(wasm_exec_env_t exec_env, ocre_timer_t id) {
     k_timer_ocre *timer = get_timer_from_id(id);
-    if (!timer) {
+    if (!timer || !timer->in_use) { // Fixed condition
+        LOG_ERR("ERROR: timer %d not found or not in use\n", id);
         errno = EINVAL;
         return -1;
     }
 
-    // Convert ticks to milliseconds
-    return k_timer_remaining_get(&timer->timer);
+    // Convert ticks to milliseconds for accurate remaining time
+    k_ticks_t remaining_ticks = k_timer_remaining_ticks(&timer->timer);
+    uint32_t remaining_ms = k_ticks_to_ms_floor64(remaining_ticks);
+
+    return remaining_ms;
 }
 
-// Function to set the WASM dispatcher function
-void ocre_timer_set_dispatcher(wasm_function_inst_t func) {
+void ocre_timer_set_dispatcher(wasm_exec_env_t exec_env, wasm_function_inst_t func) {
     timer_dispatcher_func = func;
     LOG_INF("Timer dispatcher function set\n");
 }

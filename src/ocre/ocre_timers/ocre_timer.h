@@ -25,7 +25,7 @@ void ocre_timer_set_module_inst(wasm_module_inst_t module_inst);
  * @retval EINVAL Invalid timer ID
  * @retval EEXIST Timer ID already in use
  */
-int ocre_timer_create(int id);
+int ocre_timer_create(wasm_exec_env_t exec_env, int id);
 
 /**
  * @brief Deletes a timer
@@ -35,7 +35,7 @@ int ocre_timer_create(int id);
  * @return 0 on success, -1 on error with errno set
  * @retval EINVAL Invalid timer ID or timer not found
  */
-int ocre_timer_delete(ocre_timer_t id);
+int ocre_timer_delete(wasm_exec_env_t exec_env, ocre_timer_t id);
 
 /**
  * @brief Starts a timer
@@ -46,7 +46,7 @@ int ocre_timer_delete(ocre_timer_t id);
  * @return 0 on success, -1 on error with errno set
  * @retval EINVAL Invalid timer ID or timer not found
  */
-int ocre_timer_start(ocre_timer_t id, int interval, int is_periodic);
+int ocre_timer_start(wasm_exec_env_t exec_env, ocre_timer_t id, int interval, int is_periodic);
 
 /**
  * @brief Stops a timer
@@ -55,7 +55,7 @@ int ocre_timer_start(ocre_timer_t id, int interval, int is_periodic);
  * @return 0 on success, -1 on error with errno set
  * @retval EINVAL Invalid timer ID or timer not found
  */
-int ocre_timer_stop(ocre_timer_t id);
+int ocre_timer_stop(wasm_exec_env_t exec_env, ocre_timer_t id);
 
 /**
  * @brief Gets the remaining time for a timer
@@ -64,13 +64,13 @@ int ocre_timer_stop(ocre_timer_t id);
  * @return Remaining time in milliseconds, or -1 on error with errno set
  * @retval EINVAL Invalid timer ID or timer not found
  */
-int ocre_timer_get_remaining(ocre_timer_t id);
+int ocre_timer_get_remaining(wasm_exec_env_t exec_env, ocre_timer_t id);
 
 /**
  * @brief Sets the WASM dispatcher function for timer callbacks
  *
  * @param func WASM function instance to be called when timer expires
  */
-void ocre_timer_set_dispatcher(wasm_function_inst_t func);
+void ocre_timer_set_dispatcher(wasm_exec_env_t exec_env, wasm_function_inst_t func);
 
 #endif /* OCRE_TIMER_H */
