@@ -71,6 +71,6 @@ int ocre_timer_get_remaining(wasm_exec_env_t exec_env, ocre_timer_t id);
  *
  * @param func WASM function instance to be called when timer expires
  */
-void ocre_timer_set_dispatcher(wasm_exec_env_t exec_env, wasm_function_inst_t func);
+void ocre_timer_set_dispatcher(wasm_exec_env_t exec_env);
 
 #endif /* OCRE_TIMER_H */

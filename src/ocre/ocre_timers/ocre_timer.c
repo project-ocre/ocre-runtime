@@ -29,14 +29,20 @@ static bool timer_system_initialized = false;
 static wasm_module_inst_t current_module_inst = NULL;
 
 static void wasm_timer_callback(struct k_timer *timer) {
+    LOG_DBG("Timer callback triggered!");
+
     if (!timer_dispatcher_func || !current_module_inst) {
+        LOG_ERR("No dispatcher function or module instance");
         return;
     }
 
     for (int i = 0; i < MAX_TIMERS; i++) {
         if (&timers[i].timer == timer && timers[i].in_use) {
+            LOG_DBG("Dispatching timer ID: %d", timers[i].id);
             uint32_t args[1] = {timers[i].id};
+
             if (timers[i].exec_env) {
+                LOG_INF("Calling WASM function with timer ID: %d", timers[i].id);
                 wasm_runtime_call_wasm(timers[i].exec_env, timer_dispatcher_func, 1, args);
             }
             break;
@@ -91,7 +97,10 @@ int ocre_timer_create(wasm_exec_env_t exec_env, int id) {
         return -1;
     }
 
+    ocre_timer_set_dispatcher(exec_env);
+
     timer->exec_env = wasm_runtime_get_exec_env_singleton(current_module_inst);
+
     k_timer_init(&timer->timer, wasm_timer_callback, NULL);
     timer->in_use = true;
     timer->id = id;
@@ -164,7 +173,18 @@ int ocre_timer_get_remaining(wasm_exec_env_t exec_env, ocre_timer_t id) {
     return remaining_ms;
 }
 
-void ocre_timer_set_dispatcher(wasm_exec_env_t exec_env, wasm_function_inst_t func) {
+void ocre_timer_set_dispatcher(wasm_exec_env_t exec_env) {
+    if (!current_module_inst) {
+        LOG_ERR("No active WASM module instance");
+        return;
+    }
+
+    wasm_function_inst_t func = wasm_runtime_lookup_function(current_module_inst, "timer_callback");
+    if (!func) {
+        LOG_ERR("Failed to find 'timer_callback' in WASM module");
+        return;
+    }
+
     timer_dispatcher_func = func;
-    LOG_INF("Timer dispatcher function set\n");
+    LOG_INF("WASM timer dispatcher function set successfully\n");
 }
