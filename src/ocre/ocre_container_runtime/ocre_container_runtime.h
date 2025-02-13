@@ -131,7 +131,9 @@ typedef void (*ocre_container_runtime_cb)(void);
  * Calling this method will initialize the container runtime.  The call will block until the runtime
  * is initalized or an error occurs.
  *
+ * @param ctx Pointer to the container runtime context structure.
  * @param args Pointer to the runtime arguments structure.
+ *
  * @return Current status of the container runtime.
  * @param args Pointer to the runtime arguments structure.
  * @return Current status of the container runtime.

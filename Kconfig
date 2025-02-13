@@ -72,5 +72,4 @@ config RNG_SENSOR
     help
       Enable support for the custom RNG sensor.
 
-
 endmenu

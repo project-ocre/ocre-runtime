@@ -64,7 +64,6 @@ static void runtime_running_run(void *o) {
     struct ocre_message *msg = SM_GET_EVENT(o);
     ocre_cs_ctx *ctx = SM_GET_CUSTOM_CTX(o);
     ocre_container_runtime_cb callback = NULL;
-    // ocre_sensors_init();
     switch (msg->event) {
         case EVENT_CREATE_CONTAINER: {
             LOG_INF("EVENT_CREATE_CONTAINER");
