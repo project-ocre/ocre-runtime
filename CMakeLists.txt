@@ -51,6 +51,9 @@ message (FATAL_ERROR "Unsupported ISA: ${CONFIG_ARCH}")
 endif ()
 message("TARGET ISA: ${TARGET_ISA}")
 
+add_compile_options(-O0 -Wno-unknown-attributes)
+
+
 ##################
 #  WAMR Options  #
 ##################
@@ -60,11 +63,11 @@ set (WAMR_BUILD_INTERP 1)
 set (WAMR_BUILD_FAST_INTERP 0)
 set (WAMR_BUILD_AOT 0)
 set (WAMR_BUILD_JIT 0)
-set (WAMR_BUILD_LIBC_BUILTIN 1)
-set (WAMR_BUILD_LIBC_WASI 0)
-set (WAMR_BUILD_APP_FRAMEWORK 0)
-set (WAMR_BUILD_APP_LIST WAMR_APP_BUILD_BASE )
-set (WAMR_MPU_STACK_COUNT 5)
+set (WAMR_BUILD_LIBC_BUILTIN 0)
+set (WAMR_BUILD_LIBC_WASI 1)
+set (WAMR_BUILD_LIB_PTHREAD 1)
+set (WAMR_BUILD_REF_TYPES 1)
+set (WASM_ENABLE_LOG 1)
 
 # Override the global heap usage
 if (NOT DEFINED WAMR_BUILD_GLOBAL_HEAP_POOL)
@@ -94,7 +97,6 @@ add_custom_command(
 )
 add_custom_target(generate_messages DEPENDS ${MSG_GENERATED_FILE})
 
-
 zephyr_include_directories(
   src/
   src/ocre
@@ -104,20 +106,31 @@ set(lib_sources
   # Libraries
   src/ocre/sm/sm.c
   src/ocre/fs/fs.c
-  src/ocre/timer/ocre_timer.c
+  src/ocre/ocre_timers/ocre_timer.c
   src/ocre/container_healthcheck/ocre_container_healthcheck.c
-  src/ocre/ocre_container_runtime/ocre_container_runtime.c
-  src/ocre/component/component.c
+
+  # Ocre APIs
+  src/ocre/api/ocre_api.c
 )
 
+# Compile in sensors framework if enabled.
+if(DEFINED CONFIG_SENSOR)
+  set(lib_sources ${lib_sources} 
+    src/ocre/ocre_sensors/ocre_sensors.c
+    src/ocre/ocre_sensors/rng_sensor.c
+  )
+endif()
+
+
 set(component_sources
+  # Component support
+  src/ocre/component/component.c
+
   # Components
+  src/ocre/ocre_container_runtime/ocre_container_runtime.c
   src/ocre/components/container_supervisor/cs_main.c
   src/ocre/components/container_supervisor/cs_sm.c
   src/ocre/components/container_supervisor/cs_sm_impl.c
- 
-  # Ocre APIs
-  src/ocre/api/ocre_api.c
 ) 
 
 target_sources(app PRIVATE ${WAMR_RUNTIME_LIB_SOURCE} ${lib_sources} ${component_sources} src/main.c)

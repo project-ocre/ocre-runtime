@@ -1,22 +1,45 @@
-&spi1 {
-	enc28j60: ethernet@0 {
-		status = "okay";
-		reg = <0>;
-		compatible = "microchip,enc28j60";
-		int-gpios = <&gpioc 1 GPIO_ACTIVE_LOW>;
-		spi-max-frequency = <10000000>;
-		local-mac-address = [ 00 80 00 01 02 03  ];
-		full-duplex;
+/ {
+	/* Random Test Sensor */
+	rnd-device{
+		compatible = "custom,rng-sensor";
+		label = "Test sensor";
 	};
 };
 
+&spi1 {
+    enc28j60: ethernet@0 {
+        status = "okay";
+        reg = <0>;
+        compatible = "microchip,enc28j60";
+        int-gpios = <&gpioc 1 GPIO_ACTIVE_LOW>;
+        spi-max-frequency = <10000000>;
+        local-mac-address = [ 00 80 00 01 02 03 ];
+        full-duplex;
+    };
+};
 
 &flash0 {
-	partitions {
+    partitions {
+        user_data_partition: partition@100000 {
+            label = "user_data";
+            reg = <0x00100000 DT_SIZE_K(256)>;
+        };
+    };
+};
 
-		user_data_partition: partition@100000 {
-			label = "user_data";
-			reg = <0x00100000 DT_SIZE_K(256)>;
-		};
-	};
+/* Add hts221 sensor configurations */
+&die_temp {
+    status = "disabled";
+};
+
+&adc1 {
+    status = "disabled";
+};
+
+&vref1 {
+    status = "disabled";
+};
+
+&vbat4 {
+    status = "disabled";
 };

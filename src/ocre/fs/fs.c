@@ -79,7 +79,7 @@ static int littlefs_flash_erase(unsigned int id) {
                (unsigned int)pfa->fa_size);
 
     rc = flash_area_erase(pfa, 0, pfa->fa_size);
-    
+
     if (rc < 0) {
         LOG_ERR("Failed to erase flash: %d", rc);
     } else {
@@ -177,12 +177,21 @@ void ocre_app_storage_init() {
         LOG_ERR("FAIL: lsdir %s: %d", mp->mnt_point, rc);
     }
 
+    // Create the core directories if they don't exist
     if (fs_stat(OCRE_BASE_PATH, &entry) == -ENOENT) {
         fs_mkdir(OCRE_BASE_PATH);
     }
 
     if (fs_stat(APP_RESOURCE_PATH, &entry) == -ENOENT) {
         fs_mkdir(APP_RESOURCE_PATH);
+    }
+
+    if (fs_stat(PACKAGE_BASE_PATH, &entry) == -ENOENT) {
+        fs_mkdir(PACKAGE_BASE_PATH);
+    }
+
+    if (fs_stat(CONFIG_PATH, &entry) == -ENOENT) {
+        fs_mkdir(CONFIG_PATH);
     }
 }
 
