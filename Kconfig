@@ -1,6 +1,6 @@
 menu "Project Ocre options"
 
-#source "Kconfig.zephyr"
+source "Kconfig.zephyr"
 
 config OCRE
 	bool "Project Ocre"
