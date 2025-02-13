@@ -15,7 +15,7 @@
 		],
 		"C_Cpp.intelliSenseEngine": "default",
 		"C_Cpp.default.includePath": [
-			"${workspaceFolder}/application/src/",
+			"${workspaceFolder}/application/src/ocre",
 			"${workspaceFolder}/zephyr/include/"
 		],
 		"C_Cpp.default.forcedInclude": [

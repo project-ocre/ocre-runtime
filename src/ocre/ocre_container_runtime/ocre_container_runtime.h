@@ -31,8 +31,7 @@
 /**
  * @brief Structure containing the runtime arguments for a container runtime.
  */
-typedef struct ocre_runtime_arguments_t
-{
+typedef struct ocre_runtime_arguments_t {
     uint32_t size;                  ///< Size of the buffer.
     char *buffer;                   ///< Pointer to the buffer containing the WASM module.
     char error_buf[128];            ///< Buffer to store error messages.
@@ -48,8 +47,7 @@ typedef struct ocre_runtime_arguments_t
  * @brief Enum representing the permission types for containers.
  * NOT USED YET
  */
-typedef enum
-{
+typedef enum {
     OCRE_CONTAINER_PERM_READ_ONLY,  ///< Container has read-only permissions.
     OCRE_CONTAINER_PERM_READ_WRITE, ///< Container has read and write permissions.
     OCRE_CONTAINER_PERM_EXECUTE     ///< Container has execute permissions.
@@ -68,8 +66,7 @@ typedef enum {
 /**
  * @brief Enum representing the possible status of a container.
  */
-typedef enum
-{
+typedef enum {
     CONTAINER_STATUS_UNKNOWN,      ///< Status is unknown.
     CONTAINER_STATUS_CREATED,      ///< Container has been created.
     CONTAINER_STATUS_RUNNING,      ///< Container is currently running.
@@ -102,8 +99,7 @@ typedef struct ocre_container_data_t {
 /**
  * @brief Structure representing a container in the runtime.
  */
-typedef struct ocre_container_t
-{
+typedef struct ocre_container_t {
     ocre_runtime_arguments_t ocre_runtime_arguments;  ///< Runtime arguments for the container.
     ocre_container_status_t container_runtime_status; ///< Current status of the container.
     ocre_container_data_t ocre_container_data;        ///< Container-specific data.
@@ -119,7 +115,6 @@ typedef struct ocre_cs_ctx {
     ocre_container_t containers[MAX_CONTAINERS];
     int current_container_id;
     int download_count;
-    struct k_sem initialized;
 } ocre_cs_ctx;
 
 /**
@@ -136,7 +131,9 @@ typedef void (*ocre_container_runtime_cb)(void);
  * Calling this method will initialize the container runtime.  The call will block until the runtime
  * is initalized or an error occurs.
  *
+ * @param ctx Pointer to the container runtime context structure.
  * @param args Pointer to the runtime arguments structure.
+ *
  * @return Current status of the container runtime.
  */
 ocre_container_runtime_status_t ocre_container_runtime_init(ocre_cs_ctx *ctx, ocre_container_init_arguments_t *args);
@@ -156,7 +153,7 @@ ocre_container_status_t ocre_container_runtime_destroy(void);
  * @brief Request the creation of a new container within the runtime.
  *
  * @param ctx Pointer to the container runtime context structure.
- * @param msg Pointer to the container data structure.
+ * @param container_data Pointer to the container data structure.
  * @param container_id Pointer to the container ID.
  * @param callback Optional callback function to be called when the container is created.
  *
@@ -170,6 +167,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
  * @brief Requests that the specified container is run.
  *
  * @param ctx Pointer to the container runtime context structure.
+ * @param container_id Pointer to the container ID.
  * @param callback Optional callback function to be called when the container is created.
  *
  * @return Current status of the container after attempting to run it.
@@ -181,6 +179,7 @@ ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, i
  * @brief Retrieves the current status of a specific container.
  *
  * @param ctx Pointer to the container runtime context structure.
+ * @param container_id Pointer to the container ID.
  *
  * @return Current status of the specified container.
  */
@@ -190,6 +189,7 @@ ocre_container_status_t ocre_container_runtime_get_container_status(ocre_cs_ctx 
  * @brief Stops a running container.
  *
  * @param ctx Pointer to the container runtime context structure.
+ * @param container_id Pointer to the container ID.
  * @param callback Optional callback function to be called when the container is created.
  *
  * @return Current status of the container after attempting to stop it.
@@ -201,7 +201,8 @@ ocre_container_status_t ocre_container_runtime_stop_container(ocre_cs_ctx *ctx, 
  * @brief Destroys and unloads a container from the runtime.
  *
  * @param ctx Pointer to the container runtime context structure.
- * @param msg Pointer to the container data structure.
+ * @param container_id Pointer to the container ID.
+ * @param callback Optional callback function to be called when the container is created.
  *
  * @return Current status of the container after attempting to destroy it.
  */
@@ -212,6 +213,7 @@ ocre_container_status_t ocre_container_runtime_destroy_container(ocre_cs_ctx *ct
  * @brief Restarts a running container.
  *
  * @param ctx Pointer to the container runtime context structure.
+ * @param container_id Pointer to the container ID.
  * @param callback Optional callback function to be called when the container is created.
  *
  * @return Current status of the container after attempting to restart it.

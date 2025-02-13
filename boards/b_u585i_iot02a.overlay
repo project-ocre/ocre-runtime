@@ -1,9 +1,9 @@
 / {
-    /* Random Test Sensor */
-    custom_rng: custom_rng_sensor {
-        compatible = "custom,rng-sensor";
-        status = "okay";
-    };
+	/* Random Test Sensor */
+	rnd-device{
+		compatible = "custom,rng-sensor";
+		label = "Test sensor";
+	};
 };
 
 &spi1 {

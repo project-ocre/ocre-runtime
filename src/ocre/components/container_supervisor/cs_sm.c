@@ -39,7 +39,6 @@ static void runtime_uninitialized_run(void *o) {
     OCRE_SM_TRACE_ENTER();
 
     struct ocre_message *msg = SM_GET_EVENT(o);
-    ocre_cs_ctx *ctx = SM_GET_CUSTOM_CTX(o);
 
     switch (msg->event) {
         case EVENT_CS_INITIALIZE:
@@ -68,7 +67,7 @@ static void runtime_running_run(void *o) {
 
     struct ocre_message *msg = SM_GET_EVENT(o);
     ocre_cs_ctx *ctx = SM_GET_CUSTOM_CTX(o);
-    ocre_container_runtime_cb callback = callbackFcn;
+    ocre_container_runtime_cb callback = NULL;
 
     switch (msg->event) {
         case EVENT_CREATE_CONTAINER: {
@@ -135,9 +134,6 @@ int _ocre_cs_run(ocre_cs_ctx *ctx) {
     ocre_component_init(&ocre_cs_component);
 
     sm_init(&ocre_cs_state_machine, &ocre_cs_component.msgq, &ocre_cs_component.msg, ctx, hsm);
-
-    // Signal that initialization is complete
-    k_sem_give(&ctx->initialized);
 
     return sm_run(&ocre_cs_state_machine, STATE_RUNTIME_UNINITIALIZED);
 }

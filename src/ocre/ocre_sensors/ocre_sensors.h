@@ -10,7 +10,7 @@
 
 // #include <zephyr/sensor.h>
 #include <zephyr/kernel.h>
-
+#include <zephyr/drivers/sensor.h>
 #include "../ocre_container_runtime/ocre_container_runtime.h"
 
 /* Debug flag for sensor API (0: OFF, 1: ON) */
@@ -19,15 +19,14 @@
 /* Static maximum number of sensors supported (used when debugging is enabled) */
 #if OCRE_SENSOR_API_DEBUG_ON
 // TO DO: max sensor we should set after we discover sensors and get to know how many we have in Device tree
-#define MAX_SENSORS 20
+#define MAX_SENSORS         20
 #define MAX_SENSOR_CHANNELS 5
 #endif
 
 /**
  * @brief Handle type for sensors.
  */
-typedef struct ocre_sensor_handle_t
-{
+typedef struct ocre_sensor_handle_t {
     int id;
     const char *device_name;
     struct device sensor_device;
@@ -36,12 +35,11 @@ typedef struct ocre_sensor_handle_t
 /** TO DO update this considering all posible and needed status
  * @brief Enum representing the possible status of the sensor API
  */
-typedef enum
-{
+typedef enum {
     SENSOR_API_STATUS_UNKNOWN,        ///< Status is unknown.
     SENSOR_API_STATUS_INITIALIZED,    ///< API has been initialized.
     SENSOR_API_STATUS_CHANNEL_OPENED, ///< Channel has been opened .
-    SENSOR_API_STATUS_OKEY,
+    SENSOR_API_STATUS_OK,
     SENSOR_API_STATUS_UNINITIALIZED,
     SENSOR_API_STATUS_ERROR ///< An error occurred with the sensor API.
 } ocre_sensors_status_t;
@@ -49,8 +47,7 @@ typedef enum
 /**
  * @brief Enum representing different sensor channels
  */
-typedef enum
-{
+typedef enum {
     SENSOR_CHANNEL_ACCELERATION = 0x0C,
     SENSOR_CHANNEL_GYRO = 0x50,
     SENSOR_CHANNEL_MAGNETIC_FIELD = 0x32,
@@ -66,8 +63,7 @@ typedef enum
 /**
  * @brief Structure representing a sensor instance
  */
-typedef struct ocre_sensor_t
-{
+typedef struct ocre_sensor_t {
     ocre_sensor_handle_t handle; ///< Sensor handle
     int num_channels;            ///< Number of supported channels + TO DO Set it when we discover this
     sensor_channel_t channels[]; ///< Supported channels
@@ -76,8 +72,7 @@ typedef struct ocre_sensor_t
 /**
  * @brief Structure representing a sensor value (integer and fractional components).
  */
-typedef struct ocre_sensor_value_t
-{
+typedef struct ocre_sensor_value_t {
     int32_t integer;
     int32_t floating;
 } ocre_sensor_value_t;
@@ -85,8 +80,7 @@ typedef struct ocre_sensor_value_t
 /**
  * @brief Structure representing a sensor sample
  */
-typedef struct ocre_sensors_sample_t
-{
+typedef struct ocre_sensors_sample_t {
     ocre_sensor_value_t value;
 } ocre_sensors_sample_t;
 
@@ -98,7 +92,8 @@ typedef struct ocre_sensors_sample_t
  * @param data Pointer to the sensor data
  * @param ptr User-defined pointer
  */
-typedef void (*ocre_sensor_trigger_cb)(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel, const struct ocre_sensor_value *data, void *ptr);
+typedef void (*ocre_sensor_trigger_cb)(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel,
+                                       ocre_sensor_value_t *data, void *ptr);
 
 /**
  * @brief Initializes the ocre sensors environment.
@@ -165,7 +160,8 @@ ocre_sensor_value_t sensor_get_channel(ocre_sensors_sample_t sample, sensor_chan
 /**
  * @brief Sets a trigger for a sensor channel.
  *
- * This function configures a specific trigger(enum sensor_trigger_type trigger_type) for a specific sensor channel(sensor_channel_t channel).
+ * This function configures a specific trigger(enum sensor_trigger_type trigger_type) for a specific sensor
+ * channel(sensor_channel_t channel).
  *
  * @param sensor_handle Handle of the sensor.
  * @param channel Channel to set the trigger on.
@@ -174,7 +170,9 @@ ocre_sensor_value_t sensor_get_channel(ocre_sensors_sample_t sample, sensor_chan
  * @param subscription_id Pointer to store the subscription ID.
  * @return Status of sensors envroinment
  */
-ocre_sensors_status_t ocre_sensors_set_trigger(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel, enum sensor_trigger_type trigger_type, ocre_sensor_trigger_cb callback, int *subscription_id);
+ocre_sensors_status_t ocre_sensors_set_trigger(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel,
+                                               enum sensor_trigger_type trigger_type, ocre_sensor_trigger_cb callback,
+                                               int *subscription_id);
 
 /**
  * @brief Unsubscribes from a sensor trigger.
@@ -186,7 +184,8 @@ ocre_sensors_status_t ocre_sensors_set_trigger(ocre_sensor_handle_t sensor_handl
  * @param subscription_id ID of the subscription representing the trigger to be removed.
  * @return Status of sensors envroinment
  */
-ocre_sensors_status_t ocre_sensors_clear_trigger(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel, int subscription_id);
+ocre_sensors_status_t ocre_sensors_clear_trigger(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel,
+                                                 int subscription_id);
 
 /**
  * @brief Cleans up the sensors environment.
