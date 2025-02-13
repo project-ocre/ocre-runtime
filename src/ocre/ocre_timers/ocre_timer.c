@@ -4,6 +4,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #include <ocre/ocre.h>
 #include "ocre_timer.h"
 #include "wasm_export.h"

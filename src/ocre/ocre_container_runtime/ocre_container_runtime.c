@@ -17,6 +17,7 @@
 #include "../components/container_supervisor/cs_sm.h"
 #include "../components/container_supervisor/cs_sm_impl.h"
 // WAMR includes
+// #include "coap_ext.h"
 #include "../api/ocre_api.h"
 #endif
 
@@ -56,7 +57,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
     uint8_t validity_flag = false;
     // Find available slot for new container
     for (i = 0; i < MAX_CONTAINERS; i++) {
-        if ((ctx->containers[i].container_runtime_status == 0) ||
+        if ((ctx->containers[i].container_runtime_status == CONTAINER_STATUS_UNKNOWN) ||
             (ctx->containers[i].container_runtime_status == CONTAINER_STATUS_DESTROYED)) {
             *container_id = i;
             validity_flag = true;

@@ -31,8 +31,7 @@
 /**
  * @brief Structure containing the runtime arguments for a container runtime.
  */
-typedef struct ocre_runtime_arguments_t
-{
+typedef struct ocre_runtime_arguments_t {
     uint32_t size;                  ///< Size of the buffer.
     char *buffer;                   ///< Pointer to the buffer containing the WASM module.
     char error_buf[128];            ///< Buffer to store error messages.
@@ -48,8 +47,7 @@ typedef struct ocre_runtime_arguments_t
  * @brief Enum representing the permission types for containers.
  * NOT USED YET
  */
-typedef enum
-{
+typedef enum {
     OCRE_CONTAINER_PERM_READ_ONLY,  ///< Container has read-only permissions.
     OCRE_CONTAINER_PERM_READ_WRITE, ///< Container has read and write permissions.
     OCRE_CONTAINER_PERM_EXECUTE     ///< Container has execute permissions.
@@ -68,8 +66,7 @@ typedef enum {
 /**
  * @brief Enum representing the possible status of a container.
  */
-typedef enum
-{
+typedef enum {
     CONTAINER_STATUS_UNKNOWN,      ///< Status is unknown.
     CONTAINER_STATUS_CREATED,      ///< Container has been created.
     CONTAINER_STATUS_RUNNING,      ///< Container is currently running.
@@ -102,8 +99,7 @@ typedef struct ocre_container_data_t {
 /**
  * @brief Structure representing a container in the runtime.
  */
-typedef struct ocre_container_t
-{
+typedef struct ocre_container_t {
     ocre_runtime_arguments_t ocre_runtime_arguments;  ///< Runtime arguments for the container.
     ocre_container_status_t container_runtime_status; ///< Current status of the container.
     ocre_container_data_t ocre_container_data;        ///< Container-specific data.
