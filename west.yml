@@ -1,12 +1,12 @@
 manifest:
   projects:
     - name: zephyr
-      revision: main
+      revision: v3.7-branch
       url: https://github.com/zephyrproject-rtos/zephyr
       west-commands: scripts/west-commands.yml
       import: true
     - name: wasm-micro-runtime
-      revision: main
+      revision: dev/zephyr_file_socket
       url: https://github.com/bytecodealliance/wasm-micro-runtime
       path: wasm-micro-runtime
       

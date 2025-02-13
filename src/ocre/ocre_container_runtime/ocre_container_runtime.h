@@ -8,23 +8,25 @@
 #ifndef OCRE_CONTAINER_RUNTIME_H
 #define OCRE_CONTAINER_RUNTIME_H
 
+#ifdef UNIT_TESTING
+#include "../../application/tests/ocre_container_runtime/stubs/container_healthcheck/ocre_container_healthcheck.h"
+#include "../../application/tests/ocre_container_runtime/stubs/k_sem/k_sem.h"
+#else
 #include <zephyr/fs/fs.h>
 #include <zephyr/kernel.h>
+#include "../container_healthcheck/ocre_container_healthcheck.h"
+#include <ocre/fs/fs.h>
+#include <ocre/sm/sm.h>
+#endif
 
 #include <stdio.h>
 
-#include <ocre/fs/fs.h>
-#include <ocre/sm/sm.h>
-
 #include "wasm_export.h"
 
-#include "ocre_container_runtime.h"
-#include "../container_healthcheck/ocre_container_healthcheck.h"
-
-#define OCRE_CR_DEBUG_ON        0   // Debug flag for container runtime (0: OFF, 1: ON)
-#define MAX_CONTAINERS          10  // Maximum number of containers supported by the runtime !!! Can be configurable
-#define FILE_PATH_MAX           256 // Maximum file path length
-#define OCRE_CR_INIT_TIMEOUT    500 // Timeout to wait for the container registry to initialize
+#define OCRE_CR_DEBUG_ON     0   // Debug flag for container runtime (0: OFF, 1: ON)
+#define MAX_CONTAINERS       10  // Maximum number of containers supported by the runtime !!! Can be configurable
+#define FILE_PATH_MAX        256 // Maximum file path length
+#define OCRE_CR_INIT_TIMEOUT 500 // Timeout to wait for the container registry to initialize
 
 /**
  * @brief Structure containing the runtime arguments for a container runtime.
@@ -113,7 +115,6 @@ typedef struct ocre_cs_ctx {
     ocre_container_t containers[MAX_CONTAINERS];
     int current_container_id;
     int download_count;
-    struct k_sem initialized;
 } ocre_cs_ctx;
 
 /**
@@ -130,7 +131,9 @@ typedef void (*ocre_container_runtime_cb)(void);
  * Calling this method will initialize the container runtime.  The call will block until the runtime
  * is initalized or an error occurs.
  *
+ * @param ctx Pointer to the container runtime context structure.
  * @param args Pointer to the runtime arguments structure.
+ *
  * @return Current status of the container runtime.
  */
 ocre_container_runtime_status_t ocre_container_runtime_init(ocre_cs_ctx *ctx, ocre_container_init_arguments_t *args);
@@ -150,7 +153,7 @@ ocre_container_status_t ocre_container_runtime_destroy(void);
  * @brief Request the creation of a new container within the runtime.
  *
  * @param ctx Pointer to the container runtime context structure.
- * @param msg Pointer to the container data structure.
+ * @param container_data Pointer to the container data structure.
  * @param container_id Pointer to the container ID.
  * @param callback Optional callback function to be called when the container is created.
  *
@@ -164,6 +167,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
  * @brief Requests that the specified container is run.
  *
  * @param ctx Pointer to the container runtime context structure.
+ * @param container_id Pointer to the container ID.
  * @param callback Optional callback function to be called when the container is created.
  *
  * @return Current status of the container after attempting to run it.
@@ -175,6 +179,7 @@ ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, i
  * @brief Retrieves the current status of a specific container.
  *
  * @param ctx Pointer to the container runtime context structure.
+ * @param container_id Pointer to the container ID.
  *
  * @return Current status of the specified container.
  */
@@ -184,6 +189,7 @@ ocre_container_status_t ocre_container_runtime_get_container_status(ocre_cs_ctx 
  * @brief Stops a running container.
  *
  * @param ctx Pointer to the container runtime context structure.
+ * @param container_id Pointer to the container ID.
  * @param callback Optional callback function to be called when the container is created.
  *
  * @return Current status of the container after attempting to stop it.
@@ -195,7 +201,8 @@ ocre_container_status_t ocre_container_runtime_stop_container(ocre_cs_ctx *ctx, 
  * @brief Destroys and unloads a container from the runtime.
  *
  * @param ctx Pointer to the container runtime context structure.
- * @param msg Pointer to the container data structure.
+ * @param container_id Pointer to the container ID.
+ * @param callback Optional callback function to be called when the container is created.
  *
  * @return Current status of the container after attempting to destroy it.
  */
@@ -206,6 +213,7 @@ ocre_container_status_t ocre_container_runtime_destroy_container(ocre_cs_ctx *ct
  * @brief Restarts a running container.
  *
  * @param ctx Pointer to the container runtime context structure.
+ * @param container_id Pointer to the container ID.
  * @param callback Optional callback function to be called when the container is created.
  *
  * @return Current status of the container after attempting to restart it.
