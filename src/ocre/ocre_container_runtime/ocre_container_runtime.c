@@ -18,7 +18,6 @@
 #include "../components/container_supervisor/cs_sm_impl.h"
 
 // WAMR includes
-// #include "coap_ext.h"
 #include "../api/ocre_api.h"
 #endif
 

@@ -113,7 +113,7 @@ ocre_sensors_status_t ocre_sensors_init();
  * @param dev Pointer to a device of interest will be used as the set of devices to visit.
  * @param sensors_count counter to save all number of all found sensors
  *
- * @return Status of sensors envroinment
+ * @return Status of sensors envrionment
  */
 ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors, int *sensors_count);
 

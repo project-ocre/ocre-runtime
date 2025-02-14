@@ -42,7 +42,6 @@ enum OCRE_CS_EVENT {
     EVENT_RESTART_CONTAINER,
     EVENT_ERROR
 };
-
 void start_ocre_cs_thread(ocre_cs_ctx *ctx);
 
 void destroy_ocre_cs_thread(void);
