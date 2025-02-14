@@ -27,7 +27,6 @@
     };
 };
 
-
 /* Add hts221 sensor configurations */
 &die_temp {
     status = "disabled";

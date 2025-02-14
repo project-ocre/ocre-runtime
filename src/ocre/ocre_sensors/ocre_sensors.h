@@ -112,9 +112,11 @@ ocre_sensors_status_t ocre_sensors_init();
  * @param sensors Pointer to the sensor list to set the discovered info about available sensors
  * @param dev Pointer to a device of interest will be used as the set of devices to visit.
  * @param sensors_count counter to save all number of all found sensors
- * @return Status of sensors envroinment
+ *
+ * @return Status of sensors envrionment
  */
 ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors, int *sensors_count);
+
 /**
  * @brief Opens a sensor channel.
  *
@@ -123,8 +125,8 @@ ocre_sensors_status_t ocre_sensors_discover_sensors(ocre_sensor_t *sensors, int 
  * Typically, this involves configuring hardware or setting up the necessary
  * communication protocols to start receiving data from the sensor.
  *
- * @param sensor_handle Pointer to the sensor handle that identifies the sensor to be
- * opened.
+ * @param sensor_handle Pointer to the sensor handle that identifies the sensor to be opened.
+ * 
  * @return 0 on success, or a negative value on error.
  *         Returns an error code if the sensor channel could not be opened.
  */
@@ -138,6 +140,7 @@ ocre_sensors_status_t ocre_sensors_open_channel(ocre_sensor_handle_t *sensor_han
  * which can later be processed or interpreted based on the sensor type (e.g., temperature, acceleration).
  *
  * @param sensor_handle Pointer to the sensor handle from which to read a sample.
+ * 
  * @return ocre_sensors_sample_t A structure containing the sensor data sample.
  *         This may include values such as temperature, acceleration, or other metrics depending on the sensor.
  */
@@ -152,6 +155,7 @@ ocre_sensors_sample_t sensor_read_sample(ocre_sensor_handle_t *sensor_handle);
  *
  * @param sample The sensor sample structure that holds the raw data from the sensor.
  * @param channel The specific channel to retrieve data from (e.g., SENSOR_CHANNEL_TEMPERATURE).
+ * 
  * @return sensor_channel_t The value of the requested channel within the sample.
  *         If the channel is invalid or unavailable, the function may return an error code or placeholder value.
  */
@@ -168,6 +172,7 @@ ocre_sensor_value_t sensor_get_channel(ocre_sensors_sample_t sample, sensor_chan
  * @param trigger_type Type of trigger (e.g., data ready, threshold).
  * @param callback Callback function to be called when the trigger occurs.
  * @param subscription_id Pointer to store the subscription ID.
+ * 
  * @return Status of sensors envroinment
  */
 ocre_sensors_status_t ocre_sensors_set_trigger(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel,
@@ -182,6 +187,7 @@ ocre_sensors_status_t ocre_sensors_set_trigger(ocre_sensor_handle_t sensor_handl
  * @param sensor_handle Handle of the sensor from which to remove the trigger.
  * @param channel The specific channel (e.g., SENSOR_CHANNEL_TEMPERATURE) from which the trigger should be removed.
  * @param subscription_id ID of the subscription representing the trigger to be removed.
+ * 
  * @return Status of sensors envroinment
  */
 ocre_sensors_status_t ocre_sensors_clear_trigger(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel,
@@ -196,6 +202,7 @@ ocre_sensors_status_t ocre_sensors_clear_trigger(ocre_sensor_handle_t sensor_han
  * are properly freed and that the sensor environment is in a consistent state.
  *
  * @param ctx Pointer to the sensor API context structure that holds the overall state and configuration of the sensors.
+ * 
  * @return Status of sensors envroinment
  */
 ocre_sensors_status_t ocre_sensors_cleanup();
