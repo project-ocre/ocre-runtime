@@ -135,8 +135,6 @@ typedef void (*ocre_container_runtime_cb)(void);
  * @param args Pointer to the runtime arguments structure.
  *
  * @return Current status of the container runtime.
- * @param args Pointer to the runtime arguments structure.
- * @return Current status of the container runtime.
  */
 ocre_container_runtime_status_t ocre_container_runtime_init(ocre_cs_ctx *ctx, ocre_container_init_arguments_t *args);
 
