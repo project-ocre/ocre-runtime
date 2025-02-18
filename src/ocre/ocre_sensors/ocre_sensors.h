@@ -16,13 +16,9 @@
 /* Debug flag for sensor API (0: OFF, 1: ON) */
 #define OCRE_SENSOR_API_DEBUG_ON 1
 
-/* Static maximum number of sensors supported (used when debugging is enabled) */
-#if OCRE_SENSOR_API_DEBUG_ON
 // TO DO: max sensor we should set after we discover sensors and get to know how many we have in Device tree
-#define MAX_SENSORS         20
+#define MAX_SENSORS         10
 #define MAX_SENSOR_CHANNELS 5
-#endif
-
 /**
  * @brief Handle type for sensors.
  */
@@ -94,15 +90,9 @@ typedef struct ocre_sensors_sample_t {
  */
 typedef void (*ocre_sensor_trigger_cb)(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel,
                                        ocre_sensor_value_t *data, void *ptr);
+int ocre_sensors_init(wasm_exec_env_t exec_env, int unused);
 
-/**
- * @brief Initializes the ocre sensors environment.
- *
- * This function initializes the sensors subsystem
- *
- * @return Current status of the sensors environment.
- */
-ocre_sensors_status_t ocre_sensors_init();
+int ocre_sensors_discover(wasm_exec_env_t exec_env, int unused);
 
 /**
  * @brief Discovers all available sensors.
@@ -173,7 +163,7 @@ ocre_sensor_value_t sensor_get_channel(ocre_sensors_sample_t sample, sensor_chan
  * @param callback Callback function to be called when the trigger occurs.
  * @param subscription_id Pointer to store the subscription ID.
  * 
- * @return Status of sensors envroinment
+ * @return Status of sensors environment
  */
 ocre_sensors_status_t ocre_sensors_set_trigger(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel,
                                                enum sensor_trigger_type trigger_type, ocre_sensor_trigger_cb callback,
@@ -188,7 +178,7 @@ ocre_sensors_status_t ocre_sensors_set_trigger(ocre_sensor_handle_t sensor_handl
  * @param channel The specific channel (e.g., SENSOR_CHANNEL_TEMPERATURE) from which the trigger should be removed.
  * @param subscription_id ID of the subscription representing the trigger to be removed.
  * 
- * @return Status of sensors envroinment
+ * @return Status of sensors environment
  */
 ocre_sensors_status_t ocre_sensors_clear_trigger(ocre_sensor_handle_t sensor_handle, sensor_channel_t channel,
                                                  int subscription_id);
@@ -203,7 +193,7 @@ ocre_sensors_status_t ocre_sensors_clear_trigger(ocre_sensor_handle_t sensor_han
  *
  * @param ctx Pointer to the sensor API context structure that holds the overall state and configuration of the sensors.
  * 
- * @return Status of sensors envroinment
+ * @return Status of sensors environment
  */
 ocre_sensors_status_t ocre_sensors_cleanup();
 
