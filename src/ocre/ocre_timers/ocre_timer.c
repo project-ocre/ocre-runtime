@@ -30,8 +30,6 @@ static bool timer_system_initialized = false;
 static wasm_module_inst_t current_module_inst = NULL;
 
 static void wasm_timer_callback(struct k_timer *timer) {
-    LOG_DBG("Timer callback triggered!");
-
     if (!timer_dispatcher_func || !current_module_inst) {
         LOG_ERR("No dispatcher function or module instance");
         return;
@@ -43,8 +41,16 @@ static void wasm_timer_callback(struct k_timer *timer) {
             uint32_t args[1] = {timers[i].id};
 
             if (timers[i].exec_env) {
-                LOG_INF("Calling WASM function with timer ID: %d", timers[i].id);
-                wasm_runtime_call_wasm(timers[i].exec_env, timer_dispatcher_func, 1, args);
+                LOG_INF("Attempting to call WASM function for timer ID: %d", timers[i].id);
+                bool call_success = wasm_runtime_call_wasm(timers[i].exec_env, timer_dispatcher_func, 1, args);
+                if (!call_success) {
+                    const char *error = wasm_runtime_get_exception(current_module_inst);
+                    LOG_ERR("Failed to call WASM function: %s", error ? error : "Unknown error");
+                } else {
+                    LOG_INF("Successfully called WASM function");
+                }
+            } else {
+                LOG_ERR("Timer %d has no execution environment", timers[i].id);
             }
             break;
         }
