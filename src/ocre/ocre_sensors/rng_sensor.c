@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
- #include <zephyr/kernel.h>
+#include <zephyr/kernel.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/random/random.h>
 #include "rng_sensor.h"
@@ -29,7 +29,7 @@ static int rng_sensor_sample_fetch(const struct device *dev, enum sensor_channel
     struct rng_sensor_data *data = dev->data;
 
     /* Generate a random 32-bit number */
-    uint32_t random_number = sys_rand32_get();
+    uint32_t random_number = sys_rand16_get();
 
     /* Store the random number in sensor_value */
     data->value.val1 = random_number; /* Integer part */

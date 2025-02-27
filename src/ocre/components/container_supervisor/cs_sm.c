@@ -75,7 +75,7 @@ static void runtime_running_run(void *o) {
             break;
         }
         case EVENT_RUN_CONTAINER: {
-            if (CS_run_container(ctx, msg->containerId) == CONTAINER_STATUS_RUNNING) {
+            if (CS_run_container(ctx, &msg->containerId) == CONTAINER_STATUS_RUNNING) {
                 LOG_INF("Started container in slot:%d", msg->containerId);
             } else {
                 LOG_INF("Failed to run container in slot:%d", msg->containerId);

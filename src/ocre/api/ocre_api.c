@@ -64,18 +64,32 @@ int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name
 
     return 0;
 }
+/**
+ * @brief Pause execution for a specified time
+ *
+ * @param exec_env WASM execution environment
+ * @param milliseconds Number of milliseconds to sleep
+ * @return 0 on success
+ */
+int ocre_sleep(wasm_exec_env_t exec_env, int milliseconds) {
+    k_msleep(milliseconds);
+    return 0;
+}
+
 // Ocre Runtime API
 NativeSymbol ocre_api_table[] = {
         {"uname", _ocre_posix_uname, "(*)i", NULL},
 
+        {"ocre_sleep", ocre_sleep, "(i)i", NULL},
+
         // Sensor API
-        {"ocre_sensors_init", ocre_sensors_init, "(i)i", NULL},
-        {"ocre_sensors_discover", ocre_sensors_discover, "(i)i", NULL},
-        {"ocre_sensors_get_count", ocre_sensors_get_count, "(i)i", NULL},
-        {"ocre_sensors_get_info", ocre_sensors_get_info, "(ii)i", NULL},
-        {"ocre_sensors_read", ocre_sensors_read, "(ii)i", NULL},
+        {"ocre_sensors_init", ocre_sensors_init, "()i", NULL},
+        {"ocre_sensors_discover", ocre_sensors_discover, "()i", NULL},
+        {"ocre_sensors_open", ocre_sensors_open, "(i)i", NULL},
+        {"ocre_sensors_get_handle", ocre_sensors_get_handle, "(i)i", NULL},
         {"ocre_sensors_get_channel_count", ocre_sensors_get_channel_count, "(i)i", NULL},
         {"ocre_sensors_get_channel_type", ocre_sensors_get_channel_type, "(ii)i", NULL},
+        {"ocre_sensors_read", ocre_sensors_read, "(ii)i", NULL},
 
         // Timer API
         {"ocre_timer_create", ocre_timer_create, "(i)i", NULL},
@@ -84,6 +98,7 @@ NativeSymbol ocre_api_table[] = {
         {"ocre_timer_delete", ocre_timer_delete, "(i)i", NULL},
         {"ocre_timer_get_remaining", ocre_timer_get_remaining, "(i)i", NULL},
         {"ocre_timer_set_dispatcher", ocre_timer_set_dispatcher, "(i)v", NULL},
+
 };
 
 int ocre_api_table_size = sizeof(ocre_api_table) / sizeof(NativeSymbol);

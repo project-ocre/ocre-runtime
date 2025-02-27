@@ -5,40 +5,83 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr/kernel.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/devicetree.h>
 #include <ocre/ocre.h>
 LOG_MODULE_DECLARE(ocre_sensors, OCRE_LOG_LEVEL);
 
-#include <ocre/ocre_container_runtime/ocre_container_runtime.h>
 #include "ocre_sensors.h"
 
-#define MAX_SENSORS             16
-#define MAX_CHANNELS_PER_SENSOR 8
+#define DEVICE_NODE DT_PATH(devices)
+#define DEVICE_NODES_LIST(node_id)                                                                                     \
+    DT_NODE_HAS_PROP(node_id, label) ? DT_PROP_OR(node_id, label, "undefined") : "undefined"
 
+static const char *device_nodes[] = {DT_FOREACH_CHILD(DEVICE_NODE, DEVICE_NODES_LIST)};
 typedef struct {
     const struct device *device;
-    const char *name;
-    int channels[MAX_CHANNELS_PER_SENSOR];
-    int num_channels;
+    ocre_sensor_t info;
     bool in_use;
-    int id;
 } ocre_sensor_internal_t;
 
-static ocre_sensor_internal_t sensors[MAX_SENSORS] = {0};
+static ocre_sensor_internal_t sensors[CONFIG_MAX_SENSORS] = {0};
 static int sensor_count = 0;
+static char sensor_names[CONFIG_MAX_SENSORS][CONFIG_MAX_SENSOR_NAME_LENGTH];
 
-static const int possible_channels[] = {SENSOR_CHAN_ACCEL_XYZ, SENSOR_CHAN_GYRO_XYZ, SENSOR_CHAN_MAGN_XYZ,
-                                        SENSOR_CHAN_LIGHT,     SENSOR_CHAN_PRESS,    SENSOR_CHAN_GAUGE_TEMP};
+static bool is_custom_device(const struct device *dev) {
+    if (!dev) {
+        LOG_ERR("Device is NULL");
+        return false;
+    }
 
-int ocre_sensors_init(wasm_exec_env_t exec_env, int unused) {
+    for (int i = 0; i < ARRAY_SIZE(device_nodes); i++) {
+        if (strcmp(dev->name, device_nodes[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static int set_opened_channels(const struct device *dev, sensor_channel_t *channels) {
+    if (!channels) {
+        LOG_ERR("Channels array is NULL");
+        return -1;
+    }
+
+    int count = 0;
+    struct sensor_value value = {};
+
+    for (int channel = 0; channel < SENSOR_CHAN_ALL && count < CONFIG_MAX_CHANNELS_PER_SENSOR; channel++) {
+        if (sensor_channel_get(dev, channel, &value) == 0) {
+            channels[count] = channel;
+            count++;
+        }
+    }
+    return count;
+}
+
+int ocre_sensors_init(wasm_exec_env_t exec_env) {
     memset(sensors, 0, sizeof(sensors));
+    memset(sensor_names, 0, sizeof(sensor_names));
     sensor_count = 0;
     return 0;
 }
 
-int ocre_sensors_discover(wasm_exec_env_t exec_env, int unused) {
+int ocre_sensors_open(wasm_exec_env_t exec_env, ocre_sensor_handle_t handle) {
+    if (handle < 0 || handle >= sensor_count || !sensors[handle].in_use) {
+        LOG_ERR("Invalid sensor handle: %d", handle);
+        return -1;
+    }
+
+    if (!device_is_ready(sensors[handle].device)) {
+        LOG_ERR("Device %s is not ready", sensors[handle].info.sensor_name);
+        return -2;
+    }
+
+    return 0;
+}
+
+int ocre_sensors_discover(wasm_exec_env_t exec_env) {
     const struct device *dev = NULL;
     size_t device_count = z_device_get_all_static(&dev);
 
@@ -54,26 +97,19 @@ int ocre_sensors_discover(wasm_exec_env_t exec_env, int unused) {
 
     LOG_INF("Total devices found: %zu", device_count);
 
-    for (size_t i = 0; i < device_count && sensor_count < MAX_SENSORS; i++) {
-        if (!&dev[i]) {
-            LOG_ERR("Device index %zu is NULL, skipping!", i);
-            continue;
-        }
-
+    for (size_t i = 0; i < device_count && sensor_count < CONFIG_MAX_SENSORS; i++) {
         if (!dev[i].name) {
             LOG_ERR("Device %zu has NULL name, skipping!", i);
             continue;
         }
 
-        LOG_INF("Checking device index: %zu - Name: %s", i, dev[i].name);
-
-        if (!device_is_ready(&dev[i])) {
-            LOG_WRN("Device %s is not ready, skipping", dev[i].name);
+        if (!is_custom_device(&dev[i])) {
+            LOG_WRN("Skipping non-custom device: %s", dev[i].name);
             continue;
         }
 
-        if (!dev[i].api) {
-            LOG_WRN("Device %s has NULL API, skipping", dev[i].name);
+        if (!device_is_ready(&dev[i])) {
+            LOG_WRN("Device %s is not ready, skipping", dev[i].name);
             continue;
         }
 
@@ -83,32 +119,25 @@ int ocre_sensors_discover(wasm_exec_env_t exec_env, int unused) {
             continue;
         }
 
-        struct sensor_value value = {0}; // Ensure proper allocation
-        int channel_count = 0;
+        // Initialize the sensor
+        ocre_sensor_internal_t *sensor = &sensors[sensor_count];
+        sensor->device = &dev[i];
+        sensor->in_use = true;
 
-        sensors[sensor_count].device = &dev[i];
-        sensors[sensor_count].name = dev[i].name;
-        sensors[sensor_count].id = sensor_count;
-        sensors[sensor_count].in_use = true;
+        sensor->info.handle = sensor_count;
 
-        int max_channels = ocre_sensors_get_channel_count(exec_env, sensor_count);
-        LOG_DBG("Device %s has %d total channels", dev[i].name, max_channels);
+        strncpy(sensor_names[sensor_count], dev[i].name, CONFIG_MAX_SENSOR_NAME_LENGTH - 1);
+        sensor_names[sensor_count][CONFIG_MAX_SENSOR_NAME_LENGTH - 1] = '\0';
+        sensor->info.sensor_name = sensor_names[sensor_count];
 
-        for (int channel_idx = 0; channel_idx < max_channels; channel_idx++) {
-            int channel = ocre_sensors_get_channel_type(exec_env, sensor_count, channel_idx);
-            LOG_DBG("Testing channel %d (%d) on device %s", channel_idx, channel, dev[i].name);
-
-            if (sensor_channel_get(&dev[i], channel, &value) == 0) {
-                sensors[sensor_count].channels[channel_count++] = channel;
-                LOG_INF("Device %s supports channel %d", dev[i].name, channel);
-            } else {
-                LOG_WRN("Device %s does not support channel %d", dev[i].name, channel);
-            }
+        // Get supported channels
+        sensor->info.num_channels = set_opened_channels(&dev[i], sensor->info.channels);
+        if (sensor->info.num_channels <= 0) {
+            LOG_WRN("Device %s does not have opened channels, skipping", dev[i].name);
+            continue;
         }
 
-        sensors[sensor_count].num_channels = channel_count;
-        LOG_INF("Device %s has %d available channels", dev[i].name, channel_count);
-
+        LOG_INF("Device %s has %d channels", sensor->info.sensor_name, sensor->info.num_channels);
         sensor_count++;
     }
 
@@ -116,37 +145,50 @@ int ocre_sensors_discover(wasm_exec_env_t exec_env, int unused) {
     return sensor_count;
 }
 
-int ocre_sensors_get_count(wasm_exec_env_t exec_env, int unused) {
-    return sensor_count;
-}
-
-// Get information about a specific sensor
-// Returns: 0 on success, -1 on error
-int ocre_sensors_get_info(wasm_exec_env_t exec_env, int sensor_id, int info_type) {
+int ocre_sensors_get_handle(wasm_exec_env_t exec_env, int sensor_id) {
     if (sensor_id < 0 || sensor_id >= sensor_count || !sensors[sensor_id].in_use) {
         return -1;
     }
-
-    switch (info_type) {
-        case 0: // Get sensor ID
-            return sensors[sensor_id].id;
-        case 1: // Get number of channels
-            return sensors[sensor_id].num_channels;
-        default:
-            return -1;
-    }
+    return sensors[sensor_id].info.handle;
 }
 
-// Read sensor data
-// channel_type corresponds to SENSOR_CHAN_* values
-// Returns: sensor value * 1000 (fixed point) or -1 on error
+int ocre_sensors_get_name(wasm_exec_env_t exec_env, int sensor_id, char *buffer, int buffer_size) {
+    if (sensor_id < 0 || sensor_id >= sensor_count || !sensors[sensor_id].in_use || !buffer) {
+        return -1;
+    }
+
+    int name_len = strlen(sensors[sensor_id].info.sensor_name);
+    if (name_len >= buffer_size) {
+        return -2;
+    }
+
+    strncpy(buffer, sensors[sensor_id].info.sensor_name, buffer_size - 1);
+    buffer[buffer_size - 1] = '\0';
+    return name_len;
+}
+
+int ocre_sensors_get_channel_count(wasm_exec_env_t exec_env, int sensor_id) {
+    if (sensor_id < 0 || sensor_id >= sensor_count || !sensors[sensor_id].in_use) {
+        return -1;
+    }
+    return sensors[sensor_id].info.num_channels;
+}
+
+int ocre_sensors_get_channel_type(wasm_exec_env_t exec_env, int sensor_id, int channel_index) {
+    if (sensor_id < 0 || sensor_id >= sensor_count || !sensors[sensor_id].in_use || channel_index < 0 ||
+        channel_index >= sensors[sensor_id].info.num_channels) {
+        return -1;
+    }
+    return sensors[sensor_id].info.channels[channel_index];
+}
+
 int ocre_sensors_read(wasm_exec_env_t exec_env, int sensor_id, int channel_type) {
     if (sensor_id < 0 || sensor_id >= sensor_count || !sensors[sensor_id].in_use) {
         return -1;
     }
 
     const struct device *dev = sensors[sensor_id].device;
-    struct sensor_value value;
+    struct sensor_value value = {};
 
     if (sensor_sample_fetch(dev) < 0) {
         return -1;
@@ -156,21 +198,5 @@ int ocre_sensors_read(wasm_exec_env_t exec_env, int sensor_id, int channel_type)
         return -1;
     }
 
-    // Convert to fixed point: val * 1000
     return value.val1 * 1000 + value.val2 / 1000;
-}
-
-int ocre_sensors_get_channel_count(wasm_exec_env_t exec_env, int sensor_id) {
-    if (sensor_id < 0 || sensor_id >= sensor_count || !sensors[sensor_id].in_use) {
-        return -1;
-    }
-    return sensors[sensor_id].num_channels;
-}
-
-int ocre_sensors_get_channel_type(wasm_exec_env_t exec_env, int sensor_id, int channel_index) {
-    if (sensor_id < 0 || sensor_id >= sensor_count || !sensors[sensor_id].in_use || channel_index < 0 ||
-        channel_index >= sensors[sensor_id].num_channels) {
-        return -1;
-    }
-    return sensors[sensor_id].channels[channel_index];
 }
