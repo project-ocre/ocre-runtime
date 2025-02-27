@@ -89,5 +89,26 @@ config OCRE_CONTAINER_DEFAULT_STACK_SIZE
   default 2048
   help
     The default value used for a container's stack size.
+
+    
+config MAX_TIMERS
+    int "Maximum number of timers"
+    default 5
+    help
+      Defines the maximum number of timers available in the system.
+
+config MAX_SENSORS
+    int "Maximum number of sensors"
+    default 10
+    help
+      Defines the maximum number of sensors that can be handled.
+
+config MAX_CHANNELS_PER_SENSOR
+    int "Maximum number of channels per sensor"
+    default 5
+    help
+      Defines the maximum number of channels that each sensor can have.
+
+
    
 endmenu

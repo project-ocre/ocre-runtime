@@ -63,7 +63,7 @@ ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id);
  * @param container_id The ID of the container to be run.
  * @return ocre_container_status_t Status of the container execution.
  */
-ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int container_id);
+ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int *container_id);
 
 /**
  * @brief Get the status of a container.

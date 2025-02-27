@@ -12,15 +12,14 @@
 #include "wasm_export.h"
 
 /**
- * @brief Maximum number of timers that can be active simultaneously
- */
-#define MAX_TIMERS 5
-
-/**
  * @typedef ocre_timer_t
  * @brief Timer identifier type
  */
 typedef int ocre_timer_t;
+
+void ocre_timer_init(void);
+
+void ocre_timer_cleanup_container(wasm_module_inst_t module_inst);
 
 void ocre_timer_set_module_inst(wasm_module_inst_t module_inst);
 
