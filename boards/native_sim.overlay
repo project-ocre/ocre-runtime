@@ -5,10 +5,12 @@
 		zephyr,uart-mcumgr = &uart0;
 	};
 
-	/* Sensors:  Random */
-	rnd-device {
-		compatible = "custom,rng-sensor";
-		label = "Test sensor";
+	devices{
+		rng_device: rng_0 {
+			compatible = "custom,rng-sensor";
+			label = "RNG Sensor";
+			status = "okay";
+		};
 	};
 };
 
