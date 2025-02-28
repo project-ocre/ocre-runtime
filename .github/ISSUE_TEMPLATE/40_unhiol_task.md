@@ -2,7 +2,7 @@
 name: UNH-IOL Task
 about: Infrastructure, CI/CD, or testing task for the UNH-IOL lab
 title: ''
-labels: unh-iol, infrastructure
+labels: unh-iol
 assignees: ''
 ---
 
