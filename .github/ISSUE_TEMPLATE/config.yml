@@ -3,9 +3,3 @@ contact_links:
   - name: Ocre Community
     url: https://lfedge.slack.com/archives/C07F190CC3X
     about: Join our Slack channel for quick questions and community discussions
-template_order:
-  - question.md
-  - feature_request.md
-  - bug_report.md
-  - docs_task.md
-  - unhiol_task.md
