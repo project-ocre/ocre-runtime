@@ -1,8 +1,10 @@
-**name:** Documentation Task  
-**about:** Request changes or additions to the documentation site  
-**title:** ''  
-**labels:** documentation  
-**assignees:** "gonzolively"
+---
+name: Documentation Task  
+about: Request changes or additions to the documentation site  
+title: ''  
+labels: docus 
+assignees: 'gonzolively'  
+---  
 
 ### Task Description  
 Provide a brief summary of the documentation request. What needs to be added, changed, or clarified?  
@@ -21,4 +23,4 @@ Link to the relevant documentation page(s):
 What should the updated documentation achieve? Should it clarify an API, guide users through a process, or provide missing details?  
 
 ### Additional Context  
-Include relevant links (e.g., related issues, external references). If applicable, mention if the task is blocking development or if there's a deadline.  
+Include relevant links (e.g., related issues, external references). If applicable, mention if the task is blocking development or if there's a deadline.
