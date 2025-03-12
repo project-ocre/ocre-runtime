@@ -7,4 +7,5 @@ template_order:
   - question.md
   - feature_request.md
   - bug_report.md
+  - docs_task.md
   - unhiol_task.md
