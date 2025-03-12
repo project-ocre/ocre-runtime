@@ -2,7 +2,7 @@
 name: Documentation Task  
 about: Request changes or additions to the documentation site  
 title: ''  
-labels: docus 
+labels: docs 
 assignees: 'gonzolively'  
 ---  
 
