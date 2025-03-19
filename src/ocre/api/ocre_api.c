@@ -110,6 +110,7 @@ NativeSymbol ocre_api_table[] = {
         {"ocre_timer_get_remaining", ocre_timer_get_remaining, "(i)i", NULL},
         {"ocre_timer_set_dispatcher", ocre_timer_set_dispatcher, "(i)v", NULL},
 
+#ifdef CONFIG_OCRE_GPIO
         // GPIO API
         {"ocre_gpio_init", ocre_gpio_wasm_init, "()i", NULL},
         {"ocre_gpio_configure", ocre_gpio_wasm_configure, "(iii)i", NULL},
@@ -118,6 +119,7 @@ NativeSymbol ocre_api_table[] = {
         {"ocre_gpio_toggle", ocre_gpio_wasm_toggle, "(ii)i", NULL},
         {"ocre_gpio_register_callback", ocre_gpio_wasm_register_callback, "(ii)i", NULL},
         {"ocre_gpio_unregister_callback", ocre_gpio_wasm_unregister_callback, "(ii)i", NULL},
+#endif
 };
 
 int ocre_api_table_size = sizeof(ocre_api_table) / sizeof(NativeSymbol);
