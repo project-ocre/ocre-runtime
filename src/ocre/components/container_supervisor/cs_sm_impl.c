@@ -280,7 +280,7 @@ ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int *container_id) {
     if (ctx->containers[*container_id].container_runtime_status == CONTAINER_STATUS_CREATED ||
         ctx->containers[*container_id].container_runtime_status == CONTAINER_STATUS_STOPPED) {
         ocre_timer_set_module_inst(ctx->containers[*container_id].ocre_runtime_arguments.module_inst);
-#ifdef #ifdef CONFIG_OCRE_GPIO        
+#ifdef CONFIG_OCRE_GPIO        
         ocre_gpio_set_module_inst(ctx->containers[*container_id].ocre_runtime_arguments.module_inst);
 #endif
         ctx->containers[*container_id].ocre_runtime_arguments.exec_env =
