@@ -114,13 +114,25 @@ set(lib_sources
 )
 
 # Compile in sensors framework if enabled.
-if(DEFINED CONFIG_SENSOR)
+if(CONFIG_OCRE_SENSORS)
+  set(ocre_sources ${ocre_sources} ${OCRE_ROOT_DIR}/src/ocre/ocre_sensors/ocre_sensors.c)
+endif()
+
+# Compile random sensor if enabled.
+if(CONFIG_RNG_SENSOR)
+    set(ocre_sources ${ocre_sources} ${OCRE_ROOT_DIR}/src/ocre/ocre_sensors/rng_sensor.c)
+endif()
+
+if(DEFINED CONFIG_OCRE_GPIO)
   set(lib_sources ${lib_sources} 
-    src/ocre/ocre_sensors/ocre_sensors.c
-    src/ocre/ocre_sensors/rng_sensor.c
+    src/ocre/ocre_gpio/ocre_gpio.c 
   )
 endif()
 
+# Compile container messaging if enabled.
+if(CONFIG_OCRE_CONTAINER_MESSAGING)
+  set(lib_sources ${lib_sources} src/ocre/container_messaging/messaging.c)
+endif()
 
 set(component_sources
   # Component support

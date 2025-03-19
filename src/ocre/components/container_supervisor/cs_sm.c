@@ -36,6 +36,7 @@ static void runtime_uninitialized_run(void *o) {
 
     switch (msg->event) {
         case EVENT_CS_INITIALIZE:
+            LOG_INF("Transitioning from state STATE_RUNTIME_UNINITIALIZED_RUN to state STATE_RUNTIME_RUNNING");
             sm_transition(&ocre_cs_state_machine, STATE_RUNTIME_RUNNING);
             break;
 
@@ -46,10 +47,6 @@ static void runtime_uninitialized_run(void *o) {
     }
     SM_MARK_EVENT_HANDLED(o);
 }
-
-// void callbackFcn(void) {
-//     LOG_INF("CALLBACK CALLED");
-// }
 
 static void runtime_running_entry(void *o) {
 #if OCRE_CS_DEBUG_ON
@@ -75,6 +72,7 @@ static void runtime_running_run(void *o) {
             break;
         }
         case EVENT_RUN_CONTAINER: {
+            LOG_INF("EVENT_RUN_CONTAINER");
             if (CS_run_container(ctx, &msg->containerId) == CONTAINER_STATUS_RUNNING) {
                 LOG_INF("Started container in slot:%d", msg->containerId);
             } else {
@@ -83,18 +81,22 @@ static void runtime_running_run(void *o) {
             break;
         }
         case EVENT_STOP_CONTAINER: {
+            LOG_INF("EVENT_STOP_CONTAINER");
             CS_stop_container(ctx, msg->containerId, callback);
             break;
         }
         case EVENT_DESTROY_CONTAINER: {
+            LOG_INF("EVENT_DESTROY_CONTAINER");
             CS_destroy_container(ctx, msg->containerId, callback);
             break;
         }
         case EVENT_RESTART_CONTAINER: {
+            LOG_INF("EVENT_RESTART_CONTAINER");
             CS_restart_container(ctx, msg->containerId, callback);
             break;
         }
         case EVENT_CS_DESTROY:
+            LOG_INF("EVENT_CS_DESTROY");
             sm_transition(&ocre_cs_state_machine, STATE_RUNTIME_UNINITIALIZED);
             break;
         default:

@@ -5,6 +5,10 @@
 		zephyr,uart-mcumgr = &uart0;
 	};
 
+	aliases {
+		rng0 = &rng_device;
+    };
+
 	devices{
 		rng_device: rng_0 {
 			compatible = "custom,rng-sensor";

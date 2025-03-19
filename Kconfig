@@ -65,10 +65,17 @@ source "subsys/logging/Kconfig.template.log_config"
 
 endif
 
+config OCRE_SENSORS
+    bool "Enable OCRE Sensors support"
+    default n
+    depends on SENSOR 
+    help
+      Enable support for OCRE sensors
+
 config RNG_SENSOR
     bool "RNG Sensor"
     default n
-    depends on SENSOR
+    depends on OCRE_SENSORS
     help
       Enable support for the custom RNG sensor.
 
@@ -109,6 +116,50 @@ config MAX_CHANNELS_PER_SENSOR
     help
       Defines the maximum number of channels that each sensor can have.
 
+config OCRE_MEMORY_CHECK_ENABLED
+    bool "Enable memory availability checking for containers"
+    default y
+    help
+      Enable runtime memory checks before creating containers
 
-   
+
+config OCRE_GPIO
+    bool "OCRE GPIO Driver"
+    default y
+    help
+      Enable the OCRE GPIO driver that provides a portable API layer
+      for GPIO operations across different hardware platforms.
+
+config OCRE_GPIO_MAX_PINS
+    int "Maximum number of GPIO pins"
+    default 32
+    help
+      Maximum number of GPIO pins that can be managed by the OCRE GPIO driver.
+
+config OCRE_GPIO_MAX_PORTS
+    int "Maximum number of GPIO ports"
+    default 4
+    help
+      Maximum number of GPIO port devices that can be used by the OCRE GPIO driver.
+
+config OCRE_GPIO_PINS_PER_PORT
+    int "Number of pins per GPIO port"
+    default 32
+    help
+      Number of pins available on each GPIO port. This is used to map the
+      logical pin numbers to physical port and pin numbers.
+
+config OCRE_CONTAINER_MESSAGING
+    bool "Enable OCRE Container Messaging support"
+    default n
+    help
+      Enable support for OCRE Container Messaging
+  
+config MESSAGING_MAX_SUBSCRIPTIONS
+    int "Number of maximum subscriptions for Container Messaging"
+    default 10
+    depends on OCRE_CONTAINER_MESSAGING
+    help
+      Number of maximum subscriptions for Container Messaging
+
 endmenu

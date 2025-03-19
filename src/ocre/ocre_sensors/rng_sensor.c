@@ -63,8 +63,10 @@ int rng_sensor_init(const struct device *dev) {
     return 0;
 }
 
-/* Define the sensor device */
+// /* Define the sensor device */
+#if DT_NODE_EXISTS(DT_DRV_INST(0))
 static struct rng_sensor_data rng_sensor_data;
 
 DEVICE_DT_DEFINE(DT_DRV_INST(0), rng_sensor_init, NULL, &rng_sensor_data, NULL, POST_KERNEL,
                  CONFIG_SENSOR_INIT_PRIORITY, &rng_sensor_api);
+#endif

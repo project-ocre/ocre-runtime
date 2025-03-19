@@ -13,9 +13,24 @@ LOG_MODULE_DECLARE(ocre_sensors, OCRE_LOG_LEVEL);
 
 #include "ocre_sensors.h"
 
-#define DEVICE_NODE DT_PATH(devices)
-#define DEVICE_NODES_LIST(node_id)                                                                                     \
-    DT_NODE_HAS_PROP(node_id, label) ? DT_PROP_OR(node_id, label, "undefined") : "undefined"
+/*
+ * Build a list of device nodes from the devicetree if:
+ * 1. OCRE_SENSORS is enabled
+ * 2. The 'devices' node exists in the devicetree
+ * 3. The 'devices' node has at least one child
+ * 4. The 'devices' node has property label
+ */
+#define DEVICE_NODE      DT_PATH(devices)
+#define HAS_DEVICE_NODES DT_NODE_EXISTS(DEVICE_NODE) && DT_CHILD_NUM(DEVICE_NODE) > 0
+
+#if (CONFIG_OCRE_SENSORS) && (HAS_DEVICE_NODES)
+#define DEVICE_NODES_LIST(node_id) COND_CODE_1(DT_NODE_HAS_PROP(node_id, label), (DT_PROP(node_id, label), ), ())
+static const char *device_nodes[] = {DT_FOREACH_CHILD(DEVICE_NODE, DEVICE_NODES_LIST)};
+#define DEVICE_NODES_COUNT (sizeof(device_nodes) / sizeof(device_nodes[0]))
+#else
+static const char *device_nodes[] = {};
+#define DEVICE_NODES_COUNT 0
+#endif
 
 static const char *device_nodes[] = {DT_FOREACH_CHILD(DEVICE_NODE, DEVICE_NODES_LIST)};
 typedef struct {
@@ -34,7 +49,7 @@ static bool is_custom_device(const struct device *dev) {
         return false;
     }
 
-    for (int i = 0; i < ARRAY_SIZE(device_nodes); i++) {
+    for (int i = 0; i < DEVICE_NODES_COUNT; i++) {
         if (strcmp(dev->name, device_nodes[i]) == 0) {
             return true;
         }
@@ -91,11 +106,16 @@ int ocre_sensors_discover(wasm_exec_env_t exec_env) {
     }
 
     if (device_count == 0) {
-        LOG_ERR("No devices found");
+        LOG_ERR("No static devices found");
         return -1;
     }
 
-    LOG_INF("Total devices found: %zu", device_count);
+    LOG_INF("Total static devices found: %zu", device_count);
+
+    if (!device_nodes[0]) {
+        LOG_ERR("No devices found in DeviceTree!");
+        return -1;
+    }
 
     for (size_t i = 0; i < device_count && sensor_count < CONFIG_MAX_SENSORS; i++) {
         if (!dev[i].name) {
@@ -123,7 +143,6 @@ int ocre_sensors_discover(wasm_exec_env_t exec_env) {
         ocre_sensor_internal_t *sensor = &sensors[sensor_count];
         sensor->device = &dev[i];
         sensor->in_use = true;
-
         sensor->info.handle = sensor_count;
 
         strncpy(sensor_names[sensor_count], dev[i].name, CONFIG_MAX_SENSOR_NAME_LENGTH - 1);

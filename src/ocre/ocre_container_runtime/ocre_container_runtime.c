@@ -64,6 +64,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
             break;
         }
     }
+
     if (validity_flag == false) {
         LOG_ERR("No available slots, unable to create container");
         return CONTAINER_STATUS_ERROR;
