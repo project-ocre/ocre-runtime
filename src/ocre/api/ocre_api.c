@@ -19,6 +19,8 @@
 #include "ocre_api.h"
 #include "../ocre_timers/ocre_timer.h"
 #include "../ocre_sensors/ocre_sensors.h"
+#include "../ocre_gpio/ocre_gpio.h"
+#include "../container_messaging/messaging.h"
 
 int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name) {
     struct utsname info;
@@ -82,6 +84,15 @@ NativeSymbol ocre_api_table[] = {
 
         {"ocre_sleep", ocre_sleep, "(i)i", NULL},
 
+// Container Messaging API
+#ifdef CONFIG_OCRE_CONTAINER_MESSAGING
+        {"ocre_msg_system_init", ocre_msg_system_init, "()", NULL},
+        {"ocre_publish_message", ocre_publish_message, "(***i)i", NULL},
+        {"ocre_subscribe_message", ocre_subscribe_message, "(**)i", NULL},
+#endif
+
+// Sensor API
+#ifdef CONFIG_OCRE_SENSORS
         // Sensor API
         {"ocre_sensors_init", ocre_sensors_init, "()i", NULL},
         {"ocre_sensors_discover", ocre_sensors_discover, "()i", NULL},
@@ -90,7 +101,7 @@ NativeSymbol ocre_api_table[] = {
         {"ocre_sensors_get_channel_count", ocre_sensors_get_channel_count, "(i)i", NULL},
         {"ocre_sensors_get_channel_type", ocre_sensors_get_channel_type, "(ii)i", NULL},
         {"ocre_sensors_read", ocre_sensors_read, "(ii)i", NULL},
-
+#endif
         // Timer API
         {"ocre_timer_create", ocre_timer_create, "(i)i", NULL},
         {"ocre_timer_start", ocre_timer_start, "(iii)i", NULL},
@@ -99,6 +110,16 @@ NativeSymbol ocre_api_table[] = {
         {"ocre_timer_get_remaining", ocre_timer_get_remaining, "(i)i", NULL},
         {"ocre_timer_set_dispatcher", ocre_timer_set_dispatcher, "(i)v", NULL},
 
+#ifdef CONFIG_OCRE_GPIO
+        // GPIO API
+        {"ocre_gpio_init", ocre_gpio_wasm_init, "()i", NULL},
+        {"ocre_gpio_configure", ocre_gpio_wasm_configure, "(iii)i", NULL},
+        {"ocre_gpio_set", ocre_gpio_wasm_set, "(iii)i", NULL},
+        {"ocre_gpio_get", ocre_gpio_wasm_get, "(ii)i", NULL},
+        {"ocre_gpio_toggle", ocre_gpio_wasm_toggle, "(ii)i", NULL},
+        {"ocre_gpio_register_callback", ocre_gpio_wasm_register_callback, "(ii)i", NULL},
+        {"ocre_gpio_unregister_callback", ocre_gpio_wasm_unregister_callback, "(ii)i", NULL},
+#endif
 };
 
 int ocre_api_table_size = sizeof(ocre_api_table) / sizeof(NativeSymbol);

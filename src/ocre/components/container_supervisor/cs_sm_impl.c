@@ -13,12 +13,13 @@
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include <autoconf.h>
 #include "../../../../../wasm-micro-runtime/core/iwasm/include/lib_export.h"
+#include "bh_log.h"
 
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
 #include "../../ocre_timers/ocre_timer.h"
+#include "../../container_messaging/messaging.h"
 
-// Internal Data structures for runtime
 static char filepath[FILE_PATH_MAX];
 static char wamr_heap_buf[CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE] = {0};
 
@@ -28,6 +29,24 @@ static K_THREAD_STACK_ARRAY_DEFINE(container_thread_stacks, MAX_CONTAINERS, CONT
 static struct k_thread container_threads[MAX_CONTAINERS];
 static k_tid_t container_thread_ids[MAX_CONTAINERS];
 static bool container_thread_active[MAX_CONTAINERS] = {false};
+
+#ifdef CONFIG_OCRE_MEMORY_CHECK_ENABLED
+static size_t ocre_get_available_memory(void) {
+#ifdef CONFIG_HEAP_MEM_POOL_SIZE
+    struct k_heap_stats stats;
+    k_heap_sys_get_stats(&stats);
+    return stats.free_bytes;
+#else
+    extern char *z_malloc_mem_pool_area_start;
+    extern char *z_malloc_mem_pool_area_end;
+    extern struct sys_mem_pool_base z_malloc_mem_pool;
+
+    size_t total_size = z_malloc_mem_pool_area_end - z_malloc_mem_pool_area_start;
+    size_t used_size = sys_mem_pool_get_used_size(&z_malloc_mem_pool);
+    return total_size - used_size;
+#endif
+}
+#endif
 
 // Thread entry point for container execution
 static void container_thread_entry(void *container_id_ptr, void *ctx_ptr, void *unused) {
@@ -51,6 +70,7 @@ static void container_thread_entry(void *container_id_ptr, void *ctx_ptr, void *
 
     if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_RUNNING) {
         ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_STOPPED;
+        LOG_INF("Container %d marked as STOPPED after main exit", container_id);
     }
 }
 
@@ -68,6 +88,7 @@ static int load_binary_to_buffer_fs(ocre_cs_ctx *ctx, int container_id, ocre_con
     }
 
     ctx->containers[container_id].ocre_runtime_arguments.size = entry.size;
+    LOG_INF("Allocating memory for container %d", container_id);
     ctx->containers[container_id].ocre_runtime_arguments.buffer = (char *)malloc(entry.size * sizeof(char));
     if (ctx->containers[container_id].ocre_runtime_arguments.buffer == NULL) {
         LOG_ERR("Failed to allocate memory for container binary.");
@@ -116,8 +137,6 @@ int CS_ctx_init(ocre_cs_ctx *ctx) {
     return 0;
 }
 
-// Supervisor functions
-
 ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container_init_arguments_t *args) {
     RuntimeInitArgs init_args;
     memset(&init_args, 0, sizeof(RuntimeInitArgs));
@@ -133,11 +152,15 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
         return RUNTIME_STATUS_ERROR;
     }
 
+    // Configure WAMR logging
+    bh_log_set_verbose_level(BH_LOG_LEVEL_WARNING);
+
     if (!wasm_runtime_register_natives("env", ocre_api_table, ocre_api_table_size)) {
         LOG_ERR("Failed to register the API's");
         return RUNTIME_STATUS_ERROR;
     }
     ocre_timer_init();
+    ocre_msg_system_init();
     return RUNTIME_STATUS_INITIALIZED;
 }
 
@@ -152,18 +175,49 @@ ocre_container_runtime_status_t CS_runtime_destroy(void) {
     return RUNTIME_STATUS_DESTROYED;
 }
 
-// Container functions
-
 ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id) {
+    if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_STOPPED) {
+        LOG_WRN("Container %d is in STOPPED state, destroying it before reuse", container_id);
+        CS_destroy_container(ctx, container_id, NULL);
+    }
+
     if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_DESTROYED ||
         ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_UNKNOWN) {
+
+#ifdef CONFIG_OCRE_MEMORY_CHECK_ENABLED
+        size_t requested_heap = ctx->containers[container_id].ocre_container_data.heap_size;
+        size_t requested_stack = ctx->containers[container_id].ocre_container_data.stack_size;
+
+        if (requested_heap == 0 || requested_heap > CONFIG_OCRE_CONTAINER_DEFAULT_HEAP_SIZE) {
+            LOG_ERR("Invalid heap size requested: %zu bytes", requested_heap);
+            return CONTAINER_STATUS_ERROR;
+        }
+
+        if (requested_stack == 0 || requested_stack > CONFIG_OCRE_CONTAINER_DEFAULT_STACK_SIZE) {
+            LOG_ERR("Invalid stack size requested: %zu bytes", requested_stack);
+            return CONTAINER_STATUS_ERROR;
+        }
+
+        size_t available_memory = ocre_get_available_memory();
+        size_t required_memory = requested_heap + requested_stack + sizeof(WASMExecEnv);
+
+        if (available_memory < required_memory) {
+            LOG_ERR("Insufficient memory for container %d: required %zu bytes, available %zu bytes", container_id,
+                    required_memory, available_memory);
+            return CONTAINER_STATUS_ERROR;
+        }
+        LOG_INF("Memory check passed: %zu bytes required, %zu bytes available", required_memory, available_memory);
+#endif
 
         ctx->containers[container_id].ocre_runtime_arguments.stack_size =
                 ctx->containers[container_id].ocre_container_data.stack_size;
         ctx->containers[container_id].ocre_runtime_arguments.heap_size =
                 ctx->containers[container_id].ocre_container_data.heap_size;
+#ifndef CONFIG_OCRE_MEMORY_CHECK_ENABLED
         ctx->containers[container_id].ocre_runtime_arguments.stack_size = CONFIG_OCRE_CONTAINER_DEFAULT_STACK_SIZE;
         ctx->containers[container_id].ocre_runtime_arguments.heap_size = CONFIG_OCRE_CONTAINER_DEFAULT_HEAP_SIZE;
+#endif
+
         int ret = load_binary_to_buffer_fs(ctx, container_id, &ctx->containers[container_id].ocre_container_data);
         if (ret < 0) {
             LOG_ERR("Failed to load binary to buffer: %d", ret);
@@ -184,17 +238,23 @@ ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id) 
             LOG_ERR("Failed to load WASM module: %s", ctx->containers[container_id].ocre_runtime_arguments.error_buf);
             return CONTAINER_STATUS_ERROR;
         }
-        ctx->containers[container_id].ocre_runtime_arguments.module_inst =
-                wasm_runtime_instantiate(ctx->containers[container_id].ocre_runtime_arguments.module,
-                                         ctx->containers[container_id].ocre_runtime_arguments.stack_size,
-                                         ctx->containers[container_id].ocre_runtime_arguments.heap_size,
-                                         ctx->containers[container_id].ocre_runtime_arguments.error_buf,
-                                         sizeof(ctx->containers[container_id].ocre_runtime_arguments.error_buf));
-        if (!ctx->containers[container_id].ocre_runtime_arguments.module_inst) {
-            LOG_ERR("Failed to instantiate WASM module: %s, for containerID= %d",
-                    ctx->containers[container_id].ocre_runtime_arguments.error_buf, container_id);
-            return CONTAINER_STATUS_ERROR;
+        if (ctx->containers[container_id].ocre_runtime_arguments.module_inst) {
+            LOG_INF("WASM runtime allready instantiated for container:%d", container_id);
+        } else {
+            LOG_INF("instantiating WASM runtime for container:%d", container_id);
+            ctx->containers[container_id].ocre_runtime_arguments.module_inst =
+                    wasm_runtime_instantiate(ctx->containers[container_id].ocre_runtime_arguments.module,
+                                             ctx->containers[container_id].ocre_runtime_arguments.stack_size,
+                                             ctx->containers[container_id].ocre_runtime_arguments.heap_size,
+                                             ctx->containers[container_id].ocre_runtime_arguments.error_buf,
+                                             sizeof(ctx->containers[container_id].ocre_runtime_arguments.error_buf));
+            if (!ctx->containers[container_id].ocre_runtime_arguments.module_inst) {
+                LOG_ERR("Failed to instantiate WASM module: %s, for containerID= %d",
+                        ctx->containers[container_id].ocre_runtime_arguments.error_buf, container_id);
+                return CONTAINER_STATUS_ERROR;
+            }
         }
+
         ctx->containers[container_id].container_runtime_status = CONTAINER_STATUS_CREATED;
         LOG_WRN("Created container:%d", container_id);
         return ctx->containers[container_id].container_runtime_status;
@@ -205,9 +265,24 @@ ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id) 
 }
 
 ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int *container_id) {
+    char current_sha256[70 + 1];
+
+    if (ctx->containers[*container_id].container_runtime_status == CONTAINER_STATUS_STOPPED) {
+        strcpy(current_sha256, ctx->containers[*container_id].ocre_container_data.sha256);
+
+        if (strcmp(current_sha256, ctx->containers[*container_id].ocre_container_data.sha256) != 0) {
+            LOG_WRN("Running different app in container %d, performing full cleanup", *container_id);
+            CS_destroy_container(ctx, *container_id, NULL);
+            CS_create_container(ctx, *container_id);
+        }
+    }
+
     if (ctx->containers[*container_id].container_runtime_status == CONTAINER_STATUS_CREATED ||
         ctx->containers[*container_id].container_runtime_status == CONTAINER_STATUS_STOPPED) {
         ocre_timer_set_module_inst(ctx->containers[*container_id].ocre_runtime_arguments.module_inst);
+#ifdef CONFIG_OCRE_GPIO        
+        ocre_gpio_set_module_inst(ctx->containers[*container_id].ocre_runtime_arguments.module_inst);
+#endif
         ctx->containers[*container_id].ocre_runtime_arguments.exec_env =
                 wasm_runtime_create_exec_env(ctx->containers[*container_id].ocre_runtime_arguments.module_inst,
                                              ctx->containers[*container_id].ocre_runtime_arguments.stack_size);
@@ -258,8 +333,6 @@ ocre_container_status_t CS_stop_container(ocre_cs_ctx *ctx, int container_id, oc
     }
 
     if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_RUNNING) {
-        ocre_timer_cleanup_container(ctx->containers[container_id].ocre_runtime_arguments.module_inst);
-
         if (container_thread_active[container_id] && container_thread_ids[container_id] != NULL) {
             LOG_INF("Aborting thread for container %d", container_id);
             k_thread_abort(container_thread_ids[container_id]);
@@ -294,6 +367,8 @@ ocre_container_status_t CS_destroy_container(ocre_cs_ctx *ctx, int container_id,
         return CONTAINER_STATUS_ERROR;
     }
 
+    ocre_timer_cleanup_container(ctx->containers[container_id].ocre_runtime_arguments.module_inst);
+
     if (ctx->containers[container_id].container_runtime_status == CONTAINER_STATUS_UNKNOWN) {
         LOG_ERR("Cannot destroy container %d: It was never created.", container_id);
         return CONTAINER_STATUS_ERROR;
@@ -309,6 +384,34 @@ ocre_container_status_t CS_destroy_container(ocre_cs_ctx *ctx, int container_id,
         container_thread_active[container_id] = false;
         container_thread_ids[container_id] = NULL;
     }
+
+    if (ctx->containers[container_id].ocre_runtime_arguments.exec_env) {
+        wasm_runtime_destroy_exec_env(ctx->containers[container_id].ocre_runtime_arguments.exec_env);
+        ctx->containers[container_id].ocre_runtime_arguments.exec_env = NULL;
+        LOG_INF("Destroyed exec environment for container %d", container_id);
+    }
+
+    if (ctx->containers[container_id].ocre_runtime_arguments.module_inst) {
+        wasm_runtime_deinstantiate(ctx->containers[container_id].ocre_runtime_arguments.module_inst);
+        ctx->containers[container_id].ocre_runtime_arguments.module_inst = NULL;
+        LOG_INF("Deinstantiated WASM module for container %d", container_id);
+    }
+
+    if (ctx->containers[container_id].ocre_runtime_arguments.module) {
+        wasm_runtime_unload(ctx->containers[container_id].ocre_runtime_arguments.module);
+        ctx->containers[container_id].ocre_runtime_arguments.module = NULL;
+    }
+    if (ctx->containers[container_id].ocre_runtime_arguments.buffer) {
+        free(ctx->containers[container_id].ocre_runtime_arguments.buffer);
+        LOG_INF("Freed buffer for container %d", container_id);
+        ctx->containers[container_id].ocre_runtime_arguments.buffer = NULL;
+    }
+    memset(ctx->containers[container_id].ocre_container_data.name, 0,
+           sizeof(ctx->containers[container_id].ocre_container_data.name));
+    memset(ctx->containers[container_id].ocre_container_data.sha256, 0,
+           sizeof(ctx->containers[container_id].ocre_container_data.sha256));
+    ctx->containers[container_id].ocre_container_data.timers = 0;
+    ctx->containers[container_id].ocre_container_data.watchdog_interval = 0;
 
     wasm_runtime_unload(ctx->containers[container_id].ocre_runtime_arguments.module);
     free(ctx->containers[container_id].ocre_runtime_arguments.buffer);
