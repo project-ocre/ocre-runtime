@@ -1,0 +1,1 @@
+rm -rf /tmp/ocre-tests/flash-validation

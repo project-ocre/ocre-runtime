@@ -1,0 +1,24 @@
+{
+    "name": "Flash Validation",
+    "description": "Test that after a flash, the runtime returns \"Hello World\"",
+    "setup": [{
+        "name": "Create temp directory for artifacts",
+        "exec": "bash setup.sh"
+    }],
+    "tests": [{
+        "name": "Test Connection",
+        "description": "Connects to the board using the Minicom tool",
+        "exec": "bash test1.sh"
+    }, {
+        "name": "Check Result",
+        "description": "Connects to the board using the Minicom tool and checks the output",
+        "tests": [{
+            "name": "Check test",
+            "exec": "bash test2.sh"
+        }]
+    }],
+    "cleanup": [{
+        "name": "Remove artifacts",
+        "exec": "bash clean.sh"
+    }]
+}

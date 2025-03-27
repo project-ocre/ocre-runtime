@@ -1,0 +1,1 @@
+mkdir /tmp/ocre-tests/flash-validation
