@@ -13,26 +13,18 @@ LOG_MODULE_DECLARE(ocre_sensors, OCRE_LOG_LEVEL);
 
 #include "ocre_sensors.h"
 
-/*
- * Build a list of device nodes from the devicetree if:
- * 1. OCRE_SENSORS is enabled
- * 2. The 'devices' node exists in the devicetree
- * 3. The 'devices' node has at least one child
- * 4. The 'devices' node has property label
- */
 #define DEVICE_NODE      DT_PATH(devices)
-#define HAS_DEVICE_NODES DT_NODE_EXISTS(DEVICE_NODE) && DT_CHILD_NUM(DEVICE_NODE) > 0
-
+#define HAS_DEVICE_NODES DT_NODE_EXISTS(DEVICE_NODE) && DT_PROP_LEN(DEVICE_NODE, device_list) > 1
 #if (CONFIG_OCRE_SENSORS) && (HAS_DEVICE_NODES)
-#define DEVICE_NODES_LIST(node_id) COND_CODE_1(DT_NODE_HAS_PROP(node_id, label), (DT_PROP(node_id, label), ), ())
-static const char *device_nodes[] = {DT_FOREACH_CHILD(DEVICE_NODE, DEVICE_NODES_LIST)};
-#define DEVICE_NODES_COUNT (sizeof(device_nodes) / sizeof(device_nodes[0]))
+#define EXTRACT_LABELS(node_id, prop, idx) DT_PROP_BY_PHANDLE_IDX_OR(node_id, prop, idx, label, "undefined")
+static const char *sensor_discovery_names[] = {
+        DT_FOREACH_PROP_ELEM_SEP(DEVICE_NODE, device_list, EXTRACT_LABELS, (, ))};
+static int sensor_names_count = sizeof(sensor_discovery_names) / sizeof(sensor_discovery_names[0]);
 #else
-static const char *device_nodes[] = {};
-#define DEVICE_NODES_COUNT 0
+static const char *sensor_discovery_names[] = {};
+static int sensor_names_count = 0;
 #endif
 
-static const char *device_nodes[] = {DT_FOREACH_CHILD(DEVICE_NODE, DEVICE_NODES_LIST)};
 typedef struct {
     const struct device *device;
     ocre_sensor_t info;
@@ -42,20 +34,6 @@ typedef struct {
 static ocre_sensor_internal_t sensors[CONFIG_MAX_SENSORS] = {0};
 static int sensor_count = 0;
 static char sensor_names[CONFIG_MAX_SENSORS][CONFIG_MAX_SENSOR_NAME_LENGTH];
-
-static bool is_custom_device(const struct device *dev) {
-    if (!dev) {
-        LOG_ERR("Device is NULL");
-        return false;
-    }
-
-    for (int i = 0; i < DEVICE_NODES_COUNT; i++) {
-        if (strcmp(dev->name, device_nodes[i]) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
 
 static int set_opened_channels(const struct device *dev, sensor_channel_t *channels) {
     if (!channels) {
@@ -104,7 +82,6 @@ int ocre_sensors_discover(wasm_exec_env_t exec_env) {
         LOG_ERR("Device list is NULL. Possible memory corruption!");
         return -1;
     }
-
     if (device_count == 0) {
         LOG_ERR("No static devices found");
         return -1;
@@ -112,30 +89,41 @@ int ocre_sensors_discover(wasm_exec_env_t exec_env) {
 
     LOG_INF("Total static devices found: %zu", device_count);
 
-    if (!device_nodes[0]) {
-        LOG_ERR("No devices found in DeviceTree!");
-        return -1;
-    }
-
     for (size_t i = 0; i < device_count && sensor_count < CONFIG_MAX_SENSORS; i++) {
         if (!dev[i].name) {
             LOG_ERR("Device %zu has NULL name, skipping!", i);
             continue;
         }
 
-        if (!is_custom_device(&dev[i])) {
-            LOG_WRN("Skipping non-custom device: %s", dev[i].name);
+        LOG_INF("Checking device: %s", dev[i].name);
+
+        // Check if device name is in the sensor discovery list
+        bool sensor_found = false;
+        for (int j = 0; j < sensor_names_count; j++) {
+            if (strcmp(dev[i].name, sensor_discovery_names[j]) == 0) {
+                sensor_found = true;
+                break;
+            }
+        }
+        if (!sensor_found) {
+            LOG_WRN("Skipping device, not in sensor list: %s", dev[i].name);
             continue;
         }
 
-        if (!device_is_ready(&dev[i])) {
-            LOG_WRN("Device %s is not ready, skipping", dev[i].name);
-            continue;
-        }
+        // if (!device_is_ready(&dev[i])) {
+        //     LOG_WRN("Device %s is not ready, skipping", dev[i].name);
+        //     continue;
+        // }
 
         const struct sensor_driver_api *api = (const struct sensor_driver_api *)dev[i].api;
         if (!api || !api->channel_get) {
             LOG_WRN("Device %s does not support sensor API or channel_get, skipping", dev[i].name);
+            continue;
+        }
+
+        // Ensure we don't exceed sensor limit
+        if (sensor_count >= CONFIG_MAX_SENSORS) {
+            LOG_WRN("Max sensor limit reached, skipping device: %s", dev[i].name);
             continue;
         }
 
@@ -156,7 +144,7 @@ int ocre_sensors_discover(wasm_exec_env_t exec_env) {
             continue;
         }
 
-        LOG_INF("Device %s has %d channels", sensor->info.sensor_name, sensor->info.num_channels);
+        LOG_INF("Device has %d channels", sensor->info.num_channels);
         sensor_count++;
     }
 

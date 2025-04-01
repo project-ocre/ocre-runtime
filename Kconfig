@@ -57,6 +57,25 @@ config OCRE_LOG_DEBUG
   help
     Enable Ocre debug logging
 
+config OCRE_LOG_ERR
+  bool "Error logging"
+  default n
+  help
+    Enable Ocre debug logging
+
+config OCRE_LOG_WARN
+  bool "Warn logging"
+  default n
+  help
+    Enable Ocre debug logging
+
+config OCRE_LOG_INF
+  bool "Info logging"
+  default n
+  help
+    Enable Ocre debug logging
+
+CONFIG_OCRE_LOG_INF
 if OCRE
 
 module = OCRE

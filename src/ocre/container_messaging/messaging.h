@@ -17,7 +17,7 @@ typedef struct ocre_msg {
     // payload format (MIME type??)
     char *content_type;
 
-    // payload of the request, currently only support attr_container_t type
+    // payload of the request
     void *payload;
 
     // length in bytes of the payload
