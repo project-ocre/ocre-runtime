@@ -57,6 +57,24 @@ config OCRE_LOG_DEBUG
   help
     Enable Ocre debug logging
 
+config OCRE_LOG_ERR
+  bool "Error logging"
+  default n
+  help
+    Enable Ocre debug logging
+
+config OCRE_LOG_WARN
+  bool "Warn logging"
+  default n
+  help
+    Enable Ocre debug logging
+
+config OCRE_LOG_INF
+  bool "Info logging"
+  default n
+  help
+    Enable Ocre debug logging
+
 if OCRE
 
 module = OCRE
@@ -96,7 +114,6 @@ config OCRE_CONTAINER_DEFAULT_STACK_SIZE
   default 2048
   help
     The default value used for a container's stack size.
-
     
 config MAX_TIMERS
     int "Maximum number of timers"

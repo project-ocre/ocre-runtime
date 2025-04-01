@@ -12,9 +12,6 @@
 #include <stdbool.h>
 #include "wasm_export.h"
 
-#define CONFIG_BOARD_B_U585I_IOT02A
-// #define CONFIG_BOARD_ESP32C3_DEVKITM
-
 //  Default configuration values if not provided by Kconfig
 #ifndef CONFIG_OCRE_GPIO_MAX_PINS
 #define CONFIG_OCRE_GPIO_MAX_PINS 32

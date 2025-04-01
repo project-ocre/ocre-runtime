@@ -114,9 +114,9 @@ NativeSymbol ocre_api_table[] = {
         // GPIO API
         {"ocre_gpio_init", ocre_gpio_wasm_init, "()i", NULL},
         {"ocre_gpio_configure", ocre_gpio_wasm_configure, "(iii)i", NULL},
-        {"ocre_gpio_set", ocre_gpio_wasm_set, "(iii)i", NULL},
-        {"ocre_gpio_get", ocre_gpio_wasm_get, "(ii)i", NULL},
-        {"ocre_gpio_toggle", ocre_gpio_wasm_toggle, "(ii)i", NULL},
+        {"ocre_gpio_pin_set", ocre_gpio_wasm_set, "(iii)i", NULL},
+        {"ocre_gpio_pin_get", ocre_gpio_wasm_get, "(ii)i", NULL},
+        {"ocre_gpio_pin_toggle", ocre_gpio_wasm_toggle, "(ii)i", NULL},
         {"ocre_gpio_register_callback", ocre_gpio_wasm_register_callback, "(ii)i", NULL},
         {"ocre_gpio_unregister_callback", ocre_gpio_wasm_unregister_callback, "(ii)i", NULL},
 #endif
