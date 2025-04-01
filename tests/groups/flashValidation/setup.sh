@@ -1,1 +1,2 @@
-mkdir /tmp/ocre-tests/flash-validation
+mkdir /tmp/ocre-tests /tmp/ocre-tests/flash-validation
+echo "hu"

@@ -1,6 +1,6 @@
 {
     "name": "Flash Validation",
-    "description": "Test that after a flash, the runtime returns \"Hello World\"",
+    "description": "Test that after a flash, the runtime returns 'Hello World'",
     "setup": [{
         "name": "Create temp directory for artifacts",
         "exec": "bash setup.sh"
