@@ -1,8 +1,6 @@
-read -p "Should this test pass? [y/n] " -n 1 -r
-echo
-
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "Test passed"
+echo "Will this test pass?"
+if [[ $(($RANDOM % 2)) == 0 ]]; then
+    echo "Test passed!"
     exit 0
 fi
 
