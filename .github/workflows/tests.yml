@@ -1,22 +1,26 @@
 name: Tests
 on:
-    push:
-      branches:
-          - feature/add-testing-framework
-    pull_request:
-        branches:
-            - feature/add-testing-framework
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
 jobs:
     tests:
-        runs-on: ubuntu-latest
+        runs-on: zephyr-xlarge-runner
 
         steps:
+            - name: Make the github actions runner recursively take ownership of the github workspace
+              run: sudo chown -R $(whoami) ${{ github.workspace }}
+
             - name: Checkout
               uses: actions/checkout@v4
       
             - name: Flash Validation Tests
               run: |
-                  cd tests && bash beginTests.sh "flashValidation" && cat /tmp/flashValidation.log
+                  cd tests && bash beginTests.sh "flashValidation"
+
+            - name: Print Flash Validation Logs
+              run: cat /tmp/flashValidation.log
             
             - name: Upload log file as artifact
               uses: actions/upload-artifact@v4

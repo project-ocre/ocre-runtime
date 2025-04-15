@@ -61,28 +61,30 @@ for RAW_ROW in $(parseJSONArray "setup"); do
 done
 
 # Tests
+TEST_GROUP_RESULT=0
 echo "Entering Testing..." >> $LOGFILE
 echo >> $LOGFILE
-for RAW_ROW in $(parseJSONArray "tests"); do
+for RAW_ROW in $(parseJSONArray "test_suites"); do
     ROW=$(echo $RAW_ROW | base64 -di)
 
-    if [[ "$(parseJSON2 "$ROW" "exec")" != "null" ]]; then
-        printHeader "Test: $(clStr "$(parseJSON2 "$ROW" "name")")" >> $LOGFILE
-        cd groups/$TG
-        bash -c "bash -c $(parseJSON2 "$ROW" "exec")" &>> $LOGFILE
-        cd $CWD
-        echo >> $LOGFILE
-    elif [[ "$(parseJSON2 "$ROW" "tests")" != "null" ]]; then
-        printHeader "Test Group: $(clStr "$(parseJSON2 "$ROW" "name")")" >> $LOGFILE
-        for RAW_TEST_ROW in $(parseJSONArray2 "$ROW" "tests"); do
+    if [[ "$(parseJSON2 "$ROW" "test_cases")" != "null" ]]; then
+        printHeader "Test Suite: $(clStr "$(parseJSON2 "$ROW" "name")")" >> $LOGFILE
+        for RAW_TEST_ROW in $(parseJSONArray2 "$ROW" "test_cases"); do
             TEST_ROW=$(echo $RAW_TEST_ROW | base64 -di)
 
             if [[ "$(parseJSON2 "$TEST_ROW" "exec")" != "null" ]]; then
-                printHeader "Test: $(clStr "$(parseJSON2 "$TEST_ROW" "name")")" >> $LOGFILE
+                printHeader "Test Case: $(clStr "$(parseJSON2 "$TEST_ROW" "name")")" >> $LOGFILE
                 cd groups/$TG
                 bash -c "bash -c $(parseJSON2 "$TEST_ROW" "exec")" &>> $LOGFILE
+                TESTCASE_RESULT=$?
                 cd $CWD
                 echo >> $LOGFILE
+                if [ "$TESTCASE_RESULT" -eq 0 ]; then
+                    echo $'TEST PASSED\n' >> $LOGFILE
+                else
+                    echo $'TEST FAILED\n' >> $LOGFILE
+                    TEST_GROUP_RESULT=1
+                fi
             else
                 echo "Could not figure out what to do with test block $(parseJSON2 "$TEST_ROW" "name")" >> $LOGFILE
                 exit 1
@@ -107,3 +109,5 @@ for RAW_ROW in $(parseJSONArray "cleanup"); do
 done
 
 echo "Test suite is complete" >> $LOGFILE
+
+exit $TEST_GROUP_RESULT

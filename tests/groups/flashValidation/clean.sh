@@ -1,1 +1,1 @@
-rm -rf /tmp/ocre-tests/flash-validation
+echo "Cleanup is complete"
