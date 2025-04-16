@@ -1,9 +1,11 @@
 name: Tests
 on:
-  workflow_run:
-    workflows: ["Build"]
-    types:
-      - completed
+    push:
+      branches:
+          - main
+    pull_request:
+        branches:
+            - main
 jobs:
     tests:
         runs-on: zephyr-xlarge-runner
