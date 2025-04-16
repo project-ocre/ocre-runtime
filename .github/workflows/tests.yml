@@ -1,33 +1,31 @@
 name: Tests
 on:
-    push:
-      branches:
-          - main
-    pull_request:
-        branches:
-            - main
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
 jobs:
-    tests:
-        runs-on: zephyr-xlarge-runner
+  tests:
+      runs-on: zephyr-xlarge-runner
 
-        steps:
-            - name: Make the github actions runner recursively take ownership of the github workspace
-              run: sudo chown -R $(whoami) ${{ github.workspace }}
+      steps:
+          - name: Make the github actions runner recursively take ownership of the github workspace
+            run: sudo chown -R $(whoami) ${{ github.workspace }}
 
-            - name: Checkout
-              uses: actions/checkout@v4
-      
-            - name: Flash Validation Tests
-              run: |
-                  cd tests && bash beginTests.sh "flashValidation"
+          - name: Checkout
+            uses: actions/checkout@v4
+    
+          - name: Flash Validation Tests
+            run: |
+              cd tests && bash beginTests.sh "flashValidation"
 
-            - name: Print Flash Validation Logs
-              if: always()
-              run: cat /tmp/flashValidation.log
-            
-            - name: Upload log file as artifact
-              if: always()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: "FlashValidation.log"
-                  path: /tmp/flashValidation.log
+          - name: Print Flash Validation Logs
+            if: always()
+            run: cat /tmp/flashValidation.log
+          
+          - name: Upload log file as artifact
+            if: always()
+            uses: actions/upload-artifact@v4
+            with:
+                name: "FlashValidation.log"
+                path: /tmp/flashValidation.log
