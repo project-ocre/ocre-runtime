@@ -22,9 +22,11 @@ jobs:
                   cd tests && bash beginTests.sh "flashValidation"
 
             - name: Print Flash Validation Logs
+              if: always()
               run: cat /tmp/flashValidation.log
             
             - name: Upload log file as artifact
+              if: always()
               uses: actions/upload-artifact@v4
               with:
                   name: "FlashValidation.log"
