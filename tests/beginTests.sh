@@ -110,4 +110,10 @@ done
 
 echo "Test suite is complete" >> $LOGFILE
 
+if [ $TEST_GROUP_RESULT -eq 0 ]; then
+    echo "$NAME test group passed"
+else
+    echo "$NAME test group failed"
+fi
+
 exit $TEST_GROUP_RESULT
