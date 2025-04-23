@@ -1,3 +1,5 @@
+TESTING WORKFLOW TRIGGER
+
 ![Ocre logo](ocre_logo.jpg "Ocre")
 # Ocre
 [![Build](https://github.com/project-ocre/ocre-runtime/actions/workflows/build.yml/badge.svg)](https://github.com/project-ocre/ocre-runtime/actions/workflows/build.yml)
