@@ -1,5 +1,5 @@
 {
-  "image": "mcr.microsoft.com/vscode/devcontainers/cpp:ubuntu-22.04",
+  "image": "mcr.microsoft.com/vscode/devcontainers/cpp:ubuntu-24.04",
   "features": {
   }
 }
