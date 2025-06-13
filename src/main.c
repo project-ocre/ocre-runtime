@@ -38,11 +38,10 @@ int main(int argc, char *argv[]) {
         snprintf(ocre_container_data.name, sizeof(ocre_container_data.name), "Hello World");
         snprintf(ocre_container_data.sha256, sizeof(ocre_container_data.sha256), "%s", container_filename);
         ocre_container_data.timers = 0;
-        ocre_container_data.watchdog_interval = 0;
         ocre_container_runtime_create_container(&ctx, &ocre_container_data, &container_ID, callback);
 
         // Step 3:  Execute the container
-        ocre_container_runtime_run_container(&ctx, container_ID, callback);
+        ocre_container_runtime_run_container(container_ID, callback);
 
         // Loop forever, without this the application will exit and stop all execution
         while (true) {

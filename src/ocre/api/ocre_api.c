@@ -21,15 +21,18 @@
 #include "../ocre_sensors/ocre_sensors.h"
 #include "../ocre_gpio/ocre_gpio.h"
 #include "../container_messaging/messaging.h"
+#include "ocre_common.h"
 
 int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name) {
-    struct utsname info;
-    wasm_module_inst_t module_inst = get_module_inst(exec_env);
-
+    wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
+    if (!module_inst) {
+        return -1;
+    }
     if (!wasm_runtime_validate_native_addr(module_inst, name, sizeof(struct _ocre_posix_utsname))) {
         return -1;
     }
 
+    struct utsname info;
     if (uname(&info) != 0) {
         return -1;
     }
@@ -40,7 +43,6 @@ int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name
     snprintf(name->release, OCRE_API_POSIX_BUF_SIZE, "%s (%s)", APP_VERSION_STRING, info.release);
     snprintf(name->version, OCRE_API_POSIX_BUF_SIZE, "%s", info.version);
 
-// ARM Processors are special cased as they are so popular
 #ifdef CONFIG_ARM
 #ifdef CONFIG_CPU_CORTEX_M0
     strlcat(name->machine, "ARM Cortex-M0", OCRE_API_POSIX_BUF_SIZE);
@@ -58,7 +60,6 @@ int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name
     strlcat(name->machine, "ARM Cortex-M55", OCRE_API_POSIX_BUF_SIZE);
 #endif
 #else
-    // Other processors, use value returned from uname()
     strlcat(name->machine, info.machine, OCRE_API_POSIX_BUF_SIZE);
 #endif
 
@@ -66,13 +67,7 @@ int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name
 
     return 0;
 }
-/**
- * @brief Pause execution for a specified time
- *
- * @param exec_env WASM execution environment
- * @param milliseconds Number of milliseconds to sleep
- * @return 0 on success
- */
+
 int ocre_sleep(wasm_exec_env_t exec_env, int milliseconds) {
     k_msleep(milliseconds);
     return 0;
@@ -81,19 +76,17 @@ int ocre_sleep(wasm_exec_env_t exec_env, int milliseconds) {
 // Ocre Runtime API
 NativeSymbol ocre_api_table[] = {
         {"uname", _ocre_posix_uname, "(*)i", NULL},
-
         {"ocre_sleep", ocre_sleep, "(i)i", NULL},
-
+        {"ocre_get_event", ocre_get_event, "(iiii)i", NULL},
+        {"ocre_register_dispatcher", ocre_register_dispatcher, "(i$)i", NULL},
 // Container Messaging API
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
         {"ocre_msg_system_init", ocre_msg_system_init, "()", NULL},
         {"ocre_publish_message", ocre_publish_message, "(***i)i", NULL},
         {"ocre_subscribe_message", ocre_subscribe_message, "(**)i", NULL},
 #endif
-
 // Sensor API
 #ifdef CONFIG_OCRE_SENSORS
-        // Sensor API
         {"ocre_sensors_init", ocre_sensors_init, "()i", NULL},
         {"ocre_sensors_discover", ocre_sensors_discover, "()i", NULL},
         {"ocre_sensors_open", ocre_sensors_open, "(i)i", NULL},
@@ -101,17 +94,23 @@ NativeSymbol ocre_api_table[] = {
         {"ocre_sensors_get_channel_count", ocre_sensors_get_channel_count, "(i)i", NULL},
         {"ocre_sensors_get_channel_type", ocre_sensors_get_channel_type, "(ii)i", NULL},
         {"ocre_sensors_read", ocre_sensors_read, "(ii)i", NULL},
+        {"ocre_sensors_open_by_name", ocre_sensors_open_by_name, "($)i", NULL},
+        {"ocre_sensors_get_handle_by_name", ocre_sensors_get_handle_by_name, "($)i", NULL},
+        {"ocre_sensors_get_channel_count_by_name", ocre_sensors_get_channel_count_by_name, "($)i", NULL},
+        {"ocre_sensors_get_channel_type_by_name", ocre_sensors_get_channel_type_by_name, "($i)i", NULL},
+        {"ocre_sensors_read_by_name", ocre_sensors_read_by_name, "($i)i", NULL},
+        {"ocre_sensors_get_list", ocre_sensors_get_list, "($i)i", NULL},
 #endif
-        // Timer API
+// Timer API
+#ifdef CONFIG_OCRE_TIMER
         {"ocre_timer_create", ocre_timer_create, "(i)i", NULL},
         {"ocre_timer_start", ocre_timer_start, "(iii)i", NULL},
         {"ocre_timer_stop", ocre_timer_stop, "(i)i", NULL},
         {"ocre_timer_delete", ocre_timer_delete, "(i)i", NULL},
         {"ocre_timer_get_remaining", ocre_timer_get_remaining, "(i)i", NULL},
-        {"ocre_timer_set_dispatcher", ocre_timer_set_dispatcher, "(i)v", NULL},
-
+#endif
+// GPIO API
 #ifdef CONFIG_OCRE_GPIO
-        // GPIO API
         {"ocre_gpio_init", ocre_gpio_wasm_init, "()i", NULL},
         {"ocre_gpio_configure", ocre_gpio_wasm_configure, "(iii)i", NULL},
         {"ocre_gpio_pin_set", ocre_gpio_wasm_set, "(iii)i", NULL},

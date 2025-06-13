@@ -36,7 +36,6 @@ ocre_container_runtime_status_t ocre_container_runtime_init(ocre_cs_ctx *ctx, oc
     }
 
     CS_ctx_init(ctx);
-    ctx->current_container_id = 0;
     ctx->download_count = 0;
 
     start_ocre_cs_thread(ctx);
@@ -56,10 +55,11 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
     int i;
     uint8_t validity_flag = false;
     // Find available slot for new container
-    for (i = 0; i < MAX_CONTAINERS; i++) {
+    for (i = 0; i < CONFIG_MAX_CONTAINERS; i++) {
         if ((ctx->containers[i].container_runtime_status == CONTAINER_STATUS_UNKNOWN) ||
             (ctx->containers[i].container_runtime_status == CONTAINER_STATUS_DESTROYED)) {
             *container_id = i;
+            ctx->containers[i].container_ID = i;
             validity_flag = true;
             break;
         }
@@ -82,9 +82,8 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
     return CONTAINER_STATUS_CREATED;
 }
 
-ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, int container_id,
-                                                             ocre_container_runtime_cb callback) {
-    if (container_id < 0 || container_id >= MAX_CONTAINERS) {
+ocre_container_status_t ocre_container_runtime_run_container(int container_id, ocre_container_runtime_cb callback) {
+    if (container_id < 0 || container_id >= CONFIG_MAX_CONTAINERS) {
         LOG_ERR("Invalid container ID: %d", container_id);
         return CONTAINER_STATUS_ERROR;
     }
@@ -97,7 +96,7 @@ ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, i
 }
 
 ocre_container_status_t ocre_container_runtime_get_container_status(ocre_cs_ctx *ctx, int container_id) {
-    if (container_id < 0 || container_id >= MAX_CONTAINERS) {
+    if (container_id < 0 || container_id >= CONFIG_MAX_CONTAINERS) {
         LOG_ERR("Invalid container ID: %d", container_id);
         return CONTAINER_STATUS_ERROR;
     }
@@ -105,9 +104,8 @@ ocre_container_status_t ocre_container_runtime_get_container_status(ocre_cs_ctx 
     return ctx->containers[container_id].container_runtime_status;
 }
 
-ocre_container_status_t ocre_container_runtime_stop_container(ocre_cs_ctx *ctx, int container_id,
-                                                              ocre_container_runtime_cb callback) {
-    if (container_id < 0 || container_id >= MAX_CONTAINERS) {
+ocre_container_status_t ocre_container_runtime_stop_container(int container_id, ocre_container_runtime_cb callback) {
+    if (container_id < 0 || container_id >= CONFIG_MAX_CONTAINERS) {
         LOG_ERR("Invalid container ID: %d", container_id);
         return CONTAINER_STATUS_ERROR;
     }
@@ -120,7 +118,7 @@ ocre_container_status_t ocre_container_runtime_stop_container(ocre_cs_ctx *ctx, 
 
 ocre_container_status_t ocre_container_runtime_destroy_container(ocre_cs_ctx *ctx, int container_id,
                                                                  ocre_container_runtime_cb callback) {
-    if (container_id < 0 || container_id >= MAX_CONTAINERS) {
+    if (container_id < 0 || container_id >= CONFIG_MAX_CONTAINERS) {
         LOG_ERR("Invalid container ID: %d", container_id);
         return CONTAINER_STATUS_ERROR;
     }
@@ -133,7 +131,7 @@ ocre_container_status_t ocre_container_runtime_destroy_container(ocre_cs_ctx *ct
 
 ocre_container_status_t ocre_container_runtime_restart_container(ocre_cs_ctx *ctx, int container_id,
                                                                  ocre_container_runtime_cb callback) {
-    if (container_id < 0 || container_id >= MAX_CONTAINERS) {
+    if (container_id < 0 || container_id >= CONFIG_MAX_CONTAINERS) {
         LOG_ERR("Invalid container ID: %d", container_id);
         return CONTAINER_STATUS_ERROR;
     }

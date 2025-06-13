@@ -115,6 +115,12 @@ config OCRE_CONTAINER_DEFAULT_STACK_SIZE
   help
     The default value used for a container's stack size.
     
+config MAX_CONTAINERS
+    int "Maximum concurrent containers"
+    default 10
+    help
+    The default value for maximum number of container's.
+    
 config MAX_TIMERS
     int "Maximum number of timers"
     default 5
@@ -146,6 +152,14 @@ config OCRE_GPIO
     help
       Enable the OCRE GPIO driver that provides a portable API layer
       for GPIO operations across different hardware platforms.
+  
+  
+config OCRE_TIMER
+    bool "OCRE Timer Driver"
+    default y
+    help
+      Enable the OCRE Timer driver that provides a portable API layer
+      for Timer operations across different hardware platforms.
 
 config OCRE_GPIO_MAX_PINS
     int "Maximum number of GPIO pins"

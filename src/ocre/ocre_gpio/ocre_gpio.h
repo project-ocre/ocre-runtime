@@ -45,7 +45,8 @@ typedef enum {
  * GPIO configuration structure
  */
 typedef struct {
-    int pin;                         /**< GPIO pin number (logical) */
+    int pin; /**< GPIO pin number (logical) */
+    int port_idx;
     ocre_gpio_direction_t direction; /**< Pin direction */
 } ocre_gpio_config_t;
 
@@ -101,7 +102,7 @@ int ocre_gpio_pin_toggle(int pin);
  * @param callback Callback function
  * @return 0 on success, negative error code on failure
  */
-int ocre_gpio_register_callback(int pin, ocre_gpio_callback_t callback);
+int ocre_gpio_register_callback(int pin);
 
 /**
  * Unregister GPIO pin callback.
@@ -111,19 +112,14 @@ int ocre_gpio_register_callback(int pin, ocre_gpio_callback_t callback);
  */
 int ocre_gpio_unregister_callback(int pin);
 
+void ocre_gpio_register_module(wasm_module_inst_t module_inst);
+
 /**
  * Clean up GPIO resources for a WASM container.
  *
  * @param module_inst WASM module instance
  */
 void ocre_gpio_cleanup_container(wasm_module_inst_t module_inst);
-
-/**
- * Set the active WASM module instance for GPIO operations.
- *
- * @param module_inst WASM module instance
- */
-void ocre_gpio_set_module_inst(wasm_module_inst_t module_inst);
 
 /**
  * Set the WASM function that will handle GPIO callbacks.

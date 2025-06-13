@@ -107,15 +107,16 @@ set(lib_sources
   src/ocre/sm/sm.c
   src/ocre/fs/fs.c
   src/ocre/ocre_timers/ocre_timer.c
-  src/ocre/container_healthcheck/ocre_container_healthcheck.c
 
   # Ocre APIs
   src/ocre/api/ocre_api.c
+  src/ocre/api/ocre_common.c
+
 )
 
 # Compile in sensors framework if enabled.
 if(CONFIG_OCRE_SENSORS)
-  set(ocre_sources ${ocre_sources} ${OCRE_ROOT_DIR}/src/ocre/ocre_sensors/ocre_sensors.c)
+  set(lib_sources ${ocre_sources} ${OCRE_ROOT_DIR}/src/ocre/ocre_sensors/ocre_sensors.c)
 endif()
 
 # Compile random sensor if enabled.

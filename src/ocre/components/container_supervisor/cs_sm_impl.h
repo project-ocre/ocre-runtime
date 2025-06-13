@@ -24,11 +24,11 @@
 /**
  * @brief Initialize the container runtime environment.
  *
- * This function sets up the runtime environment for OCRE containers.
+ * This function sets up the runtime environment for OCRE containers, preparing necessary resources and state.
  *
- * @param ctx  Pointer to the container runtime context.
+ * @param ctx Pointer to the container runtime context.
  * @param args Pointer to initialization arguments.
- * @return ocre_container_runtime_status_t Status of the initialization.
+ * @return ocre_container_runtime_status_t Status of the initialization (e.g., success or error code).
  */
 ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container_init_arguments_t *args);
 
@@ -52,7 +52,7 @@ ocre_container_runtime_status_t CS_runtime_destroy(void);
  * @param container_id The ID of the container to be created.
  * @return ocre_container_status_t Status of the container creation.
  */
-ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id);
+ocre_container_status_t CS_create_container(ocre_container_t *container);
 
 /**
  * @brief Run a container.
@@ -63,7 +63,7 @@ ocre_container_status_t CS_create_container(ocre_cs_ctx *ctx, int container_id);
  * @param container_id The ID of the container to be run.
  * @return ocre_container_status_t Status of the container execution.
  */
-ocre_container_status_t CS_run_container(ocre_cs_ctx *ctx, int *container_id);
+ocre_container_status_t CS_run_container(ocre_container_t *ctx);
 
 /**
  * @brief Get the status of a container.
@@ -81,36 +81,33 @@ ocre_container_status_t CS_get_container_status(ocre_cs_ctx *ctx, int container_
  *
  * This function stops the execution of the container and invokes a callback function when completed.
  *
- * @param ctx          Pointer to the container runtime context.
  * @param container_id The ID of the container to be stopped.
  * @param callback     Callback function to be invoked after stopping the container.
  * @return ocre_container_status_t Status of the stop operation.
  */
-ocre_container_status_t CS_stop_container(ocre_cs_ctx *ctx, int container_id, ocre_container_runtime_cb callback);
+ocre_container_status_t CS_stop_container(ocre_container_t *container, ocre_container_runtime_cb callback);
 
 /**
  * @brief Destroy a container.
  *
  * This function removes and destroys the specified container from the runtime.
  *
- * @param ctx          Pointer to the container runtime context.
  * @param container_id The ID of the container to be destroyed.
  * @param callback     Callback function to be invoked after destroying the container.
  * @return ocre_container_status_t Status of the container destruction.
  */
-ocre_container_status_t CS_destroy_container(ocre_cs_ctx *ctx, int container_id, ocre_container_runtime_cb callback);
+ocre_container_status_t CS_destroy_container(ocre_container_t *container, ocre_container_runtime_cb callback);
 
 /**
  * @brief Restart a container.
  *
  * This function restarts a container by stopping and then running it again.
  *
- * @param ctx          Pointer to the container runtime context.
  * @param container_id The ID of the container to be restarted.
  * @param callback     Callback function to be invoked after restarting the container.
  * @return ocre_container_status_t Status of the container restart.
  */
-ocre_container_status_t CS_restart_container(ocre_cs_ctx *ctx, int container_id, ocre_container_runtime_cb callback);
+ocre_container_status_t CS_restart_container(ocre_container_t *container, ocre_container_runtime_cb callback);
 
 /**
  * @brief context initialization
