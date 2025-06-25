@@ -36,7 +36,6 @@ typedef struct ocre_runtime_arguments_t {
     wasm_module_t module;           ///< Handle to the loaded WASM module.
     wasm_module_inst_t module_inst; ///< Handle to the instantiated WASM module.
     wasm_function_inst_t func;      ///< Handle to the function to be executed within the WASM module.
-    wasm_exec_env_t exec_env;       ///< Execution environment for the WASM function.
     uint32_t stack_size;            ///< Stack size for the WASM module.
     uint32_t heap_size;             ///< Heap size for the WASM module.
 } ocre_runtime_arguments_t;

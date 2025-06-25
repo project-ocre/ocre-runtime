@@ -76,6 +76,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
     event.containerId = *container_id;
     Data = *container_data;
     ctx->containers[*container_id].ocre_container_data = Data;
+    ctx->containers[*container_id].ocre_runtime_arguments.module_inst = NULL;
     ctx->download_count++;
 
     ocre_component_send(&ocre_cs_component, &event);

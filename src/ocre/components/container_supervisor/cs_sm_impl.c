@@ -111,7 +111,6 @@ static void container_thread_entry(void *arg1, void *arg2, void *arg3) {
 
     // Initialize WASM runtime thread environment
     wasm_runtime_init_thread_env();
-
     LOG_INF("Container thread %d started", container->container_ID);
 
     // Set TLS for the container's WASM module
@@ -133,11 +132,6 @@ static void container_thread_entry(void *arg1, void *arg2, void *arg3) {
 #ifdef CONFIG_OCRE_GPIO
         ocre_gpio_cleanup_container(module_inst);
 #endif
-        // Release execution environment
-        if (container->ocre_runtime_arguments.exec_env) {
-            wasm_runtime_destroy_exec_env(container->ocre_runtime_arguments.exec_env);
-            container->ocre_runtime_arguments.exec_env = NULL;
-        }
 
         // Clear thread tracking
         container_thread_active[container->container_ID] = false;
@@ -344,14 +338,6 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
         ocre_register_module(curr_container_arguments->module_inst);
     }
 
-    curr_container_arguments->exec_env =
-            wasm_runtime_create_exec_env(curr_container_arguments->module_inst, curr_container_arguments->stack_size);
-    if (curr_container_arguments->exec_env == NULL) {
-        LOG_ERR("Failed to create execution environment for container %d", curr_container_ID);
-        container->container_runtime_status = CONTAINER_STATUS_ERROR;
-        return CONTAINER_STATUS_ERROR;
-    }
-
     k_mutex_lock(&container_mutex, K_FOREVER);
     int thread_idx = get_available_thread();
     if (thread_idx == -1) {
@@ -429,11 +415,6 @@ ocre_container_status_t CS_stop_container(ocre_container_t *container, ocre_cont
         ocre_gpio_cleanup_container(curr_container_arguments->module_inst);
 #endif
         ocre_unregister_module(curr_container_arguments->module_inst);
-
-        if (curr_container_arguments->exec_env) {
-            wasm_runtime_destroy_exec_env(curr_container_arguments->exec_env);
-            curr_container_arguments->exec_env = NULL;
-        }
 
         if (curr_container_arguments->module_inst) {
             wasm_runtime_deinstantiate(curr_container_arguments->module_inst);
