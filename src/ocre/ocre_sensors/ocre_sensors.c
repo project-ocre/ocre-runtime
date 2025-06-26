@@ -115,11 +115,6 @@ int ocre_sensors_discover(wasm_exec_env_t exec_env) {
             continue;
         }
 
-        if (!device_is_ready(&dev[i])) {
-            LOG_WRN("Device %s is not ready, skipping", dev[i].name);
-            continue;
-        }
-
         const struct sensor_driver_api *api = (const struct sensor_driver_api *)dev[i].api;
         if (!api || !api->channel_get) {
             LOG_WRN("Device %s does not support sensor API or channel_get, skipping", dev[i].name);
