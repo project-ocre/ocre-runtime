@@ -8,11 +8,8 @@
 #ifndef OCRE_CS_SM_IMPL_H
 #define OCRE_CS_SM_IMPL_H
 
-#include <zephyr/fs/fs.h>
-#include <zephyr/kernel.h>
-#include <ocre/fs/fs.h>
-#include <ocre/sm/sm.h>
-#include "../../api/ocre_api.h"
+#include "ocre_core_external.h"
+#include "api/ocre_api.h"
 #include <ocre/ocre_container_runtime/ocre_container_runtime.h>
 
 // -----------------------------------------------------------------------------

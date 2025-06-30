@@ -4,6 +4,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #include <ocre/ocre.h>
 #include <ocre/api/ocre_common.h>
 #include <ocre/ocre_gpio/ocre_gpio.h>

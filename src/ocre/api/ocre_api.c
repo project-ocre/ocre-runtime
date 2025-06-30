@@ -11,17 +11,31 @@
 #include <sys/utsname.h>
 #include <string.h>
 #include <sys/types.h>
-#include <version.h>
-#include <app_version.h>
+
+#include "ocre_core_external.h"
 
 #include "bh_platform.h"
 
 #include "ocre_api.h"
+
+#ifdef CONFIG_OCRE_TIMER
 #include "../ocre_timers/ocre_timer.h"
-#include "../ocre_sensors/ocre_sensors.h"
-#include "../ocre_gpio/ocre_gpio.h"
+#endif
+#include "ocre/utils/utils.h"
 #include "../container_messaging/messaging.h"
+
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
 #include "ocre_common.h"
+#endif 
+
+#ifdef CONFIG_OCRE_SENSORS
+#include "../ocre_sensors/ocre_sensors.h"
+#endif
+
+#ifdef CONFIG_OCRE_GPIO
+#include "../ocre_gpio/ocre_gpio.h"
+#endif
+
 
 int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name) {
     wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
@@ -69,7 +83,7 @@ int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name
 }
 
 int ocre_sleep(wasm_exec_env_t exec_env, int milliseconds) {
-    k_msleep(milliseconds);
+    core_sleep_ms(milliseconds);
     return 0;
 }
 
@@ -77,8 +91,10 @@ int ocre_sleep(wasm_exec_env_t exec_env, int milliseconds) {
 NativeSymbol ocre_api_table[] = {
         {"uname", _ocre_posix_uname, "(*)i", NULL},
         {"ocre_sleep", ocre_sleep, "(i)i", NULL},
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
         {"ocre_get_event", ocre_get_event, "(iiii)i", NULL},
         {"ocre_register_dispatcher", ocre_register_dispatcher, "(i$)i", NULL},
+#endif
 // Container Messaging API
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
         {"ocre_msg_system_init", ocre_msg_system_init, "()", NULL},

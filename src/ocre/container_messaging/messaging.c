@@ -1,4 +1,11 @@
 
+/**
+ * @copyright Copyright © contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include <zephyr/kernel.h>
 #include <string.h>
 #include <ocre/ocre.h>

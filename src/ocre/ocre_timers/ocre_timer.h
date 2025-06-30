@@ -1,8 +1,15 @@
+/**
+ * @copyright Copyright © contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef OCRE_TIMER_H
 #define OCRE_TIMER_H
 
 #include <wasm_export.h>
-#include <zephyr/kernel.h>
+#include "ocre_core_external.h"
 
 typedef int ocre_timer_t;
 

@@ -11,9 +11,9 @@
 #include "../../application/tests/ocre_container_runtime/stubs/wasm/wasm.h"
 #include "../../application/tests/ocre_container_runtime/stubs/ocre/fs/fs.h"
 #else
-#include <zephyr/logging/log.h>
-#include <zephyr/device.h>
+
 #include <ocre/ocre.h>
+#include "ocre_core_external.h"
 #include "../components/container_supervisor/cs_sm.h"
 #include "../components/container_supervisor/cs_sm_impl.h"
 // WAMR includes
@@ -39,8 +39,7 @@ ocre_container_runtime_status_t ocre_container_runtime_init(ocre_cs_ctx *ctx, oc
     ctx->download_count = 0;
 
     start_ocre_cs_thread(ctx);
-    k_sleep(K_MSEC(1000)); // Hack to allow the thread to start prior to continuing
-
+    core_sleep_ms(1000);
     return RUNTIME_STATUS_INITIALIZED;
 }
 
@@ -69,7 +68,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
         LOG_ERR("No available slots, unable to create container");
         return CONTAINER_STATUS_ERROR;
     }
-    LOG_INF("Request to create new container in slot:%d", *container_id);
+    LOG_INF("Request to create new container in slot: %d", *container_id);
 
     struct ocre_message event = {.event = EVENT_CREATE_CONTAINER};
     ocre_container_data_t Data;
@@ -110,7 +109,7 @@ ocre_container_status_t ocre_container_runtime_stop_container(int container_id, 
         LOG_ERR("Invalid container ID: %d", container_id);
         return CONTAINER_STATUS_ERROR;
     }
-    LOG_INF("Request to stop container in slot:%d", container_id);
+    LOG_INF("Request to stop container in slot: %d", container_id);
     struct ocre_message event = {.event = EVENT_STOP_CONTAINER};
     event.containerId = container_id;
     ocre_component_send(&ocre_cs_component, &event);
@@ -123,7 +122,7 @@ ocre_container_status_t ocre_container_runtime_destroy_container(ocre_cs_ctx *ct
         LOG_ERR("Invalid container ID: %d", container_id);
         return CONTAINER_STATUS_ERROR;
     }
-    LOG_INF("Request to destroy container in slot:%d", container_id);
+    LOG_INF("Request to destroy container in slot: %d", container_id);
     struct ocre_message event = {.event = EVENT_DESTROY_CONTAINER};
     event.containerId = container_id;
     ocre_component_send(&ocre_cs_component, &event);
@@ -136,7 +135,7 @@ ocre_container_status_t ocre_container_runtime_restart_container(ocre_cs_ctx *ct
         LOG_ERR("Invalid container ID: %d", container_id);
         return CONTAINER_STATUS_ERROR;
     }
-    LOG_INF("Request to restart container in slot:%d", container_id);
+    LOG_INF("Request to restart container in slot: %d", container_id);
     struct ocre_message event = {.event = EVENT_RESTART_CONTAINER};
     event.containerId = container_id;
     ocre_component_send(&ocre_cs_component, &event);

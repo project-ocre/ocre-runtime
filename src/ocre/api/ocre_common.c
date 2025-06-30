@@ -6,6 +6,7 @@
  */
 
 #include <ocre/ocre.h>
+#include "ocre_core_external.h"
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/mem_manage.h>
@@ -47,6 +48,7 @@ static struct cleanup_handler {
     ocre_cleanup_handler_t handler;
 } cleanup_handlers[OCRE_RESOURCE_TYPE_COUNT];
 
+/* Thread-Local Storage */
 __thread wasm_module_inst_t *current_module_tls = NULL;
 
 bool common_initialized = false;
@@ -54,8 +56,7 @@ bool common_initialized = false;
 static struct k_sem event_sem;
 
 #define EVENT_THREAD_POOL_SIZE 2
-static struct k_thread event_threads[EVENT_THREAD_POOL_SIZE];
-static K_THREAD_STACK_ARRAY_DEFINE(event_thread_stacks, EVENT_THREAD_POOL_SIZE, 16384);
+static struct core_thread event_threads[EVENT_THREAD_POOL_SIZE];
 
 // Flag to signal event threads to exit gracefully
 static volatile bool event_threads_exit = false;
@@ -68,10 +69,9 @@ struct event_thread_args {
 static struct event_thread_args event_args[EVENT_THREAD_POOL_SIZE];
 
 // Event thread function to process events from the ring buffer
-static void event_thread_fn(void *arg1, void *arg2, void *arg3) {
+static void event_thread_fn(void *arg1) {
     struct event_thread_args *args = (struct event_thread_args *)arg1;
     int index = args->index; // Can be used for logging or debugging
-
     // Initialize WASM runtime thread environment
     wasm_runtime_init_thread_env();
 
@@ -239,11 +239,13 @@ int ocre_common_init(void) {
             (void *)wasm_event_queue_buffer_ptr);
     for (int i = 0; i < EVENT_THREAD_POOL_SIZE; i++) {
         event_args[i].index = i;
-        k_thread_create(&event_threads[i], event_thread_stacks[i], K_THREAD_STACK_SIZEOF(event_thread_stacks[i]),
-                        event_thread_fn, &event_args[i], NULL, NULL, K_PRIO_PREEMPT(5), 0, K_NO_WAIT);
         char thread_name[16];
         snprintf(thread_name, sizeof(thread_name), "event_thread_%d", i);
-        k_thread_name_set(&event_threads[i], thread_name);
+        int ret = core_thread_create(&event_threads[i], event_thread_fn, &event_args[i], thread_name, EVENT_THREAD_STACK_SIZE, 5);
+        if (ret != 0) {
+            LOG_ERR("Failed to create thread for event %d", i);
+            return -1;
+        }
         LOG_INF("Started event thread %s", thread_name);
     }
     initialized = true;

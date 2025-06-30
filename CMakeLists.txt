@@ -1,93 +1,51 @@
 cmake_minimum_required(VERSION 3.20.0)
 
-find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+# Allow user to set CMAKE_SYSTEM_NAME via -DCMAKE_SYSTEM_NAME=Zephyr or Linux
+if(NOT DEFINED TARGET_PLATFORM_NAME)
+    set(TARGET_PLATFORM_NAME "Zephyr")
+endif()
 
-project(ocre VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_PATCHLEVEL}.${APP_VERSION_TWEAK} LANGUAGES C ASM)
+if(TARGET_PLATFORM_NAME STREQUAL "Linux")
+    project(ocre LANGUAGES C ASM)
+elseif(TARGET_PLATFORM_NAME STREQUAL "Zephyr")
+    find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})  
+    project(ocre VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_PATCHLEVEL}.${APP_VERSION_TWEAK} LANGUAGES C ASM)
+else()
+    message(FATAL_ERROR "Unsupported TARGET_PLATFORM_NAME: ${TARGET_PLATFORM_NAME}")
+endif()
 
+# ----------- COMMON SECTION -----------
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 17)
 
+# Version and build info (common)
 execute_process(
-  	COMMAND git describe --long --dirty --always
-  	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  	OUTPUT_VARIABLE RAW_GIT_VERSION
-  	OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  
+    COMMAND git describe --long --dirty --always
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE RAW_GIT_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 string(REPLACE "-dirty" "+" BUILD_INFO ${RAW_GIT_VERSION})
-
 string(TIMESTAMP BUILD_DATE "%d-%m-%Y, %H:%M" UTC )
-
 cmake_host_system_information(RESULT BUILD_MACHINE QUERY HOSTNAME)
-
 string(PREPEND BUILD_INFO dev-)
-  
 string(REPLACE "-" ";" GIT_INFO_LIST ${RAW_GIT_VERSION})
 list(GET GIT_INFO_LIST 0 VERSION_NUMBER)
-message("VERSION NUMBER: ${VERSION_NUMBER}")
-zephyr_compile_options(-DVERSION_INFO="${VERSION_NUMBER}")
-message("BUILD DATE: ${BUILD_DATE}")
-zephyr_compile_options(-DVERSION_BUILD_DATE="${BUILD_DATE}")
-message("BUILD MACHINE: ${BUILD_MACHINE}")
-zephyr_compile_options(-DVERSION_BUILD_MACHINE="${BUILD_MACHINE}")
-message("BUILD_INFO: ${BUILD_INFO}")
-zephyr_compile_options(-DVERSION_BUILD_INFO="${BUILD_INFO}")
 
-# Determine the ISA of the target and set appropriately
-if (DEFINED CONFIG_ISA_THUMB2)
-set (TARGET_ISA THUMB)
-elseif (DEFINED CONFIG_ISA_ARM)
-set (TARGET_ISA ARM)
-elseif (DEFINED CONFIG_X86)
-set (TARGET_ISA X86_32)
-elseif (DEFINED CONFIG_XTENSA)
-set (TARGET_ISA XTENSA)
-elseif (DEFINED CONFIG_RISCV)
-set (TARGET_ISA RISCV32)
-elseif (DEFINED CONFIG_ARCH_POSIX)
-# Technically, this is not correct as the CPU architecture is not set.  This assumes POSIX is x86 32-bit
-set (TARGET_ISA X86_32)  
-else ()
-message (FATAL_ERROR "Unsupported ISA: ${CONFIG_ARCH}")
-endif ()
-message("TARGET ISA: ${TARGET_ISA}")
-
-add_compile_options(-O0 -Wno-unknown-attributes)
-
-
-##################
-#  WAMR Options  #
-##################
-set (WAMR_BUILD_PLATFORM "zephyr")
-set (WAMR_BUILD_TARGET ${TARGET_ISA})
-set (WAMR_BUILD_INTERP 1)
-set (WAMR_BUILD_FAST_INTERP 0)
-set (WAMR_BUILD_AOT 0)
-set (WAMR_BUILD_JIT 0)
-set (WAMR_BUILD_LIBC_BUILTIN 0)
-set (WAMR_BUILD_LIBC_WASI 1)
-set (WAMR_BUILD_LIB_PTHREAD 1)
-set (WAMR_BUILD_REF_TYPES 1)
-set (WASM_ENABLE_LOG 1)
-
-# Override the global heap usage
-if (NOT DEFINED WAMR_BUILD_GLOBAL_HEAP_POOL)
-  set (WAMR_BUILD_GLOBAL_HEAP_POOL 1)
-endif ()
-
-# Override the global heap size for small devices
-if (NOT DEFINED WAMR_BUILD_GLOBAL_HEAP_SIZE)
-  #set (WAMR_BUILD_GLOBAL_HEAP_SIZE 131072) # 128 KB
-  set (WAMR_BUILD_GLOBAL_HEAP_SIZE 32767) # 32 KB
-endif ()
-
-# Include WAMR build script
-set (WAMR_ROOT_DIR ${ZEPHYR_WASM_MICRO_RUNTIME_MODULE_DIR})
-include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
-
-# Generate the messages header file
+# Message generation (common)
 set(OCRE_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(MSG_INPUT_FILES ${OCRE_ROOT_DIR}/src/ocre/components/container_supervisor/component_supervisor.yaml )
 set(MSG_GENERATED_FILE ${CMAKE_CURRENT_LIST_DIR}/src/messaging/messages.g)
+
+# Zephyr toolchain usually provides PYTHON_EXECUTABLE
+if(NOT DEFINED PYTHON_EXECUTABLE)
+    find_package(Python3 QUIET REQUIRED Interpreter Development)
+    if(NOT Python3_FOUND)
+        message(FATAL_ERROR "Python3 interpreter not found. Please install Python3 or set PYTHON_EXECUTABLE to the path of your Python interpreter.")
+    endif()
+    set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
+endif()
 
 add_custom_command(
     OUTPUT ${MSG_GENERATED_FILE}
@@ -97,54 +55,22 @@ add_custom_command(
 )
 add_custom_target(generate_messages DEPENDS ${MSG_GENERATED_FILE})
 
-zephyr_include_directories(
-  src/
-  src/ocre
-)
+if(NOT "${OCRE_INPUT_FILE}" STREQUAL "")
+    message("Using input file: ${OCRE_INPUT_FILE}")
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_LIST_DIR}/src/ocre/ocre_input_file.g
+        COMMAND xxd -n wasm_binary -i ${OCRE_INPUT_FILE} > ${CMAKE_CURRENT_LIST_DIR}/src/ocre/ocre_input_file.g
+        DEPENDS ${OCRE_INPUT_FILE}
+        COMMENT "Generating C header from ${OCRE_INPUT_FILE}"
+    )
 
-set(lib_sources
-  # Libraries
-  src/ocre/sm/sm.c
-  src/ocre/fs/fs.c
-  src/ocre/ocre_timers/ocre_timer.c
+    add_definitions(-DHAS_GENERATED_INPUT)
 
-  # Ocre APIs
-  src/ocre/api/ocre_api.c
-  src/ocre/api/ocre_common.c
-
-)
-
-# Compile in sensors framework if enabled.
-if(CONFIG_OCRE_SENSORS)
-  set(lib_sources ${ocre_sources} ${OCRE_ROOT_DIR}/src/ocre/ocre_sensors/ocre_sensors.c)
+    add_custom_target(generate_ocre_file DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/ocre/ocre_input_file.g)
 endif()
 
-# Compile random sensor if enabled.
-if(CONFIG_RNG_SENSOR)
-    set(ocre_sources ${ocre_sources} ${OCRE_ROOT_DIR}/src/ocre/ocre_sensors/rng_sensor.c)
+if(TARGET_PLATFORM_NAME STREQUAL "Linux")
+    include(${CMAKE_CURRENT_LIST_DIR}/src/shared/platform/posix/ocre_internal.cmake)
+elseif(TARGET_PLATFORM_NAME STREQUAL "Zephyr")
+    include(${CMAKE_CURRENT_LIST_DIR}/src/shared/platform/zephyr/ocre_internal.cmake)
 endif()
-
-if(DEFINED CONFIG_OCRE_GPIO)
-  set(lib_sources ${lib_sources} 
-    src/ocre/ocre_gpio/ocre_gpio.c 
-  )
-endif()
-
-# Compile container messaging if enabled.
-if(CONFIG_OCRE_CONTAINER_MESSAGING)
-  set(lib_sources ${lib_sources} src/ocre/container_messaging/messaging.c)
-endif()
-
-set(component_sources
-  # Component support
-  src/ocre/component/component.c
-
-  # Components
-  src/ocre/ocre_container_runtime/ocre_container_runtime.c
-  src/ocre/components/container_supervisor/cs_main.c
-  src/ocre/components/container_supervisor/cs_sm.c
-  src/ocre/components/container_supervisor/cs_sm_impl.c
-) 
-
-target_sources(app PRIVATE ${WAMR_RUNTIME_LIB_SOURCE} ${lib_sources} ${component_sources} src/main.c)
-add_dependencies(app generate_messages)

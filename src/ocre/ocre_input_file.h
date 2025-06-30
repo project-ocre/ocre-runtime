@@ -5,72 +5,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr/kernel.h>
-#include <zephyr/fs/fs.h>
-
-#include <ocre/ocre.h>
-#include <ocre/fs/fs.h>
-#include <ocre/ocre_container_runtime/ocre_container_runtime.h>
-
-void create_sample_container();
-
-int main(int argc, char *argv[]) {
-    ocre_cs_ctx ctx;
-    ocre_container_init_arguments_t args;
-    char *container_filename = "hello";
-
-    ocre_app_storage_init();
-
-    create_sample_container(container_filename);
-
-    // Step 1:  Initialize the Ocre runtime
-    ocre_container_runtime_status_t ret = ocre_container_runtime_init(&ctx, &args);
-
-    if (ret == RUNTIME_STATUS_INITIALIZED) {
-        printf("\n\nOcre runtime started\n");
-
-        // Step 2:  Create the container, this allocates and loads the container binary
-        ocre_container_data_t ocre_container_data;
-        int container_ID;
-        ocre_container_runtime_cb callback;
-
-        ocre_container_data.heap_size = 0;
-        snprintf(ocre_container_data.name, sizeof(ocre_container_data.name), "Hello World");
-        snprintf(ocre_container_data.sha256, sizeof(ocre_container_data.sha256), "%s", container_filename);
-        ocre_container_data.timers = 0;
-        ocre_container_runtime_create_container(&ctx, &ocre_container_data, &container_ID, callback);
-
-        // Step 3:  Execute the container
-        ocre_container_runtime_run_container(container_ID, callback);
-
-        // Loop forever, without this the application will exit and stop all execution
-        while (true) {
-            k_msleep(1000);
-        }
-
-    } else {
-        printf("\n\nOcre runtime failed to start.\n");
-    }
-}
-
-/**
- * Creates a container image file using the sample "hello-word" WASM module
- * This is for demostration purposes only and does not perform any error checking.
- *
- * @param file_name a string containing the name of the file to create
- */
-
-void create_sample_container(char *file_name) {
-    struct fs_file_t f;
-    static char file_path[64];
-    snprintf((char *)&file_path, 64, "/lfs/ocre/images/%s.bin", file_name);
-    int res;
-
-    fs_file_t_init(&f);
-    res = fs_open(&f, file_path, FS_O_CREATE | FS_O_RDWR);
-
-    unsigned char wasm_binary[] = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x35, 0x09, 0x60,
+#ifndef OCRE_INPUT_FILE_H
+#define OCRE_INPUT_FILE_H
+// Sample WASM binary data
+static unsigned char wasm_binary[] = {
+            0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x35, 0x09, 0x60,
         0x03, 0x7f, 0x7f, 0x7f, 0x01, 0x7f, 0x60, 0x03, 0x7f, 0x7e, 0x7f, 0x01,
         0x7e, 0x60, 0x01, 0x7f, 0x01, 0x7f, 0x60, 0x02, 0x7f, 0x7f, 0x01, 0x7f,
         0x60, 0x04, 0x7f, 0x7e, 0x7f, 0x7f, 0x01, 0x7f, 0x60, 0x04, 0x7f, 0x7f,
@@ -392,9 +331,7 @@ void create_sample_container(char *file_name) {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x04, 0x00, 0x00
         };
-    unsigned int wasm_binary_len = 3850;
 
-    fs_write(&f, &wasm_binary, wasm_binary_len);
+static unsigned int wasm_binary_len = 3850;
 
-    fs_close(&f);
-}
+#endif // OCRE_INPUT_FILE_H

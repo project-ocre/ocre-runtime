@@ -193,4 +193,17 @@ config MESSAGING_MAX_SUBSCRIPTIONS
     help
       Number of maximum subscriptions for Container Messaging
 
+config OCRE_SHELL
+    bool "Enable OCRE Shell"
+    default y
+    help
+        Enable the OCRE Shell for dynamic configuration management.
+
+config IMU_SENSOR
+    bool "IMU Sensor"
+    default n
+    depends on OCRE_SENSORS
+    help
+      Enable support for the custom IMU sensor.
+
 endmenu

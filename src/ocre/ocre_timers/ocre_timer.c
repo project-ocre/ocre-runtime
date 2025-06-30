@@ -6,13 +6,19 @@
  */
 
 #include <ocre/ocre.h>
-#include <ocre/api/ocre_common.h>
 #include <ocre/ocre_timers/ocre_timer.h>
+#include <ocre_core_external.h>
+
+#include <ocre/api/ocre_common.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/spinlock.h>
 
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include <errno.h>
 
 // Compact timer structure
 typedef struct {
@@ -23,6 +29,10 @@ typedef struct {
     struct k_timer *timer; // Pointer to shared timer
     wasm_module_inst_t owner;
 } ocre_timer;
+
+#ifndef CONFIG_MAX_TIMER
+#define CONFIG_MAX_TIMERS 5
+#endif
 
 // Static data
 static ocre_timer timers[CONFIG_MAX_TIMERS];

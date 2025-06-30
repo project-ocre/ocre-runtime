@@ -6,14 +6,14 @@
  */
 
 #include <ocre/ocre.h>
-#include <zephyr/logging/log.h>
+#include "ocre_core_external.h"
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
-
+#ifdef CONFIG_OCRE_SENSORS
+#include "../../ocre_sensors/ocre_sensors.h"
+#endif
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
 #include <ocre/ocre_container_runtime/ocre_container_runtime.h>
-
-#include "../../ocre_sensors/ocre_sensors.h"
 
 // Define state machine and component
 struct ocre_component ocre_cs_component;
@@ -162,8 +162,6 @@ static const struct smf_state hsm[] = {
 // Entry point for running the state machine
 int _ocre_cs_run(ocre_cs_ctx *ctx) {
     ocre_component_init(&ocre_cs_component);
-
     sm_init(&ocre_cs_state_machine, &ocre_cs_component.msgq, &ocre_cs_component.msg, ctx, hsm);
-
     return sm_run(&ocre_cs_state_machine, STATE_RUNTIME_UNINITIALIZED);
 }

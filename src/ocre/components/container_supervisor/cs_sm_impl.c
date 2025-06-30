@@ -5,37 +5,42 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <ocre/ocre.h>
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/kernel/mm.h>
-#include <stdlib.h>
-#include <autoconf.h>
+#include "ocre_core_external.h"
 
-#include "../../../../../wasm-micro-runtime/core/iwasm/include/lib_export.h"
-#include "bh_log.h"
-#include "cs_sm.h"
-#include "cs_sm_impl.h"
-#include "../../ocre_timers/ocre_timer.h"
-#include "../../ocre_gpio/ocre_gpio.h"
-#include "../../container_messaging/messaging.h"
-#include "../../api/ocre_common.h"
-#include "../src/ocre/shell/ocre_shell.h"
+#ifdef CONFIG_OCRE_TIMER
+#include "ocre_timers/ocre_timer.h"
+#endif
+#ifdef CONFIG_OCRE_GPIO
+#include "ocre_gpio/ocre_gpio.h"
+#endif
+#ifdef CONFIG_OCRE_CONTAINER_MESSAGING
+#include "container_messaging/messaging.h"
+#endif
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
+#include "api/ocre_common.h"
+#endif
+
+#ifdef CONFIG_OCRE_SHELL
+#include "ocre/shell/ocre_shell.h"
+#endif
 
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
-#define UNUSED_CONTAINER_ID UINT32_MAX
+#include "../../../../../wasm-micro-runtime/core/iwasm/include/lib_export.h"
+#include "bh_log.h"
+#include <stdlib.h>
+#include "cs_sm.h"
+#include "cs_sm_impl.h"
 
 static char filepath[FILE_PATH_MAX];
 static char wamr_heap_buf[CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE] = {0};
 
 // Thread pool for container execution
 #define CONTAINER_THREAD_POOL_SIZE 4
-static struct k_thread container_threads[CONTAINER_THREAD_POOL_SIZE];
-static K_THREAD_STACK_ARRAY_DEFINE(container_thread_stacks, CONTAINER_THREAD_POOL_SIZE, 8192);
+static core_thread_t container_threads[CONTAINER_THREAD_POOL_SIZE];
 static bool container_thread_active[CONTAINER_THREAD_POOL_SIZE] = {false};
-static k_tid_t container_thread_ids[CONTAINER_THREAD_POOL_SIZE];
 
-static struct k_mutex container_mutex;
+static core_mutex_t container_mutex;
 
 // Arguments for container threads
 struct container_thread_args {
@@ -94,28 +99,20 @@ static bool validate_container_memory(ocre_container_t *container) {
     return true;
 }
 
-static int get_available_thread(void) {
-    for (int i = 0; i < CONTAINER_THREAD_POOL_SIZE; i++) {
-        if (!container_thread_active[i]) {
-            return i;
-        }
-    }
-    return -1;
-}
-
 // Container thread entry function
-static void container_thread_entry(void *arg1, void *arg2, void *arg3) {
-    struct container_thread_args *args = (struct container_thread_args *)arg1;
+static void container_thread_entry(struct container_thread_args *args) {
     ocre_container_t *container = args->container;
     wasm_module_inst_t module_inst = container->ocre_runtime_arguments.module_inst;
 
     // Initialize WASM runtime thread environment
     wasm_runtime_init_thread_env();
+
     LOG_INF("Container thread %d started", container->container_ID);
 
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
     // Set TLS for the container's WASM module
     current_module_tls = &module_inst;
-
+#endif
     // Run the WASM main function
     bool success = wasm_application_execute_main(module_inst, 0, NULL);
 
@@ -123,7 +120,7 @@ static void container_thread_entry(void *arg1, void *arg2, void *arg3) {
     container->container_runtime_status = success ? CONTAINER_STATUS_STOPPED : CONTAINER_STATUS_ERROR;
 
     // Cleanup sequence
-    k_mutex_lock(&container->lock, K_FOREVER);
+    core_mutex_lock(&container->lock);
     {
         // Cleanup timers and GPIO resources
 #ifdef CONFIG_OCRE_TIMER
@@ -135,72 +132,84 @@ static void container_thread_entry(void *arg1, void *arg2, void *arg3) {
 
         // Clear thread tracking
         container_thread_active[container->container_ID] = false;
-        container_thread_ids[container->container_ID] = NULL;
-
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
         // Clear TLS
         current_module_tls = NULL;
+#endif
+
     }
-    k_mutex_unlock(&container->lock);
+    core_mutex_unlock(&container->lock);
 
     LOG_INF("Container thread %d exited cleanly", container->container_ID);
 
     // Clean up WASM runtime thread environment
     wasm_runtime_destroy_thread_env();
-    k_free(args); // Free the dynamically allocated args
+    core_free(args); // Free the dynamically allocated args
+}
+
+static int get_available_thread(void) {
+    for (int i = 0; i < CONTAINER_THREAD_POOL_SIZE; i++) {
+        if (!container_thread_active[i]) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_arguments,
                                     ocre_container_data_t *container_data) {
     int ret = 0;
-    struct fs_file_t app_file;
-    struct fs_dirent entry;
+    size_t file_size = 0;
+    void *file_handle = NULL;
+    char filepath[FILE_PATH_MAX];
 
-    snprintf(filepath, sizeof(filepath), "/lfs/ocre/images/%s.bin", container_data->sha256);
-
-    ret = fs_stat(filepath, &entry);
+    ret = core_construct_filepath(filepath, sizeof(filepath), container_data->sha256);
+    if (ret < 0) {
+        LOG_ERR("Failed to construct filepath for %s: %d", container_data->sha256, ret);
+        return ret;
+    }
+    ret = core_filestat(filepath, &file_size);
     if (ret < 0) {
         LOG_ERR("Failed to get file status for %s: %d", filepath, ret);
         return ret;
     }
 
-    container_arguments->size = entry.size;
-    container_arguments->buffer = malloc(entry.size);
+    container_arguments->size = file_size;
+    container_arguments->buffer = malloc(file_size);
     if (!container_arguments->buffer) {
         LOG_ERR("Failed to allocate memory for container binary.");
         return -ENOMEM;
     }
 
-    LOG_INF("File path: %s, size: %d", filepath, entry.size);
-    fs_file_t_init(&app_file);
+    LOG_INF("File path: %s, size: %d", filepath, file_size);
 
-    ret = fs_open(&app_file, filepath, FS_O_READ);
+    ret = core_fileopen(filepath, &file_handle);
     if (ret < 0) {
         LOG_ERR("Failed to open file %s: %d", filepath, ret);
-        free(container_arguments->buffer);
+        core_free(container_arguments->buffer);
         return ret;
     }
 
-    ret = fs_read(&app_file, container_arguments->buffer, container_arguments->size);
+    ret = core_fileread(file_handle, container_arguments->buffer, file_size);
     if (ret < 0) {
         LOG_ERR("Failed to read file %s: %d", filepath, ret);
-        fs_close(&app_file);
-        free(container_arguments->buffer);
+        core_fileclose(file_handle);
+        core_free(container_arguments->buffer);
         return ret;
     }
 
-    ret = fs_close(&app_file);
+    ret = core_fileclose(file_handle);
     if (ret < 0) {
         LOG_ERR("Failed to close file %s: %d", filepath, ret);
-        free(container_arguments->buffer);
+        core_free(container_arguments->buffer);
         return ret;
     }
-
     return 0;
 }
 
 int CS_ctx_init(ocre_cs_ctx *ctx) {
     for (int i = 0; i < CONFIG_MAX_CONTAINERS; i++) {
-        k_mutex_init(&ctx->containers[i].lock);
+        core_mutex_init(&ctx->containers[i].lock);
         ctx->containers[i].container_runtime_status = CONTAINER_STATUS_UNKNOWN;
         ctx->containers[i].ocre_container_data.heap_size = CONFIG_OCRE_CONTAINER_DEFAULT_HEAP_SIZE;
         ctx->containers[i].ocre_container_data.stack_size = CONFIG_OCRE_CONTAINER_DEFAULT_STACK_SIZE;
@@ -212,7 +221,7 @@ int CS_ctx_init(ocre_cs_ctx *ctx) {
 #ifdef CONFIG_OCRE_SHELL
     register_ocre_shell(ctx);
 #endif
-    k_mutex_init(&container_mutex);
+    core_mutex_init(&container_mutex);
     return 0;
 }
 
@@ -248,14 +257,15 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 
 ocre_container_runtime_status_t CS_runtime_destroy(void) {
     // Signal event threads to exit gracefully
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
     ocre_common_shutdown();
+#endif
 
     // Abort any active container threads
     for (int i = 0; i < CONTAINER_THREAD_POOL_SIZE; i++) {
-        if (container_thread_active[i] && container_thread_ids[i] != NULL) {
-            k_thread_abort(container_thread_ids[i]);
+        if (container_thread_active[i]) {
+            core_thread_destroy(&container_threads[i]);
             container_thread_active[i] = false;
-            container_thread_ids[i] = NULL;
         }
     }
     return RUNTIME_STATUS_DESTROYED;
@@ -313,6 +323,15 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
         return CONTAINER_STATUS_RUNNING;
     }
 
+#ifdef CONFIG_OCRE_NETWORKING
+            #define ADDRESS_POOL_SIZE 1
+            const char *addr_pool[ADDRESS_POOL_SIZE] = {
+                "0.0.0.0/0",
+            };
+            wasm_runtime_set_wasi_addr_pool(curr_container_arguments->module, addr_pool, ADDRESS_POOL_SIZE);
+#endif
+
+
     if (container->container_runtime_status != CONTAINER_STATUS_CREATED &&
         container->container_runtime_status != CONTAINER_STATUS_STOPPED) {
         LOG_ERR("Container (ID: %d), is not in a valid state to run", curr_container_ID);
@@ -335,46 +354,49 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
             free(curr_container_arguments->buffer);
             return CONTAINER_STATUS_ERROR;
         }
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
         ocre_register_module(curr_container_arguments->module_inst);
+#endif
     }
 
-    k_mutex_lock(&container_mutex, K_FOREVER);
+    core_mutex_lock(&container_mutex);
     int thread_idx = get_available_thread();
     if (thread_idx == -1) {
         LOG_ERR("No available threads for container %d", curr_container_ID);
         container->container_runtime_status = CONTAINER_STATUS_ERROR;
-        k_mutex_unlock(&container_mutex);
+        core_mutex_unlock(&container_mutex);
         return CONTAINER_STATUS_ERROR;
     }
 
     // Allocate thread arguments dynamically
-    struct container_thread_args *args = k_malloc(sizeof(struct container_thread_args));
+    struct container_thread_args *args = core_malloc(sizeof(struct container_thread_args));
     if (!args) {
         LOG_ERR("Failed to allocate thread args for container %d", curr_container_ID);
         container->container_runtime_status = CONTAINER_STATUS_ERROR;
-        k_mutex_unlock(&container_mutex);
+        core_mutex_unlock(&container_mutex);
         return CONTAINER_STATUS_ERROR;
     }
     args->container = container;
 
     // Create and start a new thread for the container
-    container_thread_ids[thread_idx] =
-            k_thread_create(&container_threads[thread_idx], container_thread_stacks[thread_idx],
-                            K_THREAD_STACK_SIZEOF(container_thread_stacks[thread_idx]), container_thread_entry, args,
-                            NULL, NULL, K_PRIO_PREEMPT(5), 0, K_NO_WAIT);
-    if (container_thread_ids[thread_idx] == NULL) {
+    char thread_name[16];
+    snprintf(thread_name, sizeof(thread_name), "container_%d", curr_container_ID);
+    container_threads[thread_idx].user_options = curr_container_ID;
+    int ret = core_thread_create(&container_threads[thread_idx], container_thread_entry, args, thread_name,
+                                 CONTAINER_THREAD_STACK_SIZE, 5);
+
+    if (ret != 0) {
         LOG_ERR("Failed to create thread for container %d", curr_container_ID);
         container->container_runtime_status = CONTAINER_STATUS_ERROR;
-        k_free(args);
-        k_mutex_unlock(&container_mutex);
+
+        core_free(args); // Free the dynamically allocated args
+
+        core_mutex_unlock(&container_mutex);
         return CONTAINER_STATUS_ERROR;
     }
 
-    char thread_name[16];
-    snprintf(thread_name, sizeof(thread_name), "container_%d", curr_container_ID);
-    k_thread_name_set(container_thread_ids[thread_idx], thread_name);
     container_thread_active[thread_idx] = true;
-    k_mutex_unlock(&container_mutex);
+    core_mutex_unlock(&container_mutex);
 
     container->container_runtime_status = CONTAINER_STATUS_RUNNING;
     LOG_WRN("Running container:%d in dedicated thread", curr_container_ID);
@@ -397,15 +419,14 @@ ocre_container_status_t CS_stop_container(ocre_container_t *container, ocre_cont
         LOG_WRN("Container status is already in STOP state");
         return CONTAINER_STATUS_STOPPED;
     }
-    k_mutex_lock(&container->lock, K_FOREVER);
+    core_mutex_lock(&container->lock);
     {
         LOG_INF("Stopping container %d from state %d", curr_container_ID, container->container_runtime_status);
 
         for (int i = 0; i < CONTAINER_THREAD_POOL_SIZE; i++) {
-            if (container_thread_active[i] && container_thread_ids[i]->base.user_options == curr_container_ID) {
-                k_thread_abort(container_thread_ids[i]);
+            if (container_thread_active[i] && container_threads[i].user_options == curr_container_ID) {
+                core_thread_destroy(&container_threads[i]);
                 container_thread_active[i] = false;
-                container_thread_ids[i] = NULL;
             }
         }
 #ifdef CONFIG_OCRE_TIMER
@@ -414,8 +435,9 @@ ocre_container_status_t CS_stop_container(ocre_container_t *container, ocre_cont
 #ifdef CONFIG_OCRE_GPIO
         ocre_gpio_cleanup_container(curr_container_arguments->module_inst);
 #endif
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
         ocre_unregister_module(curr_container_arguments->module_inst);
-
+#endif
         if (curr_container_arguments->module_inst) {
             wasm_runtime_deinstantiate(curr_container_arguments->module_inst);
             curr_container_arguments->module_inst = NULL;
@@ -423,7 +445,7 @@ ocre_container_status_t CS_stop_container(ocre_container_t *container, ocre_cont
 
         container->container_runtime_status = CONTAINER_STATUS_STOPPED;
     }
-    k_mutex_unlock(&container->lock);
+    core_mutex_unlock(&container->lock);
 
     if (callback) {
         callback();
@@ -432,7 +454,7 @@ ocre_container_status_t CS_stop_container(ocre_container_t *container, ocre_cont
 }
 
 ocre_container_status_t CS_destroy_container(ocre_container_t *container, ocre_container_runtime_cb callback) {
-    k_mutex_lock(&container->lock, K_FOREVER);
+    core_mutex_lock(&container->lock);
     {
         LOG_INF("Destroying container %d", container->container_ID);
 
@@ -453,7 +475,7 @@ ocre_container_status_t CS_destroy_container(ocre_container_t *container, ocre_c
         memset(&container->ocre_container_data, 0, sizeof(ocre_container_data_t));
         container->container_runtime_status = CONTAINER_STATUS_DESTROYED;
     }
-    k_mutex_unlock(&container->lock);
+    core_mutex_unlock(&container->lock);
 
     if (callback) {
         callback();
@@ -473,7 +495,6 @@ ocre_container_status_t CS_restart_container(ocre_container_t *container, ocre_c
         LOG_ERR("Failed to start container: %d", container->container_ID);
         return CONTAINER_STATUS_ERROR;
     }
-
     if (callback) {
         callback();
     }

@@ -1,4 +1,12 @@
+/**
+ * @copyright Copyright © contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
+#ifndef CONTAINER_MESSAGING_H
+#define CONTAINER_MESSAGING_H
 #include "wasm_export.h"
 
 /**
@@ -59,3 +67,5 @@ void ocre_messaging_register_module(wasm_module_inst_t module_inst);
  * @param module_inst WASM module instance to clean up
  */
 void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst);
+
+#endif /* CONTAINER_MESSAGING_H */

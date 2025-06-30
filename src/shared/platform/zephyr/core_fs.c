@@ -10,13 +10,14 @@
 LOG_MODULE_REGISTER(filesystem, OCRE_LOG_LEVEL);
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <zephyr/device.h>
 #include <zephyr/fs/fs.h>
 #include <zephyr/fs/littlefs.h>
 #include <zephyr/kernel.h>
 #include <zephyr/shell/shell.h>
 #include <zephyr/storage/flash_map.h>
-#include "fs.h"
+#include "ocre_core_external.h"
 
 #define MAX_PATH_LEN LFS_NAME_MAX
 
@@ -31,6 +32,44 @@ LOG_MODULE_REGISTER(filesystem, OCRE_LOG_LEVEL);
         printk(fmt, ##__VA_ARGS__);                                                                                    \
     } while (false)
 #endif
+
+int core_construct_filepath(char *path, size_t len, char *name) {
+    return snprintf(path, len, "/lfs/ocre/images/%s.bin", name);
+}
+
+int core_filestat(const char *path, size_t *size) {
+    struct fs_dirent entry;
+    int ret = fs_stat(path, &entry);
+    if (ret == 0 && size) {
+        *size = entry.size;
+    }
+    return ret;
+}
+
+int core_fileopen(const char *path, void **handle) {
+    struct fs_file_t *file = core_malloc(sizeof(struct fs_file_t));
+    if (!file) return -ENOMEM;
+    fs_file_t_init(file);
+    int ret = fs_open(file, path, FS_O_READ);
+    if (ret < 0) {
+        core_free(file);
+        return ret;
+    }
+    *handle = file;
+    return 0;
+}
+
+int core_fileread(void *handle, void *buffer, size_t size) {
+    struct fs_file_t *file = (struct fs_file_t *)handle;
+    return fs_read(file, buffer, size);
+}
+
+int core_fileclose(void *handle) {
+    struct fs_file_t *file = (struct fs_file_t *)handle;
+    int ret = fs_close(file);
+    core_free(file);
+    return ret;
+}
 
 static int lsdir(const char *path) {
     int res;

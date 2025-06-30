@@ -57,3 +57,5 @@ Thumbs.db
 *.mov
 *.wmv
 
+# VS Code IDE
+.vscode/
