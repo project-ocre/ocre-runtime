@@ -66,7 +66,7 @@ int sm_init_event_timer(state_machine_t *sm, int timer_id, void *timer_cb) {
         LOG_ERR("Invalid timer id: %d", timer_id);
         return -EINVAL;
     }
-
+    
     core_timer_init(&sm->timers[timer_id], timer_cb, NULL);
     return 0;
 }

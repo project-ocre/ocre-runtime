@@ -33,8 +33,13 @@ int core_timer_init(core_timer_t *timer, core_timer_callback_t cb, void *user_da
 int core_timer_start(core_timer_t *timer, int timeout_ms, int period_ms) {
     if (!timer) return -1;
     struct itimerspec its;
-    its.it_value.tv_sec = timeout_ms / 1000;
-    its.it_value.tv_nsec = (timeout_ms % 1000) * 1000000;
+    if (timeout_ms == 0 && period_ms > 0) {
+        its.it_value.tv_sec = period_ms / 1000;
+        its.it_value.tv_nsec = (period_ms % 1000) * 1000000;
+    } else {
+        its.it_value.tv_sec = timeout_ms / 1000;
+        its.it_value.tv_nsec = (timeout_ms % 1000) * 1000000;
+    }
     its.it_interval.tv_sec = period_ms / 1000;
     its.it_interval.tv_nsec = (period_ms % 1000) * 1000000;
     return timer_settime(timer->timerid, 0, &its, NULL);

@@ -15,6 +15,9 @@
 
 #include <stdint.h>
 
+#define CONFIG_SMF_ANCESTOR_SUPPORT
+#define CONFIG_SMF_INITIAL_TRANSITION
+
 /**
  * @brief State Machine Framework API
  * @defgroup smf State Machine Framework API
@@ -37,6 +40,8 @@
 	.entry   = _entry,                                                 \
 	.run     = _run,                                                   \
 	.exit    = _exit,                                                  \
+	.parent    = _parent,                                                  \
+	.initial = _initial									\
 }
 
 /**

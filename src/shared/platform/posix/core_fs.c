@@ -34,11 +34,15 @@ int core_construct_filepath(char *path, size_t len, char *name) {
 
 int core_filestat(const char *path, size_t *size) {
     struct stat st;
-    int ret = stat(path, &st);
-    if (ret == 0 && size) {
-        *size = st.st_size;
+    if (stat(path, &st) == 0) {
+        if (size) {
+            *size = st.st_size;
+        }
+        return 0;  // success
+    } else {
+        return errno;  // return the specific error code
     }
-    return ret;
+
 }
 
 int core_fileopen(const char *path, void **handle) {
