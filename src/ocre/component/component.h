@@ -8,10 +8,11 @@
 #ifndef OCRE_COMPONENT_H
 #define OCRE_COMPONENT_H
 
-#include <zephyr/kernel.h>
+#include "ocre_core_external.h"
 #include <messaging/messages.g>
 
-#define MSG_QUEUE_DEPTH 16
+// can't be higher than /proc/sys/fs/mqueue/msg_max which is typically 10
+#define MSG_QUEUE_DEPTH 10
 
 #define COMPONENT_SEND_SIMPLE(c, e)                                                                                    \
     struct ocre_message _msg = {.event = e};                                                                           \
@@ -19,12 +20,11 @@
 
 struct ocre_component {
     struct ocre_message msg; /*!< Message struct for reading messages into */
-    struct k_msgq msgq;      /*!< Message queue to read from */
-    char __aligned(4) msgq_buffer[MSG_QUEUE_DEPTH * sizeof(struct ocre_message)]; /*!< Message queue buffer */
+    core_mq_t msgq;             /*!< Message queue to read from */
 };
 
 void ocre_component_init(struct ocre_component *component);
 
 int ocre_component_send(struct ocre_component *component, struct ocre_message *msg);
 
-#endif
+#endif // OCRE_COMPONENT_H

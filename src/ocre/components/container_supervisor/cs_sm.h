@@ -8,8 +8,7 @@
 #ifndef OCRE_IWASM_H
 #define OCRE_IWASM_H
 
-#include <zephyr/kernel.h>
-#include <zephyr/smf.h>
+#include "ocre_core_external.h"
 
 #include <ocre/component/component.h>
 #include <ocre/ocre_container_runtime/ocre_container_runtime.h>

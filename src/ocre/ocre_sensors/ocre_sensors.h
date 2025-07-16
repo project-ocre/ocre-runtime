@@ -96,4 +96,14 @@ int ocre_sensors_get_channel_type(wasm_exec_env_t exec_env, int sensor_id, int c
  */
 int ocre_sensors_read(wasm_exec_env_t exec_env, int sensor_id, int channel_type);
 
+/* New string-based APIs */
+int ocre_sensors_open_by_name(wasm_exec_env_t exec_env, const char *sensor_name);
+int ocre_sensors_get_handle_by_name(wasm_exec_env_t exec_env, const char *sensor_name);
+int ocre_sensors_get_channel_count_by_name(wasm_exec_env_t exec_env, const char *sensor_name);
+int ocre_sensors_get_channel_type_by_name(wasm_exec_env_t exec_env, const char *sensor_name, int channel_index);
+int ocre_sensors_read_by_name(wasm_exec_env_t exec_env, const char *sensor_name, int channel_type);
+
+/* Utility functions */
+int ocre_sensors_get_list(wasm_exec_env_t exec_env, char **name_list, int max_names);
+
 #endif /* OCRE_SENSORS_H */

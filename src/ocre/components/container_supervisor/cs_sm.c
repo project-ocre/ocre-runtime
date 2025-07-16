@@ -6,14 +6,14 @@
  */
 
 #include <ocre/ocre.h>
-#include <zephyr/logging/log.h>
+#include "ocre_core_external.h"
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
-
+#ifdef CONFIG_OCRE_SENSORS
+#include "../../ocre_sensors/ocre_sensors.h"
+#endif
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
 #include <ocre/ocre_container_runtime/ocre_container_runtime.h>
-
-#include "../../ocre_sensors/ocre_sensors.h"
 
 // Define state machine and component
 struct ocre_component ocre_cs_component;
@@ -64,35 +64,76 @@ static void runtime_running_run(void *o) {
     switch (msg->event) {
         case EVENT_CREATE_CONTAINER: {
             LOG_INF("EVENT_CREATE_CONTAINER");
-            if (CS_create_container(ctx, msg->containerId) == CONTAINER_STATUS_CREATED) {
+
+            if (msg->containerId < 0 || msg->containerId >= CONFIG_MAX_CONTAINERS) {
+                LOG_ERR("Invalid container ID: %d", msg->containerId);
+                break;
+            }
+
+            if (CS_create_container(&ctx->containers[msg->containerId]) == CONTAINER_STATUS_CREATED) {
                 LOG_INF("Created container in slot:%d", msg->containerId);
             } else {
-                LOG_INF("Failed to create container in slot:%d", msg->containerId);
+                LOG_ERR("Failed to create container in slot:%d", msg->containerId);
             }
             break;
         }
         case EVENT_RUN_CONTAINER: {
             LOG_INF("EVENT_RUN_CONTAINER");
-            if (CS_run_container(ctx, &msg->containerId) == CONTAINER_STATUS_RUNNING) {
+
+            if (msg->containerId < 0 || msg->containerId >= CONFIG_MAX_CONTAINERS) {
+                LOG_ERR("Invalid container ID: %d", msg->containerId);
+                break;
+            }
+
+            if (CS_run_container(&ctx->containers[msg->containerId]) == CONTAINER_STATUS_RUNNING) {
                 LOG_INF("Started container in slot:%d", msg->containerId);
             } else {
-                LOG_INF("Failed to run container in slot:%d", msg->containerId);
+                LOG_ERR("Failed to run container in slot:%d", msg->containerId);
             }
             break;
         }
         case EVENT_STOP_CONTAINER: {
             LOG_INF("EVENT_STOP_CONTAINER");
-            CS_stop_container(ctx, msg->containerId, callback);
+
+            if (msg->containerId < 0 || msg->containerId >= CONFIG_MAX_CONTAINERS) {
+                LOG_ERR("Invalid container ID: %d", msg->containerId);
+                break;
+            }
+
+            if (CS_stop_container(&ctx->containers[msg->containerId], callback) == CONTAINER_STATUS_STOPPED) {
+                LOG_INF("Stopped container in slot:%d", msg->containerId);
+            } else {
+                LOG_ERR("Failed to stop container in slot:%d", msg->containerId);
+            }
             break;
         }
         case EVENT_DESTROY_CONTAINER: {
             LOG_INF("EVENT_DESTROY_CONTAINER");
-            CS_destroy_container(ctx, msg->containerId, callback);
+
+            if (msg->containerId < 0 || msg->containerId >= CONFIG_MAX_CONTAINERS) {
+                LOG_ERR("Invalid container ID: %d", msg->containerId);
+                break;
+            }
+
+            if (CS_destroy_container(&ctx->containers[msg->containerId], callback) == CONTAINER_STATUS_DESTROYED) {
+                LOG_INF("Destroyed container in slot:%d", msg->containerId);
+            } else {
+                LOG_ERR("Failed to destroy container in slot:%d", msg->containerId);
+            }
             break;
         }
         case EVENT_RESTART_CONTAINER: {
             LOG_INF("EVENT_RESTART_CONTAINER");
-            CS_restart_container(ctx, msg->containerId, callback);
+            if (msg->containerId < 0 || msg->containerId >= CONFIG_MAX_CONTAINERS) {
+                LOG_ERR("Invalid container ID: %d", msg->containerId);
+                break;
+            }
+
+            if (CS_restart_container(&ctx->containers[msg->containerId], callback) == CONTAINER_STATUS_RUNNING) {
+                LOG_INF("Container in slot:%d restarted successfully", msg->containerId);
+            } else {
+                LOG_ERR("Failed to restart container in slot:%d", msg->containerId);
+            }
             break;
         }
         case EVENT_CS_DESTROY:
@@ -121,8 +162,6 @@ static const struct smf_state hsm[] = {
 // Entry point for running the state machine
 int _ocre_cs_run(ocre_cs_ctx *ctx) {
     ocre_component_init(&ocre_cs_component);
-
     sm_init(&ocre_cs_state_machine, &ocre_cs_component.msgq, &ocre_cs_component.msg, ctx, hsm);
-
     return sm_run(&ocre_cs_state_machine, STATE_RUNTIME_UNINITIALIZED);
 }

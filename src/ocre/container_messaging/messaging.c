@@ -1,4 +1,11 @@
 
+/**
+ * @copyright Copyright © contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include <zephyr/kernel.h>
 #include <string.h>
 #include <ocre/ocre.h>
@@ -7,8 +14,10 @@
 
 LOG_MODULE_DECLARE(ocre_container_messaging, OCRE_LOG_LEVEL);
 
+#define MESSAGING_MAX_MODULE_ENVS CONFIG_MAX_CONTAINERS
+
 #define QUEUE_SIZE      100
-#define STACK_SIZE      1024
+#define STACK_SIZE      4096
 #define PRIORITY        5
 #define WASM_STACK_SIZE (8 * 1024)
 
@@ -20,91 +29,79 @@ typedef struct {
     wasm_function_inst_t handler;
     wasm_module_inst_t module_inst;
     wasm_exec_env_t exec_env;
-} ocre_subscription_t;
+    bool is_active;
+} messaging_subscription_t;
 
-static ocre_subscription_t subscriptions[CONFIG_MESSAGING_MAX_SUBSCRIPTIONS];
-static int subscription_count = 0;
+typedef struct {
+    messaging_subscription_t info[CONFIG_MESSAGING_MAX_SUBSCRIPTIONS];
+    uint16_t subscriptions_number;
+} messaging_subscription_list;
+
+// Structure to hold all module environments
+typedef struct {
+    wasm_module_inst_t module_inst;
+    wasm_exec_env_t exec_env;
+    bool is_active;
+} messaging_module_env_t;
+
+typedef struct {
+    messaging_module_env_t module_info[MESSAGING_MAX_MODULE_ENVS];
+    uint16_t envs_number;
+} messaging_module_env_list;
+
+messaging_subscription_list subscription_list = {0};
+messaging_module_env_list module_env_list = {0};
+
 static bool msg_system_is_init = false;
-
-static uint32_t allocate_wasm_memory(wasm_module_inst_t module_inst, const void *src, size_t size) {
-    void *native_addr = NULL;
-    uint64_t wasm_ptr = wasm_runtime_module_malloc(module_inst, size, &native_addr);
-    if (!wasm_ptr || !native_addr) {
-        LOG_ERR("Failed to allocate memory in WASM");
-        return 0;
-    }
-    if (src) {
-        memcpy(native_addr, src, size);
-    }
-    return (uint32_t)wasm_ptr;
-}
-
-static void free_wasm_message(wasm_module_inst_t module_inst, uint32_t *ptr_array, uint16_t count) {
-    for (uint16_t i = 0; i < count; i++) {
-        if (ptr_array[i]) {
-            wasm_runtime_module_free(module_inst, ptr_array[i]);
-        }
-    }
-}
 
 void subscriber_thread(void *arg1, void *arg2, void *arg3) {
     ocre_msg_t msg;
+
     while (1) {
         if (k_msgq_get(&ocre_msg_queue, &msg, K_FOREVER) == 0) {
-            for (int i = 0; i < subscription_count; i++) {
-                if (strcmp(subscriptions[i].topic, msg.topic) == 0) {
+            for (int i = 0; i < CONFIG_MESSAGING_MAX_SUBSCRIPTIONS; i++) {
+                if (!subscription_list.info[i].is_active) {
+                    continue;
+                }
+                if (strcmp(subscription_list.info[i].topic, msg.topic) == 0) {
 
-                    wasm_module_inst_t module_inst = subscriptions[i].module_inst;
+                    wasm_module_inst_t module_inst = subscription_list.info[i].module_inst;
                     if (!module_inst) {
                         LOG_ERR("Invalid module instance");
                         continue;
                     }
 
-                    uint32_t allocated_pointers[4] = {0};
-                    // Allocate memory for ocre_msg_t
-                    allocated_pointers[0] = allocate_wasm_memory(module_inst, NULL, sizeof(ocre_msg_t));
-                    if (allocated_pointers[0] == 0) {
-                        LOG_ERR("Failed to allocate memory for message structure in WASM");
-                        continue;
-                    }
-
                     // Allocate memory for topic
-                    allocated_pointers[1] = allocate_wasm_memory(module_inst, msg.topic, strlen(msg.topic) + 1);
-                    if (allocated_pointers[1] == 0) {
+                    uint32_t topic_offset =
+                            (uint32_t)wasm_runtime_module_dup_data(module_inst, msg.topic, strlen(msg.topic) + 1);
+                    if (topic_offset == 0) {
                         LOG_ERR("Failed to allocate memory for topic in WASM");
-                        free_wasm_message(module_inst, allocated_pointers, 1);
                         continue;
                     }
 
                     // Allocate memory for content_type
-                    allocated_pointers[2] =
-                            allocate_wasm_memory(module_inst, msg.content_type, strlen(msg.content_type) + 1);
-                    if (allocated_pointers[2] == 0) {
+                    uint32_t content_offset = (uint32_t)wasm_runtime_module_dup_data(module_inst, msg.content_type,
+                                                                                     strlen(msg.content_type) + 1);
+                    if (content_offset == 0) {
                         LOG_ERR("Failed to allocate memory for content_type in WASM");
-                        free_wasm_message(module_inst, allocated_pointers, 2);
+                        wasm_runtime_module_free(module_inst, topic_offset);
                         continue;
                     }
 
                     // Allocate memory for payload
-                    allocated_pointers[3] = allocate_wasm_memory(module_inst, msg.payload, msg.payload_len);
-                    if (allocated_pointers[3] == 0) {
+                    uint32_t payload_offset =
+                            (uint32_t)wasm_runtime_module_dup_data(module_inst, msg.payload, msg.payload_len);
+                    if (payload_offset == 0) {
                         LOG_ERR("Failed to allocate memory for payload in WASM");
-                        free_wasm_message(module_inst, allocated_pointers, 3);
+                        wasm_runtime_module_free(module_inst, topic_offset);
+                        wasm_runtime_module_free(module_inst, content_offset);
                         continue;
                     }
 
-                    // Populate the WASM message structure
-                    ocre_msg_t *wasm_msg =
-                            (ocre_msg_t *)wasm_runtime_addr_app_to_native(module_inst, allocated_pointers[0]);
-                    wasm_msg->mid = msg.mid;
-                    wasm_msg->topic = (char *)allocated_pointers[1];
-                    wasm_msg->content_type = (char *)allocated_pointers[2];
-                    wasm_msg->payload = (void *)allocated_pointers[3];
-                    wasm_msg->payload_len = msg.payload_len;
-
                     // Call the WASM function
-                    uint32_t args[1] = {allocated_pointers[0]};
-                    if (!wasm_runtime_call_wasm(subscriptions[i].exec_env, subscriptions[i].handler, 1, args)) {
+                    uint32_t args[5] = {msg.mid, topic_offset, content_offset, payload_offset, msg.payload_len};
+                    if (!wasm_runtime_call_wasm(subscription_list.info[i].exec_env, subscription_list.info[i].handler,
+                                                5, args)) {
                         const char *error = wasm_runtime_get_exception(module_inst);
                         LOG_ERR("Failed to call WASM function: %s", error ? error : "Unknown error");
                     } else {
@@ -112,7 +109,9 @@ void subscriber_thread(void *arg1, void *arg2, void *arg3) {
                     }
 
                     // Free allocated WASM memory
-                    free_wasm_message(module_inst, allocated_pointers, 4);
+                    wasm_runtime_module_free(module_inst, topic_offset);
+                    wasm_runtime_module_free(module_inst, content_offset);
+                    wasm_runtime_module_free(module_inst, payload_offset);
                 }
             }
         }
@@ -133,12 +132,16 @@ void ocre_msg_system_init() {
     k_tid_t tid = k_thread_create(&subscriber_thread_data, subscriber_stack_area,
                                   K_THREAD_STACK_SIZEOF(subscriber_stack_area), subscriber_thread, NULL, NULL, NULL,
                                   PRIORITY, 0, K_NO_WAIT);
-
+    wasm_runtime_init_thread_env();
     if (!tid) {
         LOG_ERR("Failed to create container messaging thread");
         return;
     }
     k_thread_name_set(tid, "container_messaging");
+
+    memset(&module_env_list, 0, sizeof(messaging_module_env_list));
+    memset(&subscription_list, 0, sizeof(messaging_subscription_list));
+
     msg_system_is_init = true;
 }
 
@@ -166,12 +169,12 @@ int ocre_publish_message(wasm_exec_env_t exec_env, char *topic, char *content_ty
         return -1;
     }
 
-    static uint64_t message_id = 0;
+    static uint32_t message_id = 0;
     ocre_msg_t msg = {.mid = message_id,
                       .topic = topic,
                       .content_type = content_type,
                       .payload = payload,
-                      .payload_len = payload_len};
+                      .payload_len = (uint32_t)payload_len};
 
     message_id++;
 
@@ -192,37 +195,129 @@ int ocre_subscribe_message(wasm_exec_env_t exec_env, char *topic, char *handler_
         return -1;
     }
 
-    if (subscription_count < CONFIG_MESSAGING_MAX_SUBSCRIPTIONS) {
-
-        if (!topic || (topic[0] == '\0')) {
-            LOG_ERR("topic is NULL or empty, please check function parameters!");
-            return -1;
-        }
-
-        if (!handler_name || (handler_name[0] == '\0')) {
-            LOG_ERR("handler_name is NULL or empty, please check function parameters!");
-            return -1;
-        }
-
-        wasm_module_inst_t current_module_inst = wasm_runtime_get_module_inst(exec_env);
-        wasm_function_inst_t handler_function = wasm_runtime_lookup_function(current_module_inst, handler_name);
-        if (!handler_function) {
-            LOG_ERR("Failed to find %s in WASM module", handler_name);
-            return -1;
-        }
-
-        subscriptions[subscription_count].topic = topic;
-        subscriptions[subscription_count].handler = handler_function;
-        subscriptions[subscription_count].exec_env = exec_env;
-        subscriptions[subscription_count].module_inst = current_module_inst;
-
-        LOG_INF("WASM messaging callback function set successfully");
-
-        subscription_count++;
-    } else {
-        LOG_ERR("Maximum subscriptions reached, could not subscribe to topic");
+    if (subscription_list.subscriptions_number >= CONFIG_MESSAGING_MAX_SUBSCRIPTIONS) {
+        LOG_ERR("Maximum subscriptions reached");
         return -1;
     }
 
+    if (!topic || (topic[0] == '\0')) {
+        LOG_ERR("topic is NULL or empty, please check function parameters!");
+        return -1;
+    }
+
+    if (!handler_name || (handler_name[0] == '\0')) {
+        LOG_ERR("handler_name is NULL or empty, please check function parameters!");
+        return -1;
+    }
+
+    wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
+    if (!module_inst) {
+        LOG_ERR("Failed to retrieve module instance from execution environment");
+        return -1;
+    }
+
+    wasm_exec_env_t assigned_exec_env = NULL;
+    for (int i = 0; i < MESSAGING_MAX_MODULE_ENVS; i++) {
+        if (module_env_list.module_info[i].module_inst == module_inst) {
+            assigned_exec_env = module_env_list.module_info[i].exec_env;
+            break;
+        }
+    }
+
+    if (!assigned_exec_env) {
+        LOG_ERR("Execution environment not found for module instance");
+        return -1;
+    }
+
+    wasm_function_inst_t handler_function = wasm_runtime_lookup_function(module_inst, handler_name);
+    if (!handler_function) {
+        LOG_ERR("Failed to find %s in WASM module", handler_name);
+        return -1;
+    }
+
+    // Find a free slot for subscription and set a new subscription
+    for (int i = 0; i < CONFIG_MESSAGING_MAX_SUBSCRIPTIONS; i++) {
+        if (!subscription_list.info[i].is_active) {
+            subscription_list.info[i].topic = topic;
+            subscription_list.info[i].handler = handler_function;
+            subscription_list.info[i].exec_env = assigned_exec_env;
+            subscription_list.info[i].module_inst = module_inst;
+            subscription_list.info[i].is_active = true;
+
+            subscription_list.subscriptions_number++;
+            break;
+        }
+    }
+
+    LOG_INF("WASM messaging callback function set successfully");
     return 0;
+}
+
+void ocre_messaging_register_module(wasm_module_inst_t module_inst) {
+    if (module_env_list.envs_number >= MESSAGING_MAX_MODULE_ENVS) {
+        LOG_ERR("Maximum module instances reached");
+        return;
+    }
+
+    if (!module_inst) {
+        LOG_ERR("Module instance is NULL");
+        return;
+    }
+
+    // Check if module already exists
+    for (int i = 0; i < MESSAGING_MAX_MODULE_ENVS; i++) {
+        if (module_env_list.module_info[i].module_inst == module_inst) {
+            LOG_WRN("Module instance already set");
+            return;
+        }
+    }
+
+    // Create new exec env
+    wasm_exec_env_t exec_env = wasm_runtime_create_exec_env(module_inst, WASM_STACK_SIZE);
+    if (!exec_env) {
+        LOG_ERR("Failed to create execution environment");
+        return;
+    }
+
+    // Save module_inst and exec_env
+    for (int i = 0; i < MESSAGING_MAX_MODULE_ENVS; i++) {
+        if (!module_env_list.module_info[i].is_active) {
+            module_env_list.module_info[i].module_inst = module_inst;
+            module_env_list.module_info[i].exec_env = exec_env;
+            module_env_list.module_info[i].is_active = true;
+            module_env_list.envs_number++;
+            break;
+        }
+    }
+
+    LOG_INF("Module instance registered successfully");
+}
+
+void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst) {
+    if (!module_inst) {
+        LOG_ERR("Module instance is NULL");
+        return;
+    }
+
+    /* Stop and clear subscribers related to this module_inst */
+    for (int i = 0; i < CONFIG_MESSAGING_MAX_SUBSCRIPTIONS; i++) {
+        if (subscription_list.info[i].module_inst == module_inst && subscription_list.info[i].is_active) {
+            LOG_DBG("Cleaning up subscription: %s", subscription_list.info[i].topic);
+            memset(&subscription_list.info[i], 0, sizeof(messaging_subscription_t));
+            subscription_list.subscriptions_number--;
+        }
+    }
+    /* Destroy and clear module environments related to this module_inst */
+    for (int i = 0; i < MESSAGING_MAX_MODULE_ENVS; i++) {
+        if (module_env_list.module_info[i].module_inst == module_inst && module_env_list.module_info[i].is_active) {
+            if (module_env_list.module_info[i].exec_env) {
+                wasm_runtime_destroy_exec_env(module_env_list.module_info[i].exec_env);
+            }
+            memset(&module_env_list.module_info[i], 0, sizeof(messaging_module_env_t));
+            module_env_list.envs_number--;
+        }
+    }
+    wasm_runtime_destroy_thread_env();
+
+    LOG_INF("Cleaned up messaging for module %p", (void *)module_inst);
 }

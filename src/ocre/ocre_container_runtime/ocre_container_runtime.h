@@ -12,11 +12,7 @@
 #include "../../application/tests/ocre_container_runtime/stubs/container_healthcheck/ocre_container_healthcheck.h"
 #include "../../application/tests/ocre_container_runtime/stubs/k_sem/k_sem.h"
 #else
-#include <zephyr/fs/fs.h>
-#include <zephyr/kernel.h>
-#include "../container_healthcheck/ocre_container_healthcheck.h"
-#include <ocre/fs/fs.h>
-#include <ocre/sm/sm.h>
+#include "ocre_core_external.h"
 #endif
 
 #include <stdio.h>
@@ -24,9 +20,9 @@
 #include "wasm_export.h"
 
 #define OCRE_CR_DEBUG_ON     0   // Debug flag for container runtime (0: OFF, 1: ON)
-#define MAX_CONTAINERS       10  // Maximum number of containers supported by the runtime !!! Can be configurable
 #define FILE_PATH_MAX        256 // Maximum file path length
 #define OCRE_CR_INIT_TIMEOUT 500 // Timeout to wait for the container registry to initialize
+
 
 /**
  * @brief Structure containing the runtime arguments for a container runtime.
@@ -38,7 +34,6 @@ typedef struct ocre_runtime_arguments_t {
     wasm_module_t module;           ///< Handle to the loaded WASM module.
     wasm_module_inst_t module_inst; ///< Handle to the instantiated WASM module.
     wasm_function_inst_t func;      ///< Handle to the function to be executed within the WASM module.
-    wasm_exec_env_t exec_env;       ///< Execution environment for the WASM function.
     uint32_t stack_size;            ///< Stack size for the WASM module.
     uint32_t heap_size;             ///< Heap size for the WASM module.
 } ocre_runtime_arguments_t;
@@ -87,11 +82,10 @@ typedef struct ocre_container_runtime_init_arguments_t {
  * @brief Structure representing the data associated with a container.
  */
 typedef struct ocre_container_data_t {
-    char name[16];        // <! Name of module (must be unique per installed instance)
-    char sha256[70];      // <! Sha256 of file (to be used in file path)
-    uint32_t stack_size;  ///< Stack size for the WASM module.
+    char name[OCRE_MODULE_NAME_LEN];        // <! Name of module (must be unique per installed instance)
+    char sha256[OCRE_SHA256_LEN];      // <! Sha256 of file (to be used in file path)
+    uint32_t stack_size; ///< Stack size for the WASM module.
     uint32_t heap_size;   ///< Heap size for the WASM module.
-    ocre_healthcheck WDT; ///< Watchdog timer for container health checking.
     int watchdog_interval;
     int timers;
 } ocre_container_data_t;
@@ -103,6 +97,8 @@ typedef struct ocre_container_t {
     ocre_runtime_arguments_t ocre_runtime_arguments;  ///< Runtime arguments for the container.
     ocre_container_status_t container_runtime_status; ///< Current status of the container.
     ocre_container_data_t ocre_container_data;        ///< Container-specific data.
+    core_mutex_t lock;
+    uint32_t container_ID;
 } ocre_container_t;
 
 /**
@@ -112,8 +108,7 @@ typedef struct ocre_container_t {
  * It should not be accessed or modified by the caller.
  */
 typedef struct ocre_cs_ctx {
-    ocre_container_t containers[MAX_CONTAINERS];
-    int current_container_id;
+    ocre_container_t containers[CONFIG_MAX_CONTAINERS];
     int download_count;
 } ocre_cs_ctx;
 
@@ -172,8 +167,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
  *
  * @return Current status of the container after attempting to run it.
  */
-ocre_container_status_t ocre_container_runtime_run_container(ocre_cs_ctx *ctx, int container_id,
-                                                             ocre_container_runtime_cb callback);
+ocre_container_status_t ocre_container_runtime_run_container(int container_id, ocre_container_runtime_cb callback);
 
 /**
  * @brief Retrieves the current status of a specific container.
@@ -194,8 +188,7 @@ ocre_container_status_t ocre_container_runtime_get_container_status(ocre_cs_ctx 
  *
  * @return Current status of the container after attempting to stop it.
  */
-ocre_container_status_t ocre_container_runtime_stop_container(ocre_cs_ctx *ctx, int container_id,
-                                                              ocre_container_runtime_cb callback);
+ocre_container_status_t ocre_container_runtime_stop_container(int container_id, ocre_container_runtime_cb callback);
 
 /**
  * @brief Destroys and unloads a container from the runtime.
