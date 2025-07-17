@@ -1,0 +1,36 @@
+{
+    "name": "Flash Validation",
+    "description": "Test the Ocre runtime after the flash is complete",
+    "setup": [
+      {
+        "name": "Flash Validation Setup",
+        "exec": "bash setup.sh"
+      }
+    ],
+    "test_suites": [
+      {
+        "name": "Runtime Validation Tests",
+        "description": "Sends a break to the runtime and checks for the expected output",
+        "test_cases": [
+          {
+            "name": "Check Runtime Hello World",
+            "exec": "./flash_validation_hello_world.py"
+          },
+          {
+            "name": "Check Runetime Error",
+            "exec": "./flash_validation_error.py"
+          },
+          {
+            "name": "Check Runtime Hello World With Error",
+            "exec": "./flash_validation_hello_world_error.py"
+          }
+        ]
+      }
+    ],
+    "cleanup": [
+      {
+        "name": "Flash Validation Cleanup",
+        "exec": "bash clean.sh"
+      }
+    ]
+  }

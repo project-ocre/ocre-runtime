@@ -184,7 +184,8 @@ Distributed under the Apache License 2.0. See [LICENSE](https://github.com/proje
 ---
 
 ## More Info
-* **[Website](https://lfedge.org/projects/ocre/)**: For a high-level overview of the Ocre project, and its goals visit our website.
+* **[Website](https://lfedge.org/projects/ocre/)**: For a high-level overview of the Ocre project, and its goals, visit our website.
 * **[Docs](https://docs.project-ocre.org/)**: For more detailed information about the Ocre runtime, visit Ocre docs.
 * **[Wiki](https://lf-edge.atlassian.net/wiki/spaces/OCRE/overview?homepageId=14909442)**: For a full project overview, FAQs, project roadmap, and governance information, visit the Ocre Wiki.
-* **[Slack](https://lfedge.slack.com/archives/C07F190CC3X)**: If you need support, or simply want to discuss all things Ocre head on over to our Slack channel (`#ocre`) on LFEdge's Slack org.
+* **[Slack](https://lfedge.slack.com/archives/C07F190CC3X)**: If you need support or simply want to discuss all things Ocre, head on over to our Slack channel (`#ocre`) on LFEdge's Slack org.
+* **[Mailing list](https://lists.lfedge.org/g/Ocre-TSC)**: Join the Ocre Technical Steering Committee (TSC) mailing list to stay up to date with important project announcements, discussions, and meetings.
