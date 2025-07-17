@@ -1,4 +1,12 @@
+/**
+ * @copyright Copyright © contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
+#ifndef CONTAINER_MESSAGING_H
+#define CONTAINER_MESSAGING_H
 #include "wasm_export.h"
 
 /**
@@ -9,7 +17,7 @@
  */
 typedef struct ocre_msg {
     // message id - increments on each message
-    uint64_t mid;
+    uint32_t mid;
 
     // url of the request
     char *topic;
@@ -21,7 +29,7 @@ typedef struct ocre_msg {
     void *payload;
 
     // length in bytes of the payload
-    int payload_len;
+    uint32_t payload_len;
 } ocre_msg_t;
 
 /**
@@ -47,3 +55,17 @@ int ocre_publish_message(wasm_exec_env_t exec_env, char *topic, char *content_ty
  * @param handler_name name of callback function that will be called when a message is received on this topic
  */
 int ocre_subscribe_message(wasm_exec_env_t exec_env, char *topic, char *handler_name);
+
+/**
+ * @brief Register a new WASM module instance
+ * @param module_inst WASM module instance to register
+ */
+void ocre_messaging_register_module(wasm_module_inst_t module_inst);
+
+/**
+ * @brief Cleans up all subscriptions associated with a WASM module instance
+ * @param module_inst WASM module instance to clean up
+ */
+void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst);
+
+#endif /* CONTAINER_MESSAGING_H */

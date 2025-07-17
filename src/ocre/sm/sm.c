@@ -6,13 +6,16 @@
  */
 
 #include <ocre/ocre.h>
-#include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(state_machine, OCRE_LOG_LEVEL);
+#include "ocre_core_external.h"
 
-#include "sm.h"
+#include <string.h>
+#include <stdio.h>
 #include <errno.h>
 
-void sm_init(state_machine_t *sm, struct k_msgq *msgq, void *msg, void *custom_ctx, const struct smf_state *hsm) {
+#include "sm.h"
+LOG_MODULE_REGISTER(state_machine, OCRE_LOG_LEVEL);
+
+void sm_init(state_machine_t *sm, core_mq_t *msgq, void *msg, void *custom_ctx, const struct smf_state *hsm) {
     sm->hsm = hsm;
     sm->msgq = msgq;
     sm->ctx.event.msg = msg;
@@ -25,7 +28,8 @@ int sm_run(state_machine_t *sm, int initial_state) {
     smf_set_initial(SMF_CTX(&sm->ctx), &sm->hsm[initial_state]);
 
     while (true) {
-        k_msgq_get(sm->msgq, sm->ctx.event.msg, K_FOREVER);
+        // Wait for a message from the queue
+        core_mq_recv(sm->msgq, sm->ctx.event.msg);
         sm->ctx.event.handled = false;
 
         ret = smf_run_state(SMF_CTX(&sm->ctx));
@@ -40,7 +44,7 @@ int sm_run(state_machine_t *sm, int initial_state) {
         }
 
         // Yield the current thread to allow the queue events to be processed
-        k_yield();
+        core_yield();
     }
 
     return ret;
@@ -62,18 +66,18 @@ int sm_init_event_timer(state_machine_t *sm, int timer_id, void *timer_cb) {
         LOG_ERR("Invalid timer id: %d", timer_id);
         return -EINVAL;
     }
-
-    k_timer_init(&sm->timers[timer_id], timer_cb, NULL);
+    
+    core_timer_init(&sm->timers[timer_id], timer_cb, NULL);
     return 0;
 }
 
-int sm_set_event_timer(state_machine_t *sm, int timer_id, k_timeout_t duration, k_timeout_t period) {
+int sm_set_event_timer(state_machine_t *sm, int timer_id, int duration, int period) {
     if (timer_id < 0 || timer_id >= MAX_TIMERS) {
         LOG_ERR("Invalid timer id: %d", timer_id);
         return -EINVAL;
     }
 
-    k_timer_start(&sm->timers[timer_id], duration, period);
+    core_timer_start(&sm->timers[timer_id], duration, period);
     return 0;
 }
 
@@ -83,6 +87,6 @@ int sm_clear_event_timer(state_machine_t *sm, int timer_id) {
         return -EINVAL;
     }
 
-    k_timer_stop(&sm->timers[timer_id]);
+    core_timer_stop(&sm->timers[timer_id]);
     return 0;
 }

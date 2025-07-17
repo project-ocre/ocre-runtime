@@ -8,8 +8,7 @@
 #ifndef SM_H
 #define SM_H
 
-#include <zephyr/kernel.h>
-#include <zephyr/smf.h>
+#include "ocre_core_external.h"
 
 #define MAX_TIMERS 3
 
@@ -32,24 +31,24 @@ struct sm_ctx {
 };
 
 typedef struct state_machine {
-    struct k_msgq *msgq;
-    struct k_timer timers[MAX_TIMERS];
-    struct sm_ctx ctx;
-    const struct smf_state *hsm;
+    core_mq_t *msgq;
+    core_timer_t timers[MAX_TIMERS];
+    struct sm_ctx ctx;         /*!< State machine context */
+    const struct smf_state *hsm; /*!< State machine states */
 } state_machine_t;
 
 int sm_transition(state_machine_t *sm, int target_state);
 
+int sm_run(state_machine_t *sm, int initial_state);
+
 int sm_init_event_timer(state_machine_t *sm, int timer_id, void *timer_cb);
 
-int sm_set_event_timer(state_machine_t *sm, int timer_id, k_timeout_t duration, k_timeout_t period);
+int sm_set_event_timer(state_machine_t *sm, int timer_id, int duration, int period);
 
 int sm_clear_event_timer(state_machine_t *sm, int timer_id);
 
 int sm_dispatch_event(state_machine_t *sm, void *msg);
 
-int sm_run(state_machine_t *sm, int initial_state);
+void sm_init(state_machine_t *sm, core_mq_t *msgq, void *msg, void *custom_ctx, const struct smf_state *hsm);
 
-void sm_init(state_machine_t *sm, struct k_msgq *msgq, void *msg, void *custom_ctx, const struct smf_state *hsm);
-
-#endif
+#endif // SM_H
