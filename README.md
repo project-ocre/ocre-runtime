@@ -8,7 +8,11 @@
 [![slack](https://img.shields.io/badge/slack-ocre-brightgreen.svg?logo=slack)](https://lfedge.slack.com/archives/C07F190CC3X)
 [![Stars](https://img.shields.io/github/stars/project-ocre/ocre-runtime?style=social)](Stars)
 
-Ocre is a container runtime for constrained devices. It leverages [WebAssembly](https://www.webassembly.org) and [Zephyr](https://www.zephyrproject.org/) to support OCI-type application containers in a footprint up to 2,000 times smaller than traditional Linux-based container runtimes. Our mission is to modernize the embedded applications by making it as easy to develop and securely deploy apps on constrained edge devices as it is in the cloud.
+Powered by WebAssembly, the Ocre runtime is available in both Zephyr and Linux variants and supports OCI-like application containers in a footprint up to 2000x lighter than traditional container runtimes like Docker.
+
+With Ocre, developers can run the exact same application container binaries written in choice of programming language on both the Linux and Zephyr-based runtime versions spanning CPU and MCU-based devices.
+
+Our mission is to make it as easy to develop and securely deploy apps for the billions of embedded devices in the physical world as it is in the cloud.
 
 ---
 
