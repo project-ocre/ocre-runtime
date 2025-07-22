@@ -13,27 +13,25 @@
 #include <zephyr/drivers/mm/system_mm.h>
 #include <zephyr/sys/slist.h>
 #include <stdlib.h>
+#include <string.h>
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include <autoconf.h>
 #include "../../../../../wasm-micro-runtime/core/iwasm/include/lib_export.h"
 #include "bh_log.h"
 #include "../ocre_timers/ocre_timer.h"
 #include "../ocre_gpio/ocre_gpio.h"
+#include "../ocre_messaging/ocre_messaging.h"
 #include "ocre_common.h"
 #include <zephyr/sys/ring_buffer.h>
+// Place queue buffer in a dedicated section with alignments
+#define SIZE_OCRE_EVENT_BUFFER 32
+__attribute__((section(".noinit.ocre_event_queue"),
+               aligned(8))) char ocre_event_queue_buffer[SIZE_OCRE_EVENT_BUFFER * sizeof(ocre_event_t)];
+char *ocre_event_queue_buffer_ptr = ocre_event_queue_buffer; // Pointer for validation
 
-// Place queue buffer in a dedicated section with alignment
-__attribute__((section(".noinit.wasm_event_queue"),
-               aligned(8))) char wasm_event_queue_buffer[64 * sizeof(wasm_event_t)];
-
-char *wasm_event_queue_buffer_ptr = wasm_event_queue_buffer; // Pointer for validation
-K_MSGQ_DEFINE(wasm_event_queue, sizeof(wasm_event_t), 64, 4);
-bool wasm_event_queue_initialized = false;
-struct k_spinlock wasm_event_queue_lock;
-
-#define EVENT_BUFFER_SIZE 512
-static uint8_t event_buffer[EVENT_BUFFER_SIZE];
-static struct ring_buf event_ring;
+K_MSGQ_DEFINE(ocre_event_queue, sizeof(ocre_event_t), SIZE_OCRE_EVENT_BUFFER, 4);
+bool ocre_event_queue_initialized = false;
+struct k_spinlock ocre_event_queue_lock;
 
 typedef struct module_node {
     ocre_module_context_t ctx;
@@ -48,170 +46,115 @@ static struct cleanup_handler {
     ocre_cleanup_handler_t handler;
 } cleanup_handlers[OCRE_RESOURCE_TYPE_COUNT];
 
+bool common_initialized = false;
+
 /* Thread-Local Storage */
 __thread wasm_module_inst_t *current_module_tls = NULL;
 
-bool common_initialized = false;
-
-static struct k_sem event_sem;
-
-#define EVENT_THREAD_POOL_SIZE 2
-static struct core_thread event_threads[EVENT_THREAD_POOL_SIZE];
-
-// Flag to signal event threads to exit gracefully
-static volatile bool event_threads_exit = false;
-
+#if EVENT_THREAD_POOL_SIZE > 0
 // Arguments for event threads
 struct event_thread_args {
     int index; // Thread index for identification or logging
 };
-
+static struct core_thread event_threads[EVENT_THREAD_POOL_SIZE];
+// Flag to signal event threads to exit gracefully
+static volatile bool event_threads_exit = false;
 static struct event_thread_args event_args[EVENT_THREAD_POOL_SIZE];
 
 // Event thread function to process events from the ring buffer
 static void event_thread_fn(void *arg1) {
     struct event_thread_args *args = (struct event_thread_args *)arg1;
-    int index = args->index; // Can be used for logging or debugging
     // Initialize WASM runtime thread environment
     wasm_runtime_init_thread_env();
-
-    wasm_event_t event_batch[10];
-    uint32_t bytes_read;
-
     // Main event processing loop
-    while (!event_threads_exit) {
-        k_sem_take(&event_sem, K_FOREVER);
-        if (event_threads_exit) {
-            break; // Exit if shutdown is signaled
-        }
-        bytes_read = ring_buf_get(&event_ring, (uint8_t *)event_batch, sizeof(event_buffer));
-        for (size_t i = 0; i < bytes_read / sizeof(wasm_event_t); i++) {
-            wasm_event_t *event = &event_batch[i];
-            if (!event) {
-                LOG_ERR("Null event in batch");
-                continue;
-            }
-            if (event->type >= OCRE_RESOURCE_TYPE_COUNT) {
-                LOG_ERR("Invalid event type: %d", event->type);
-                continue;
-            }
-            wasm_module_inst_t module_inst = current_module_tls ? *current_module_tls : NULL;
-            if (!module_inst) {
-                LOG_ERR("No module instance for event type %d", event->type);
-                continue;
-            }
-            switch (event->type) {
-                case OCRE_RESOURCE_TYPE_TIMER:
-                    LOG_INF("Timer event: id=%d, owner=%p", event->id, (void *)module_inst);
-                    break;
-                case OCRE_RESOURCE_TYPE_GPIO:
-                    LOG_INF("GPIO event: id=%d, state=%d, owner=%p", event->id, event->state, (void *)module_inst);
-                    break;
-                case OCRE_RESOURCE_TYPE_SENSOR:
-                    LOG_INF("Sensor event: id=%d, channel=%d, value=%d, owner=%p", event->id, event->port, event->state,
-                            (void *)module_inst);
-                    break;
-                default:
-                    LOG_ERR("Unhandled event type: %d", event->type);
-                    continue;
-            }
-            k_mutex_lock(&registry_mutex, K_FOREVER);
-            module_node_t *node;
-            bool found = false;
-            SYS_SLIST_FOR_EACH_CONTAINER(&module_registry, node, node) {
-                if (node->ctx.inst == module_inst) {
-                    found = true;
-                    wasm_function_inst_t dispatcher = node->ctx.dispatchers[event->type];
-                    if (!dispatcher) {
-                        LOG_ERR("No dispatcher for event type %d, module %p", event->type, (void *)module_inst);
-                        break;
-                    }
-                    if (!node->ctx.exec_env) {
-                        LOG_ERR("Null exec_env for module %p", (void *)module_inst);
-                        break;
-                    }
-                    // Array to store arguments for wasm_event_t handler. Size is 3 to hold:
-                    // 1. Event type identifier
-                    // 2. Event data pointer
-                    // 3. Additional context or flags
-                    uint32_t args[3] = {0};
-                    bool result = false;
-                    current_module_tls = &node->ctx.inst;
-                    switch (event->type) {
-                        case OCRE_RESOURCE_TYPE_TIMER:
-                            args[0] = event->id;
-                            LOG_INF("Dispatching timer event: ID=%d", args[0]);
-                            result = wasm_runtime_call_wasm(node->ctx.exec_env, dispatcher, 1, args);
-                            break;
-                        case OCRE_RESOURCE_TYPE_GPIO:
-                            args[0] = event->id;
-                            args[1] = event->state;
-                            LOG_INF("Dispatching GPIO event: pin=%d, state=%d", args[0], args[1]);
-                            result = wasm_runtime_call_wasm(node->ctx.exec_env, dispatcher, 2, args);
-                            break;
-                        case OCRE_RESOURCE_TYPE_SENSOR:
-                            args[0] = event->id;
-                            args[1] = event->port;
-                            args[2] = event->state;
-                            LOG_INF("Dispatching sensor event: ID=%d, channel=%d, value=%d", args[0], args[1], args[2]);
-                            result = wasm_runtime_call_wasm(node->ctx.exec_env, dispatcher, 3, args);
-                            break;
-                        default:
-                            LOG_ERR("Unknown event type in dispatcher");
-                            break;
-                    }
-                    if (!result) {
-                        LOG_ERR("WASM call failed: %s", wasm_runtime_get_exception(module_inst));
-                    }
-                    current_module_tls = NULL;
-                    node->ctx.last_activity = k_uptime_get_32();
-                    break;
-                }
-            }
-            k_mutex_unlock(&registry_mutex);
-            if (!found) {
-                LOG_ERR("Module instance %p not found in registry", (void *)module_inst);
-            }
-        }
-    }
-
-    // Clean up WASM runtime thread environment
+    // Do something in wasm
+    // Saved for future usage
+    // Clean up WASM runtime thread envirnment
     wasm_runtime_destroy_thread_env();
 }
+#endif 
 
 int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_offset, uint32_t port_offset,
-                   uint32_t state_offset) {
+                   uint32_t state_offset, uint32_t extra_offset, uint32_t payload_len_offset) {
     wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
     if (!module_inst) {
-        LOG_ERR("No module instance for exec_env");
+        LOG_ERR("No module instance for exec_env\n");
         return -EINVAL;
     }
 
-    int32_t *type_native = (int32_t *)wasm_runtime_addr_app_to_native(module_inst, type_offset);
-    int32_t *id_native = (int32_t *)wasm_runtime_addr_app_to_native(module_inst, id_offset);
-    int32_t *port_native = (int32_t *)wasm_runtime_addr_app_to_native(module_inst, port_offset);
-    int32_t *state_native = (int32_t *)wasm_runtime_addr_app_to_native(module_inst, state_offset);
+    uint32_t *type_native = (uint32_t *)wasm_runtime_addr_app_to_native(module_inst, type_offset);
+    uint32_t *id_native = (uint32_t *)wasm_runtime_addr_app_to_native(module_inst, id_offset);
+    uint32_t *port_native = (uint32_t *)wasm_runtime_addr_app_to_native(module_inst, port_offset);
+    uint32_t *state_native = (uint32_t *)wasm_runtime_addr_app_to_native(module_inst, state_offset);
+    uint32_t *extra_native = (uint32_t *)wasm_runtime_addr_app_to_native(module_inst, extra_offset);
+    uint32_t *payload_len_native = (uint32_t *)wasm_runtime_addr_app_to_native(module_inst, payload_len_offset);
 
-    if (!type_native || !id_native || !port_native || !state_native) {
+    if (!type_native || !id_native || !port_native || !state_native || !extra_native || !payload_len_native) {
         LOG_ERR("Invalid offsets provided");
         return -EINVAL;
     }
-
-    wasm_event_t event;
-    k_spinlock_key_t key = k_spin_lock(&wasm_event_queue_lock);
-    int ret = k_msgq_get(&wasm_event_queue, &event, K_NO_WAIT);
+    ocre_event_t event;
+    k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
+    int ret = k_msgq_get(&ocre_event_queue, &event, K_FOREVER);
     if (ret != 0) {
-        k_spin_unlock(&wasm_event_queue_lock, key);
+        k_spin_unlock(&ocre_event_queue_lock, key);
         return -ENOENT;
     }
-
-    *type_native = event.type;
-    *id_native = event.id;
-    *port_native = event.port;
-    *state_native = event.state;
-
-    LOG_INF("Retrieved event: type=%d, id=%d, port=%d, state=%d", event.type, event.id, event.port, event.state);
-    k_spin_unlock(&wasm_event_queue_lock, key);
+    // Send event correctly to WASM
+    switch (event.type) {
+        case OCRE_RESOURCE_TYPE_TIMER: {
+            LOG_INF("Retrieved Timer event timer_id=%u, owner=%p\n", event.data.timer_event.timer_id,
+                    (void *)event.data.timer_event.owner);
+            *type_native = event.type;
+            *id_native = event.data.timer_event.timer_id;
+            *port_native = 0;
+            *state_native = 0;
+            *extra_native = 0;
+            *payload_len_native = 0;
+            break;
+        }
+        case OCRE_RESOURCE_TYPE_GPIO: {
+            LOG_INF("Retrieved Gpio event pin_id=%u, port=%u, state=%u, owner=%p\n", event.data.gpio_event.pin_id,
+                    event.data.gpio_event.port, event.data.gpio_event.state, (void *)event.data.gpio_event.owner);
+            *type_native = event.type;
+            *id_native = event.data.gpio_event.pin_id;
+            *port_native = event.data.gpio_event.port;
+            *state_native = event.data.gpio_event.state;
+            *extra_native = 0;
+            *payload_len_native = 0;
+            break;
+        }
+        case OCRE_RESOURCE_TYPE_SENSOR: {
+            // Not used as we don't use callbacks in sensor API yet
+            break;
+        }
+        case OCRE_RESOURCE_TYPE_MESSAGING: {
+            LOG_INF("Retrieved Messaging event: message_id=%u, topic=%s, topic_offset=%u, content_type=%s, "
+                    "content_type_offset=%u, payload_len=%d, owner=%p\n",
+                    event.data.messaging_event.message_id, event.data.messaging_event.topic,
+                    event.data.messaging_event.topic_offset, event.data.messaging_event.content_type,
+                    event.data.messaging_event.content_type_offset, event.data.messaging_event.payload_len,
+                    (void *)event.data.messaging_event.owner);
+            *type_native = event.type;
+            *id_native = event.data.messaging_event.message_id;
+            *port_native = event.data.messaging_event.topic_offset;
+            *state_native = event.data.messaging_event.content_type_offset;
+            *extra_native = event.data.messaging_event.payload_offset;
+            *payload_len_native = event.data.messaging_event.payload_len;
+            break;
+        }
+        /*
+            =================================
+            Place to add more resource types
+            =================================
+        */
+        default: {
+            k_spin_unlock(&ocre_event_queue_lock, key);
+            LOG_ERR("Invalid event type: %u\n", event.type);
+            return -EINVAL;
+        }
+    }
+    k_spin_unlock(&ocre_event_queue_lock, key);
     return 0;
 }
 
@@ -223,43 +166,50 @@ int ocre_common_init(void) {
     }
     k_mutex_init(&registry_mutex);
     sys_slist_init(&module_registry);
-    k_sem_init(&event_sem, 0, UINT_MAX);
-    ring_buf_init(&event_ring, EVENT_BUFFER_SIZE, event_buffer);
-    if ((uintptr_t)wasm_event_queue_buffer_ptr % 4 != 0) {
-        LOG_ERR("wasm_event_queue_buffer misaligned: %p", (void *)wasm_event_queue_buffer_ptr);
+    if ((uintptr_t)ocre_event_queue_buffer_ptr % 4 != 0) {
+        LOG_ERR("ocre_event_queue_buffer misaligned: %p", (void *)ocre_event_queue_buffer_ptr);
         return -EINVAL;
     }
-    k_msgq_init(&wasm_event_queue, wasm_event_queue_buffer, sizeof(wasm_event_t), 64);
-    wasm_event_t dummy;
-    while (k_msgq_get(&wasm_event_queue, &dummy, K_NO_WAIT) == 0) {
+    k_msgq_init(&ocre_event_queue, ocre_event_queue_buffer, sizeof(ocre_event_t), 64);
+    ocre_event_t dummy;
+    while (k_msgq_get(&ocre_event_queue, &dummy, K_NO_WAIT) == 0) {
         LOG_INF("Purged stale event from queue");
     }
-    wasm_event_queue_initialized = true;
-    LOG_INF("wasm_event_queue initialized at %p, size=%d, buffer=%p", (void *)&wasm_event_queue, sizeof(wasm_event_t),
-            (void *)wasm_event_queue_buffer_ptr);
+    ocre_event_queue_initialized = true;
+#if EVENT_THREAD_POOL_SIZE > 0
+    LOG_INF("ocre_event_queue initialized at %p, size=%d, buffer=%p", (void *)&ocre_event_queue, sizeof(ocre_event_t),
+            (void *)ocre_event_queue_buffer_ptr);
     for (int i = 0; i < EVENT_THREAD_POOL_SIZE; i++) {
         event_args[i].index = i;
         char thread_name[16];
         snprintf(thread_name, sizeof(thread_name), "event_thread_%d", i);
-        int ret = core_thread_create(&event_threads[i], event_thread_fn, &event_args[i], thread_name, EVENT_THREAD_STACK_SIZE, 5);
+        int ret = core_thread_create(&event_threads[i], event_thread_fn, &event_args[i], thread_name,
+                                     EVENT_THREAD_STACK_SIZE, 5);
         if (ret != 0) {
             LOG_ERR("Failed to create thread for event %d", i);
             return -1;
         }
         LOG_INF("Started event thread %s", thread_name);
     }
+#endif
     initialized = true;
     common_initialized = true;
     LOG_INF("OCRE common initialized successfully");
     return 0;
 }
 
-// Signal event threads to exit gracefully
 void ocre_common_shutdown(void) {
+    #if EVENT_THREAD_POOL_SIZE > 0
     event_threads_exit = true;
-    for (int i = 0; i < EVENT_THREAD_POOL_SIZE; i++) {
-        k_sem_give(&event_sem);
+    for (int i = EVENT_THREAD_POOL_SIZE; i > 0; i--) {
+        event_args[i].index = i;
+        char thread_name[16];
+        snprintf(thread_name, sizeof(thread_name), "event_thread_%d", i);
+        core_thread_destroy(&event_threads[i]);
     }
+    #endif 
+    common_initialized = false;
+    LOG_INF("OCRE common shutdown successfully");
 }
 
 int ocre_register_cleanup_handler(ocre_resource_type_t type, ocre_cleanup_handler_t handler) {
@@ -367,28 +317,6 @@ int ocre_register_dispatcher(wasm_exec_env_t exec_env, ocre_resource_type_t type
     ctx->dispatchers[type] = func;
     k_mutex_unlock(&registry_mutex);
     LOG_INF("Registered dispatcher for type %d: %s", type, function_name);
-    return 0;
-}
-
-int ocre_post_event(ocre_event_t *event) {
-    if (!event) {
-        LOG_ERR("Null event");
-        return -EINVAL;
-    }
-    if (event->type >= OCRE_RESOURCE_TYPE_COUNT) {
-        LOG_ERR("Invalid event type: %d", event->type);
-        return -EINVAL;
-    }
-    if (ring_buf_space_get(&event_ring) < sizeof(ocre_event_t)) {
-        LOG_ERR("Event ring buffer full");
-        return -ENOMEM;
-    }
-    if (ring_buf_put(&event_ring, (uint8_t *)event, sizeof(ocre_event_t)) != sizeof(ocre_event_t)) {
-        LOG_ERR("Failed to post event to ring buffer");
-        return -ENOMEM;
-    }
-    k_sem_give(&event_sem);
-    LOG_INF("Posted event: type=%d", event->type);
     return 0;
 }
 

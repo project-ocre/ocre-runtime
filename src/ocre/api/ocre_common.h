@@ -11,23 +11,34 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/slist.h>
 #include <wasm_export.h>
+#include "../ocre_messaging/ocre_messaging.h"
 
 #define OCRE_EVENT_THREAD_STACK_SIZE 2048
 #define OCRE_EVENT_THREAD_PRIORITY   5
 #define OCRE_WASM_STACK_SIZE         16384
+#define EVENT_THREAD_POOL_SIZE 0
+
 
 extern bool common_initialized;
-extern bool wasm_event_queue_initialized;
+extern bool ocre_event_queue_initialized;
 extern __thread wasm_module_inst_t *current_module_tls;
+
+
+extern struct k_msgq ocre_event_queue;          // Defined in ocre_common.c
+extern bool ocre_event_queue_initialized;       // Defined in ocre_common.c
+extern struct k_spinlock ocre_event_queue_lock; // Defined in ocre_common.c
+extern char *ocre_event_queue_buffer_ptr;       // Defined in ocre_common.c
+
 
 /**
  * @brief Enumeration of OCRE resource types.
  */
 typedef enum {
-    OCRE_RESOURCE_TYPE_TIMER,  ///< Timer resource
-    OCRE_RESOURCE_TYPE_GPIO,   ///< GPIO resource
-    OCRE_RESOURCE_TYPE_SENSOR, ///< Sensor resource
-    OCRE_RESOURCE_TYPE_COUNT   ///< Total number of resource types
+    OCRE_RESOURCE_TYPE_TIMER,     ///< Timer resource
+    OCRE_RESOURCE_TYPE_GPIO,      ///< GPIO resource
+    OCRE_RESOURCE_TYPE_SENSOR,    ///< Sensor resource 
+    OCRE_RESOURCE_TYPE_MESSAGING, ///< Messaging resource
+    OCRE_RESOURCE_TYPE_COUNT      ///< Total number of resource types
 } ocre_resource_type_t;
 
 /**
@@ -50,16 +61,6 @@ typedef struct {
 typedef void (*ocre_cleanup_handler_t)(wasm_module_inst_t module_inst);
 
 /**
- * @brief Structure representing a WASM event for the event queue.
- */
-typedef struct {
-    uint32_t type;  ///< Event type
-    uint32_t id;    ///< Event ID
-    uint32_t port;  ///< Port associated with the event
-    uint32_t state; ///< State associated with the event
-} wasm_event_t;
-
-/**
  * @brief Structure representing an OCRE event for dispatching.
  */
 typedef struct {
@@ -70,6 +71,7 @@ typedef struct {
         } timer_event;                ///< Timer event data
         struct {
             uint32_t pin_id;          ///< GPIO pin ID
+            uint32_t port;           ///< GPIO port 
             uint32_t state;           ///< GPIO state
             wasm_module_inst_t owner; ///< Owner module instance
         } gpio_event;                 ///< GPIO event data
@@ -79,6 +81,22 @@ typedef struct {
             uint32_t value;           ///< Sensor value
             wasm_module_inst_t owner; ///< Owner module instance
         } sensor_event;               ///< Sensor event data
+        struct {
+            uint32_t message_id;                ///< Message ID
+            char *topic;                        ///< Message topic
+            uint32_t topic_offset;              ///< Message topic offset
+            char *content_type;                 ///< Message content type
+            uint32_t content_type_offset;       ///< Message content type offset
+            void *payload;                      ///< Message payload
+            uint32_t payload_offset;            ///< Message payload offset
+            uint32_t payload_len;               ///< Payload length
+            wasm_module_inst_t owner;           ///< Owner module instance
+        } messaging_event;            ///< Messaging event data
+        /*
+            =============================
+            Place to add more event data  
+            =============================
+        */
     } data;                           ///< Union of event data
     ocre_resource_type_t type;        ///< Type of the event
 } ocre_event_t;
@@ -124,14 +142,6 @@ ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst);
  * @return 0 on success, negative error code on failure.
  */
 int ocre_register_dispatcher(wasm_exec_env_t exec_env, ocre_resource_type_t type, const char *function_name);
-
-/**
- * @brief Post an event to the OCRE event queue.
- *
- * @param event Pointer to the event to post.
- * @return 0 on success, negative error code on failure.
- */
-int ocre_post_event(ocre_event_t *event);
 
 /**
  * @brief Get the count of resources of a specific type for a module.
@@ -189,10 +199,12 @@ wasm_module_inst_t ocre_get_current_module(void);
  * @param id_offset Offset in WASM memory for event ID.
  * @param port_offset Offset in WASM memory for event port.
  * @param state_offset Offset in WASM memory for event state.
+ * @param extra_offset Offset in WASM memory for extra data.
+ * @param payload_len_offset Offset in WASM memory for payload length.
  * @return 0 on success, negative error code on failure.
  */
 int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_offset, uint32_t port_offset,
-                   uint32_t state_offset);
+                   uint32_t state_offset, uint32_t extra_offset, uint32_t payload_len_offset);
 
 void ocre_common_shutdown(void);
 

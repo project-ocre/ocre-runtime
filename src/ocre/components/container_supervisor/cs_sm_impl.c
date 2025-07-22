@@ -14,11 +14,12 @@
 #include "ocre_gpio/ocre_gpio.h"
 #endif
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
-#include "container_messaging/messaging.h"
+#include "ocre_messaging/ocre_messaging.h"
 #endif
 #if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
 #include "api/ocre_common.h"
 #endif
+
 
 #ifdef CONFIG_OCRE_SHELL
 #include "ocre/shell/ocre_shell.h"
@@ -32,7 +33,6 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
 
-static char filepath[FILE_PATH_MAX];
 static char wamr_heap_buf[CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE] = {0};
 
 // Thread pool for container execution
@@ -250,7 +250,7 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
     ocre_timer_init();
 #endif
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
-    ocre_msg_system_init();
+    ocre_messaging_init();
 #endif
     return RUNTIME_STATUS_INITIALIZED;
 }
