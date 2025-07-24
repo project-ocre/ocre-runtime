@@ -82,10 +82,17 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
 
     // Iterate through subscriptions to find matching topics
     for (int i = 0; i < MESSAGING_MAX_SUBSCRIPTIONS; i++) {
-        if (!subscription_list.info[i].is_active ||
-            strcmp((char *)subscription_list.info[i].topic, (char *)topic) != 0) {
+        if (!subscription_list.info[i].is_active) {
             continue;
         }
+
+        char *subscribed_topic = (char *)subscription_list.info[i].topic;
+        size_t subscribed_len = strlen(subscribed_topic);
+
+        if (strncmp(subscribed_topic, (char *)topic, subscribed_len) != 0) {
+            continue; // No prefix match
+        }
+
         wasm_module_inst_t target_module = subscription_list.info[i].module_inst;
         if (!target_module) {
             LOG_ERR("Invalid module instance for subscription %d", i);
@@ -124,7 +131,7 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
         event.data.messaging_event.payload = payload;
         event.data.messaging_event.payload_offset = payload_offset;
         event.data.messaging_event.payload_len = (uint32_t)payload_len;
-        event.data.messaging_event.owner = target_module;
+        event.owner = target_module;
 
         k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
         if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {

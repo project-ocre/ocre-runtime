@@ -67,19 +67,16 @@ typedef struct {
     union {
         struct {
             uint32_t timer_id;        ///< Timer ID
-            wasm_module_inst_t owner; ///< Owner module instance
         } timer_event;                ///< Timer event data
         struct {
             uint32_t pin_id;          ///< GPIO pin ID
             uint32_t port;           ///< GPIO port 
             uint32_t state;           ///< GPIO state
-            wasm_module_inst_t owner; ///< Owner module instance
         } gpio_event;                 ///< GPIO event data
         struct {
             uint32_t sensor_id;       ///< Sensor ID
             uint32_t channel;         ///< Sensor channel
             uint32_t value;           ///< Sensor value
-            wasm_module_inst_t owner; ///< Owner module instance
         } sensor_event;               ///< Sensor event data
         struct {
             uint32_t message_id;                ///< Message ID
@@ -90,7 +87,6 @@ typedef struct {
             void *payload;                      ///< Message payload
             uint32_t payload_offset;            ///< Message payload offset
             uint32_t payload_len;               ///< Payload length
-            wasm_module_inst_t owner;           ///< Owner module instance
         } messaging_event;            ///< Messaging event data
         /*
             =============================
@@ -98,6 +94,7 @@ typedef struct {
             =============================
         */
     } data;                           ///< Union of event data
+    wasm_module_inst_t owner;           ///< Owner module instance
     ocre_resource_type_t type;        ///< Type of the event
 } ocre_event_t;
 

@@ -447,7 +447,7 @@ static void gpio_callback_handler(const struct device *port, struct gpio_callbac
             event.data.gpio_event.pin_id = gpio_pins[i].pin_number;
             event.data.gpio_event.port = gpio_pins[i].port_idx;
             event.data.gpio_event.state = (uint32_t)state;
-            event.data.gpio_event.owner = -ENOENT;
+            event.owner = gpio_pins[i].owner;
             k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
             if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {
                 LOG_ERR("Failed to queue GPIO event for pin %d", i);

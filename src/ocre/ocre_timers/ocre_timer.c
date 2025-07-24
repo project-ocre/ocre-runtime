@@ -26,7 +26,7 @@ typedef struct {
     uint32_t id: 8;        // Up to 256 timers
     uint32_t interval: 16; // Up to 65s intervals
     uint32_t periodic: 1;
-    struct k_timer *timer; // Pointer to shared timer
+    struct k_timer timer; 
     wasm_module_inst_t owner;
 } ocre_timer;
 
@@ -36,9 +36,7 @@ typedef struct {
 
 // Static data
 static ocre_timer timers[CONFIG_MAX_TIMERS];
-static struct k_timer shared_timer;
 static bool timer_system_initialized = false;
-
 
 static void timer_callback_wrapper(struct k_timer *timer);
 
@@ -53,7 +51,6 @@ void ocre_timer_init(void) {
         return;
     }
 
-    k_timer_init(&shared_timer, timer_callback_wrapper, NULL);
     ocre_register_cleanup_handler(OCRE_RESOURCE_TYPE_TIMER, ocre_timer_cleanup_container);
     timer_system_initialized = true;
     LOG_INF("Timer system initialized");
@@ -75,7 +72,7 @@ int ocre_timer_create(wasm_exec_env_t exec_env, int id) {
     timer->id = id;
     timer->owner = module;
     timer->in_use = 1;
-    timer->timer = &shared_timer;
+    k_timer_init(&timer->timer, timer_callback_wrapper, NULL);
     ocre_increment_resource_count(module, OCRE_RESOURCE_TYPE_TIMER);
     LOG_INF("Created timer %d for module %p", id, (void *)module);
     return 0;
@@ -93,8 +90,7 @@ int ocre_timer_delete(wasm_exec_env_t exec_env, ocre_timer_t id) {
         LOG_ERR("Timer ID %d not in use or not owned by module %p", id, (void *)module);
         return -EINVAL;
     }
-
-    k_timer_stop(timer->timer);
+    k_timer_stop(&timer->timer);
     timer->in_use = 0;
     timer->owner = NULL;
     ocre_decrement_resource_count(module, OCRE_RESOURCE_TYPE_TIMER);
@@ -124,7 +120,7 @@ int ocre_timer_start(wasm_exec_env_t exec_env, ocre_timer_t id, int interval, in
     timer->periodic = is_periodic;
     k_timeout_t duration = K_MSEC(interval);
     k_timeout_t period = is_periodic ? duration : K_NO_WAIT;
-    k_timer_start(timer->timer, duration, period);
+    k_timer_start(&timer->timer, duration, period);
     LOG_INF("Started timer %d with interval %dms, periodic=%d", id, interval, is_periodic);
     return 0;
 }
@@ -141,8 +137,7 @@ int ocre_timer_stop(wasm_exec_env_t exec_env, ocre_timer_t id) {
         LOG_ERR("Timer ID %d not in use or not owned by module %p", id, (void *)module);
         return -EINVAL;
     }
-
-    k_timer_stop(timer->timer);
+    k_timer_stop(&timer->timer);
     LOG_INF("Stopped timer %d", id);
     return 0;
 }
@@ -159,8 +154,7 @@ int ocre_timer_get_remaining(wasm_exec_env_t exec_env, ocre_timer_t id) {
         LOG_ERR("Timer ID %d not in use or not owned by module %p", id, (void *)module);
         return -EINVAL;
     }
-
-    int remaining = k_ticks_to_ms_floor32(k_timer_remaining_ticks(timer->timer));
+    int remaining = k_ticks_to_ms_floor32(k_timer_remaining_ticks(&timer->timer));
     LOG_INF("Timer %d remaining time: %dms", id, remaining);
     return remaining;
 }
@@ -173,7 +167,7 @@ void ocre_timer_cleanup_container(wasm_module_inst_t module_inst) {
 
     for (int i = 0; i < CONFIG_MAX_TIMERS; i++) {
         if (timers[i].in_use && timers[i].owner == module_inst) {
-            k_timer_stop(timers[i].timer);
+            k_timer_stop(&timers[i].timer);
             timers[i].in_use = 0;
             timers[i].owner = NULL;
             ocre_decrement_resource_count(module_inst, OCRE_RESOURCE_TYPE_TIMER);
@@ -196,18 +190,17 @@ static void timer_callback_wrapper(struct k_timer *timer) {
         LOG_ERR("ocre_event_queue_buffer misaligned: %p", (void *)ocre_event_queue_buffer_ptr);
         return;
     }
-    LOG_DBG("Timer callback for timer %p, shared_timer=%p", (void *)timer, (void *)&shared_timer);
+    LOG_DBG("Timer callback for timer %p", (void *)timer);
     LOG_DBG("ocre_event_queue at %p, buffer at %p", (void *)&ocre_event_queue, (void *)ocre_event_queue_buffer_ptr);
     for (int i = 0; i < CONFIG_MAX_TIMERS; i++) {
-        if (timers[i].in_use && timers[i].timer == timer && timers[i].owner) {
-
+        if (timers[i].in_use && &timers[i].timer == timer && timers[i].owner) {
             ocre_event_t event;
             event.type = OCRE_RESOURCE_TYPE_TIMER;
             event.data.timer_event.timer_id = timers[i].id;
-            event.data.timer_event.owner = timers[i].owner;
+            event.owner = timers[i].owner;
 
-            LOG_DBG("Creating timer event: type=%d, id=%d, for owner %p", event.type,
-                                event.data.timer_event.timer_id, (void *)timers[i].owner);
+            LOG_DBG("Creating timer event: type=%d, id=%d, for owner %p", event.type, event.data.timer_event.timer_id,
+                    (void *)timers[i].owner);
             LOG_DBG("Event address: %p, Queue buffer: %p", (void *)&event, (void *)ocre_event_queue_buffer_ptr);
             k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
             if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {

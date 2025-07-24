@@ -72,7 +72,7 @@ static void event_thread_fn(void *arg1) {
     // Clean up WASM runtime thread envirnment
     wasm_runtime_destroy_thread_env();
 }
-#endif 
+#endif
 
 int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_offset, uint32_t port_offset,
                    uint32_t state_offset, uint32_t extra_offset, uint32_t payload_len_offset) {
@@ -93,18 +93,31 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
         LOG_ERR("Invalid offsets provided");
         return -EINVAL;
     }
+
     ocre_event_t event;
     k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
-    int ret = k_msgq_get(&ocre_event_queue, &event, K_FOREVER);
+    int ret = k_msgq_peek(&ocre_event_queue, &event);
     if (ret != 0) {
         k_spin_unlock(&ocre_event_queue_lock, key);
         return -ENOENT;
     }
+    
+    if (event.owner != module_inst) {
+        k_spin_unlock(&ocre_event_queue_lock, key);
+        return -EPERM;
+    }
+
+    ret = k_msgq_get(&ocre_event_queue, &event, K_FOREVER);
+    if (ret != 0) {
+        k_spin_unlock(&ocre_event_queue_lock, key);
+        return -ENOENT;
+    }
+
     // Send event correctly to WASM
     switch (event.type) {
         case OCRE_RESOURCE_TYPE_TIMER: {
             LOG_INF("Retrieved Timer event timer_id=%u, owner=%p\n", event.data.timer_event.timer_id,
-                    (void *)event.data.timer_event.owner);
+                    (void *)event.owner);
             *type_native = event.type;
             *id_native = event.data.timer_event.timer_id;
             *port_native = 0;
@@ -115,7 +128,7 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
         }
         case OCRE_RESOURCE_TYPE_GPIO: {
             LOG_INF("Retrieved Gpio event pin_id=%u, port=%u, state=%u, owner=%p\n", event.data.gpio_event.pin_id,
-                    event.data.gpio_event.port, event.data.gpio_event.state, (void *)event.data.gpio_event.owner);
+                    event.data.gpio_event.port, event.data.gpio_event.state, (void *)event.owner);
             *type_native = event.type;
             *id_native = event.data.gpio_event.pin_id;
             *port_native = event.data.gpio_event.port;
@@ -134,7 +147,7 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
                     event.data.messaging_event.message_id, event.data.messaging_event.topic,
                     event.data.messaging_event.topic_offset, event.data.messaging_event.content_type,
                     event.data.messaging_event.content_type_offset, event.data.messaging_event.payload_len,
-                    (void *)event.data.messaging_event.owner);
+                    (void *)event.owner);
             *type_native = event.type;
             *id_native = event.data.messaging_event.message_id;
             *port_native = event.data.messaging_event.topic_offset;
@@ -199,7 +212,7 @@ int ocre_common_init(void) {
 }
 
 void ocre_common_shutdown(void) {
-    #if EVENT_THREAD_POOL_SIZE > 0
+#if EVENT_THREAD_POOL_SIZE > 0
     event_threads_exit = true;
     for (int i = EVENT_THREAD_POOL_SIZE; i > 0; i--) {
         event_args[i].index = i;
@@ -207,7 +220,7 @@ void ocre_common_shutdown(void) {
         snprintf(thread_name, sizeof(thread_name), "event_thread_%d", i);
         core_thread_destroy(&event_threads[i]);
     }
-    #endif 
+#endif
     common_initialized = false;
     LOG_INF("OCRE common shutdown successfully");
 }
