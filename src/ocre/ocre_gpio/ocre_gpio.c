@@ -40,29 +40,19 @@ static const struct device *gpio_ports[CONFIG_OCRE_GPIO_MAX_PORTS];
 static bool port_ready[CONFIG_OCRE_GPIO_MAX_PORTS];
 static bool gpio_system_initialized = false;
 
-
-#if defined(CONFIG_BOARD_B_U585I_IOT02A)
-#define GPIO_PORT_A DT_NODELABEL(gpioa)
-#define GPIO_PORT_B DT_NODELABEL(gpiob)
-#define GPIO_PORT_C DT_NODELABEL(gpioc)
-#define GPIO_PORT_D DT_NODELABEL(gpiod)
-#define GPIO_PORT_E DT_NODELABEL(gpioe)
-#define GPIO_PORT_F DT_NODELABEL(gpiof)
-#define GPIO_PORT_G DT_NODELABEL(gpiog)
-#define GPIO_PORT_H DT_NODELABEL(gpioh)
-#elif defined(CONFIG_BOARD_ESP32C3_DEVKITM)
-#define GPIO_PORT_0 DT_NODELABEL(gpio0)
-#else
-#if DT_NODE_EXISTS(DT_NODELABEL(gpio0))
-#define GPIO_PORT_0 DT_NODELABEL(gpio0)
-#endif
-#if DT_NODE_EXISTS(DT_NODELABEL(gpioa))
-#define GPIO_PORT_A DT_NODELABEL(gpioa)
-#endif
-#if DT_NODE_EXISTS(DT_NODELABEL(gpio))
-#define GPIO_PORT_G DT_NODELABEL(gpio)
-#endif
-#endif
+#define INIT_GPIO_PORT_NAMED(idx, label, name_str)                                 \
+    do {                                                                           \
+        if (DT_NODE_EXISTS(label)) {                                               \
+            gpio_ports[idx] = DEVICE_DT_GET(label);                                \
+            if (!device_is_ready(gpio_ports[idx])) {                               \
+                LOG_ERR("%s not ready", name_str);                                 \
+            } else {                                                               \
+                LOG_DBG("%s initialized", name_str);                               \
+                port_ready[idx] = true;                                            \
+                port_count++;                                                      \
+            }                                                                      \
+        }                                                                          \
+    } while (0)
 
 static void gpio_callback_handler(const struct device *port, struct gpio_callback *cb, gpio_port_pins_t pins);
 
@@ -77,119 +67,51 @@ int ocre_gpio_init(void) {
     }
     int port_count = 0;
     memset(port_ready, 0, sizeof(port_ready));
+
 #if defined(CONFIG_BOARD_B_U585I_IOT02A)
-    if (DT_NODE_EXISTS(GPIO_PORT_A)) {
-        gpio_ports[0] = DEVICE_DT_GET(GPIO_PORT_A);
-        if (!device_is_ready(gpio_ports[0])) {
-            LOG_ERR("GPIOA is not ready");
-        } else {
-            LOG_INF("GPIOA is initialized");
-            port_ready[0] = true;
-            port_count++;
-        }
-    }
-    if (DT_NODE_EXISTS(GPIO_PORT_B)) {
-        gpio_ports[1] = DEVICE_DT_GET(GPIO_PORT_B);
-        if (!device_is_ready(gpio_ports[1])) {
-            LOG_ERR("GPIOB is not ready");
-        } else {
-            LOG_INF("GPIOB is initialized");
-            port_ready[1] = true;
-            port_count++;
-        }
-    }
-    if (DT_NODE_EXISTS(GPIO_PORT_C)) {
-        gpio_ports[2] = DEVICE_DT_GET(GPIO_PORT_C);
-        if (!device_is_ready(gpio_ports[2])) {
-            LOG_ERR("GPIOC is not ready");
-        } else {
-            LOG_INF("GPIOC is initialized");
-            port_ready[2] = true;
-            port_count++;
-        }
-    }
-    if (DT_NODE_EXISTS(GPIO_PORT_D)) {
-        gpio_ports[3] = DEVICE_DT_GET(GPIO_PORT_D);
-        if (!device_is_ready(gpio_ports[3])) {
-            LOG_ERR("GPIOD is not ready");
-        } else {
-            LOG_INF("GPIOD is initialized");
-            port_ready[3] = true;
-            port_count++;
-        }
-    }
-    if (DT_NODE_EXISTS(GPIO_PORT_E)) {
-        gpio_ports[4] = DEVICE_DT_GET(GPIO_PORT_E);
-        if (!device_is_ready(gpio_ports[4])) {
-            LOG_ERR("GPIOE is not ready");
-        } else {
-            LOG_INF("GPIOE is initialized");
-            port_ready[4] = true;
-            port_count++;
-        }
-    }
-    if (DT_NODE_EXISTS(GPIO_PORT_F)) {
-        gpio_ports[5] = DEVICE_DT_GET(GPIO_PORT_F);
-        if (!device_is_ready(gpio_ports[5])) {
-            LOG_ERR("GPIOF is not ready");
-        } else {
-            LOG_INF("GPIOF is initialized");
-            port_ready[5] = true;
-            port_count++;
-        }
-    }
-    if (DT_NODE_EXISTS(GPIO_PORT_G)) {
-        gpio_ports[6] = DEVICE_DT_GET(GPIO_PORT_G);
-        if (!device_is_ready(gpio_ports[6])) {
-            LOG_ERR("GPIOG is not ready");
-        } else {
-            LOG_INF("GPIOG is initialized");
-            port_ready[6] = true;
-            port_count++;
-        }
-    }
-    if (DT_NODE_EXISTS(GPIO_PORT_H)) {
-        gpio_ports[7] = DEVICE_DT_GET(GPIO_PORT_H);
-        if (!device_is_ready(gpio_ports[7])) {
-            LOG_ERR("GPIOH is not ready");
-        } else {
-            LOG_INF("GPIOH is initialized");
-            port_ready[7] = true;
-            port_count++;
-        }
-    }
+    INIT_GPIO_PORT_NAMED(0, DT_NODELABEL(gpioa), "GPIOA");
+    INIT_GPIO_PORT_NAMED(1, DT_NODELABEL(gpiob), "GPIOB");
+    INIT_GPIO_PORT_NAMED(2, DT_NODELABEL(gpioc), "GPIOC");
+    INIT_GPIO_PORT_NAMED(3, DT_NODELABEL(gpiod), "GPIOD");
+    INIT_GPIO_PORT_NAMED(4, DT_NODELABEL(gpioe), "GPIOE");
+    INIT_GPIO_PORT_NAMED(5, DT_NODELABEL(gpiof), "GPIOF");
+    INIT_GPIO_PORT_NAMED(6, DT_NODELABEL(gpiog), "GPIOG");
+    INIT_GPIO_PORT_NAMED(7, DT_NODELABEL(gpioh), "GPIOH");
+
 #elif defined(CONFIG_BOARD_ESP32C3_DEVKITM)
-    if (DT_NODE_EXISTS(GPIO_PORT_0)) {
-        gpio_ports[0] = DEVICE_DT_GET(GPIO_PORT_0);
-        if (!device_is_ready(gpio_ports[0])) {
-            LOG_ERR("GPIO0 is not ready");
-        } else {
-            LOG_INF("GPIO0 is initialized");
-            port_ready[0] = true;
-            port_count++;
-        }
-    }
+    INIT_GPIO_PORT_NAMED(0, DT_NODELABEL(gpio0), "GPIO0");
+
+#elif defined(CONFIG_BOARD_MAX32690EVKIT)
+    INIT_GPIO_PORT_NAMED(0, DT_NODELABEL(gpio0), "GPIO0");
+    INIT_GPIO_PORT_NAMED(1, DT_NODELABEL(gpio1), "GPIO1");
+    INIT_GPIO_PORT_NAMED(2, DT_NODELABEL(gpio2), "GPIO2");
+    INIT_GPIO_PORT_NAMED(3, DT_NODELABEL(gpio3), "GPIO3");
+    INIT_GPIO_PORT_NAMED(4, DT_NODELABEL(gpio4), "GPIO4");
+
+#elif defined(CONFIG_BOARD_ARDUINO_PORTENTA_H7)
+    INIT_GPIO_PORT_NAMED(0,  DT_NODELABEL(gpioa), "GPIOA");
+    INIT_GPIO_PORT_NAMED(1,  DT_NODELABEL(gpiob), "GPIOB");
+    INIT_GPIO_PORT_NAMED(2,  DT_NODELABEL(gpioc), "GPIOC");
+    INIT_GPIO_PORT_NAMED(3,  DT_NODELABEL(gpiod), "GPIOD");
+    INIT_GPIO_PORT_NAMED(4,  DT_NODELABEL(gpioe), "GPIOE");
+    INIT_GPIO_PORT_NAMED(5,  DT_NODELABEL(gpiof), "GPIOF");
+    INIT_GPIO_PORT_NAMED(6,  DT_NODELABEL(gpiog), "GPIOG");
+    INIT_GPIO_PORT_NAMED(7,  DT_NODELABEL(gpioh), "GPIOH");
+    INIT_GPIO_PORT_NAMED(8,  DT_NODELABEL(gpioi), "GPIOI");
+    INIT_GPIO_PORT_NAMED(9,  DT_NODELABEL(gpioj), "GPIOJ");
+    INIT_GPIO_PORT_NAMED(10, DT_NODELABEL(gpiok), "GPIOK");
+
+#elif defined(CONFIG_BOARD_W5500_EVB_PICO2)
+    INIT_GPIO_PORT_NAMED(0, DT_NODELABEL(gpio0), "GPIO0");
+
 #else
-#if defined(GPIO_PORT_A) && DT_NODE_EXISTS(GPIO_PORT_A)
-    gpio_ports[0] = DEVICE_DT_GET(GPIO_PORT_A);
-    if (!device_is_ready(gpio_ports[0])) {
-        LOG_ERR("GPIOA is not ready");
-    } else {
-        LOG_INF("GPIOA is initialized");
-        port_ready[0] = true;
-        port_count++;
-    }
+    // Generic fallback
+#if DT_NODE_EXISTS(DT_NODELABEL(gpio0))
+    INIT_GPIO_PORT_NAMED(0, DT_NODELABEL(gpio0), "GPIO0");
+#elif DT_NODE_EXISTS(DT_NODELABEL(gpioa))
+    INIT_GPIO_PORT_NAMED(0,  DT_NODELABEL(gpioa), "GPIOA");
 #endif
-#if defined(GPIO_PORT_G) && DT_NODE_EXISTS(GPIO_PORT_G)
-    gpio_ports[0] = DEVICE_DT_GET(GPIO_PORT_G);
-    if (!device_is_ready(gpio_ports[0])) {
-        LOG_ERR("GPIO is not ready");
-    } else {
-        LOG_INF("GPIO is initialized");
-        port_ready[0] = true;
-        port_count++;
-    }
-#endif
+
 #endif
     if (port_count == 0) {
         LOG_ERR("No GPIO ports were initialized");
