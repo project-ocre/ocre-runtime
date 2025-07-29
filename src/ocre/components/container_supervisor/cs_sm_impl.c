@@ -186,7 +186,7 @@ static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_argument
     ret = core_fileopen(filepath, &file_handle);
     if (ret < 0) {
         LOG_ERR("Failed to open file %s: %d", filepath, ret);
-        core_free(container_arguments->buffer);
+        free(container_arguments->buffer);
         return ret;
     }
 
@@ -194,14 +194,14 @@ static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_argument
     if (ret < 0) {
         LOG_ERR("Failed to read file %s: %d", filepath, ret);
         core_fileclose(file_handle);
-        core_free(container_arguments->buffer);
+        free(container_arguments->buffer);
         return ret;
     }
 
     ret = core_fileclose(file_handle);
     if (ret < 0) {
         LOG_ERR("Failed to close file %s: %d", filepath, ret);
-        core_free(container_arguments->buffer);
+        free(container_arguments->buffer);
         return ret;
     }
     return 0;
