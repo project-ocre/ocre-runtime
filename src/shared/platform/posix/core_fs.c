@@ -21,8 +21,10 @@
 
 int core_construct_filepath(char *path, size_t len, char *name) {
     char cwd[PATH_MAX];
-    if (getcwd(cwd, sizeof(cwd)) != NULL) 
-       printf("Current working dir: %s\n", cwd);
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        // Shall be in /build folder
+       LOG_DBG("Current working dir: %s", cwd);
+       }
     if (g_argc) {
         strcpy(path, name);
         return 0;

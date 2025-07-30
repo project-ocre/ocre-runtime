@@ -32,6 +32,12 @@
  */
 #define LOG_MODULE_REGISTER(name, level)
 
+
+/**
+ * @brief Log a debug message.
+ */
+#define LOG_DBG(fmt, ...)   printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+
 /**
  * @brief Log an error message.
  */
