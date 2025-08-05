@@ -123,5 +123,13 @@ void ocre_app_storage_init() {
         }
     }
 
+#ifdef CONFIG_OCRE_CONTAINER_FILESYSTEM
+    if (stat(CONTAINER_FS_PATH, &st) == -1) {
+        if (mkdir(CONTAINER_FS_PATH, 0755) < 0) {
+            printf("Failed to create directory %s [%d]\n", CONTAINER_FS_PATH, errno);
+        }
+    }
+#endif
+
     lsdir(OCRE_BASE_PATH);
 }
