@@ -48,7 +48,7 @@ if(NOT DEFINED WAMR_BUILD_GLOBAL_HEAP_SIZE)
     set(WAMR_BUILD_GLOBAL_HEAP_SIZE 32767)
 endif()
 
-set(WAMR_ROOT_DIR ${ZEPHYR_WASM_MICRO_RUNTIME_MODULE_DIR})
+set(WAMR_ROOT_DIR ${OCRE_ROOT_DIR}/wasm-micro-runtime)
 include(${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 
 zephyr_include_directories(
