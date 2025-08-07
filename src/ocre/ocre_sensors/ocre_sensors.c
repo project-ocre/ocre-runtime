@@ -42,13 +42,22 @@ static int set_opened_channels(const struct device *dev, enum sensor_channel *ch
         return -EINVAL;
     }
 
+    if (!device_is_ready(dev)) {
+        LOG_ERR("Device is not ready");
+        return -ENODEV;
+    }
+
+    if (sensor_sample_fetch(dev) < 0) {
+        LOG_WRN("Failed to fetch sensor data - sensor might not be initialized");
+    }
+
     int count = 0;
     struct sensor_value value = {};
 
     for (int channel = 0; channel < SENSOR_CHAN_ALL && count < CONFIG_MAX_CHANNELS_PER_SENSOR; channel++) {
-        if (sensor_channel_get(dev, channel, &value) == 0) {
-            if (channel != SENSOR_CHAN_ACCEL_XYZ && channel != SENSOR_CHAN_GYRO_XYZ &&
-                channel != SENSOR_CHAN_MAGN_XYZ && channel != SENSOR_CHAN_POS_DXYZ) {
+        if (channel != SENSOR_CHAN_ACCEL_XYZ && channel != SENSOR_CHAN_GYRO_XYZ && channel != SENSOR_CHAN_MAGN_XYZ &&
+            channel != SENSOR_CHAN_POS_DXYZ) {
+            if (sensor_channel_get(dev, channel, &value) == 0) {
                 channels[count] = channel;
                 count++;
             }
