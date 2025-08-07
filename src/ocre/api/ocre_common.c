@@ -98,8 +98,9 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
     k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
     int ret = k_msgq_peek(&ocre_event_queue, &event);
     if (ret != 0) {
+        // k_msg_peek returns either 0, or -ENOMSG if empty
         k_spin_unlock(&ocre_event_queue_lock, key);
-        return -ENOENT;
+        return -ENOMSG;
     }
     
     if (event.owner != module_inst) {
