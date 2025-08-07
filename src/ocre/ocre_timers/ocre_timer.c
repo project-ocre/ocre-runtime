@@ -206,7 +206,7 @@ static void timer_callback_wrapper(struct k_timer *timer) {
             if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {
                 LOG_ERR("Failed to queue timer event for timer %d", timers[i].id);
             } else {
-                LOG_INF("Queued timer event for timer %d", timers[i].id);
+                LOG_DBG("Queued timer event for timer %d", timers[i].id);
             }
             k_spin_unlock(&ocre_event_queue_lock, key);
         }

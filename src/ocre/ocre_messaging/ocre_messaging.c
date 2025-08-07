@@ -141,13 +141,13 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
             wasm_runtime_module_free(target_module, payload_offset);
         } else {
             posted = true;
-            LOG_INF("Queued messaging event: ID=%d, topic=%s, content_type=%s, payload_len=%d for module %p",
+            LOG_DBG("Queued messaging event: ID=%d, topic=%s, content_type=%s, payload_len=%d for module %p",
                     message_id, (char *)topic, (char *)content_type, payload_len, (void *)target_module);
         }
         k_spin_unlock(&ocre_event_queue_lock, key);
     }
     if (posted) {
-        LOG_INF("Published message: ID=%d, topic=%s, content_type=%s, payload_len=%d", message_id, (char *)topic,
+        LOG_DBG("Published message: ID=%d, topic=%s, content_type=%s, payload_len=%d", message_id, (char *)topic,
                 (char *)content_type, payload_len);
         message_id++;
         return 0;

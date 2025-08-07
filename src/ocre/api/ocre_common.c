@@ -117,7 +117,7 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
     // Send event correctly to WASM
     switch (event.type) {
         case OCRE_RESOURCE_TYPE_TIMER: {
-            LOG_INF("Retrieved Timer event timer_id=%u, owner=%p\n", event.data.timer_event.timer_id,
+            LOG_DBG("Retrieved Timer event timer_id=%u, owner=%p", event.data.timer_event.timer_id,
                     (void *)event.owner);
             *type_native = event.type;
             *id_native = event.data.timer_event.timer_id;
@@ -128,7 +128,7 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
             break;
         }
         case OCRE_RESOURCE_TYPE_GPIO: {
-            LOG_INF("Retrieved Gpio event pin_id=%u, port=%u, state=%u, owner=%p\n", event.data.gpio_event.pin_id,
+            LOG_DBG("Retrieved Gpio event pin_id=%u, port=%u, state=%u, owner=%p", event.data.gpio_event.pin_id,
                     event.data.gpio_event.port, event.data.gpio_event.state, (void *)event.owner);
             *type_native = event.type;
             *id_native = event.data.gpio_event.pin_id;
@@ -143,8 +143,8 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
             break;
         }
         case OCRE_RESOURCE_TYPE_MESSAGING: {
-            LOG_INF("Retrieved Messaging event: message_id=%u, topic=%s, topic_offset=%u, content_type=%s, "
-                    "content_type_offset=%u, payload_len=%d, owner=%p\n",
+            LOG_DBG("Retrieved Messaging event: message_id=%u, topic=%s, topic_offset=%u, content_type=%s, "
+                    "content_type_offset=%u, payload_len=%d, owner=%p",
                     event.data.messaging_event.message_id, event.data.messaging_event.topic,
                     event.data.messaging_event.topic_offset, event.data.messaging_event.content_type,
                     event.data.messaging_event.content_type_offset, event.data.messaging_event.payload_len,
@@ -164,7 +164,7 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
         */
         default: {
             k_spin_unlock(&ocre_event_queue_lock, key);
-            LOG_ERR("Invalid event type: %u\n", event.type);
+            LOG_ERR("Invalid event type: %u", event.type);
             return -EINVAL;
         }
     }
