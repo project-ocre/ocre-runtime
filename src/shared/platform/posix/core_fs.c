@@ -23,7 +23,7 @@ int core_construct_filepath(char *path, size_t len, char *name) {
     char cwd[PATH_MAX];
     if (getcwd(cwd, sizeof(cwd)) != NULL) 
        printf("Current working dir: %s\n", cwd);
-    if (g_argc) {
+    if (g_argc>1) {
         strcpy(path, name);
         return 0;
     } else {
