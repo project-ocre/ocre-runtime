@@ -80,16 +80,16 @@ static int lsdir(const char *path) {
 
     dirp = opendir(path);
     if (!dirp) {
-        printf("Error opening dir %s [%d]\n", path, errno);
+        LOG_ERR("Error opening dir %s [%d]\n", path, errno);
         return -errno;
     }
 
     while ((entry = readdir(dirp)) != NULL) {
-        printf("Found: %s", entry->d_name);
+        LOG_INF("Found: %s", entry->d_name);
     }
 
     if (closedir(dirp) < 0) {
-        printf("Error closing dir [%d]\n", errno);
+        LOG_ERR("Error closing dir [%d]\n", errno);
         return -errno;
     }
 
@@ -101,32 +101,32 @@ void ocre_app_storage_init() {
 
     if (stat(OCRE_BASE_PATH, &st) == -1) {
         if (mkdir(OCRE_BASE_PATH, 0755) < 0) {
-            printf("Failed to create directory %s [%d]\n", OCRE_BASE_PATH, errno);
+            LOG_ERR("Failed to create directory %s [%d]\n", OCRE_BASE_PATH, errno);
         }
     }
 
     if (stat(APP_RESOURCE_PATH, &st) == -1) {
         if (mkdir(APP_RESOURCE_PATH, 0755) < 0) {
-            printf("Failed to create directory %s [%d]\n", APP_RESOURCE_PATH, errno);
+            LOG_ERR("Failed to create directory %s [%d]\n", APP_RESOURCE_PATH, errno);
         }
     }
 
     if (stat(PACKAGE_BASE_PATH, &st) == -1) {
         if (mkdir(PACKAGE_BASE_PATH, 0755) < 0) {
-            printf("Failed to create directory %s [%d]\n", PACKAGE_BASE_PATH, errno);
+            LOG_ERR("Failed to create directory %s [%d]\n", PACKAGE_BASE_PATH, errno);
         }
     }
 
     if (stat(CONFIG_PATH, &st) == -1) {
         if (mkdir(CONFIG_PATH, 0755) < 0) {
-            printf("Failed to create directory %s [%d]\n", CONFIG_PATH, errno);
+            LOG_ERR("Failed to create directory %s [%d]\n", CONFIG_PATH, errno);
         }
     }
 
 #ifdef CONFIG_OCRE_CONTAINER_FILESYSTEM
     if (stat(CONTAINER_FS_PATH, &st) == -1) {
         if (mkdir(CONTAINER_FS_PATH, 0755) < 0) {
-            printf("Failed to create directory %s [%d]\n", CONTAINER_FS_PATH, errno);
+            LOG_ERR("Failed to create directory %s [%d]\n", CONTAINER_FS_PATH, errno);
         }
     }
 #endif
