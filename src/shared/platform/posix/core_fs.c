@@ -19,13 +19,38 @@
 
 #define MAX_PATH_LEN 256
 
+/*
+When containers are passed locally, from the filesystem - we don't need to construct the path.
+Instead, we just use the original file's location. This is indicated whether the container was passed as a buffer,
+or as a program parameter. Encapsulation is used to avoid global variables.
+*/
+static int stored_argc = 0;
+
+void set_argc(int argc) {
+    stored_argc = argc;
+}
+
+
+/**
+ * @brief Retrieves the stored argc value.
+ *
+ * Returns the argc value previously set by set_argc().
+ * Useful for conditional logic based on argument count.
+ *
+ * @return The stored argc value.
+ */
+static int get_argc() {
+    return stored_argc;
+}
+
+
 int core_construct_filepath(char *path, size_t len, char *name) {
     char cwd[PATH_MAX];
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
         // Shall be in /build folder
        LOG_DBG("Current working dir: %s", cwd);
        }
-    if (g_argc) {
+    if (get_argc() > 1) {
         strcpy(path, name);
         return 0;
     } else {

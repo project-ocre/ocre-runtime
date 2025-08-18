@@ -62,9 +62,15 @@
 // Constants
 
 /**
- * @brief Global argument count, used for command-line argument handling.
+ * @brief Sets the value of argc for internal use.
+ *
+ * This function stores the argc value passed from main
+ * so that other functions in the module can access it
+ * without relying on global variables.
+ *
+ * @param argc The argument count from main.
  */
-extern int g_argc;
+void set_argc(int argc);
 
 /**
  * @brief Maximum length for SHA256 string representations.
