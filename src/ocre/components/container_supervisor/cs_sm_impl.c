@@ -109,7 +109,8 @@ static void container_thread_entry(struct container_thread_args *args) {
 
     LOG_INF("Container thread %d started", container->container_ID);
 
-#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
+        defined(CONFIG_OCRE_CONTAINER_MESSAGING)
     // Set TLS for the container's WASM module
     current_module_tls = &module_inst;
 #endif
@@ -122,17 +123,21 @@ static void container_thread_entry(struct container_thread_args *args) {
     // Cleanup sequence
     core_mutex_lock(&container->lock);
     {
-        // Cleanup timers and GPIO resources
+        // Cleanup subsystems
 #ifdef CONFIG_OCRE_TIMER
         ocre_timer_cleanup_container(module_inst);
 #endif
 #ifdef CONFIG_OCRE_GPIO
         ocre_gpio_cleanup_container(module_inst);
 #endif
+#ifdef CONFIG_OCRE_CONTAINER_MESSAGING
+        ocre_messaging_cleanup_container(module_inst);
+#endif
 
         // Clear thread tracking
         container_thread_active[container->container_ID] = false;
-#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
+        defined(CONFIG_OCRE_CONTAINER_MESSAGING)
         // Clear TLS
         current_module_tls = NULL;
 #endif
@@ -257,7 +262,8 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 
 ocre_container_runtime_status_t CS_runtime_destroy(void) {
     // Signal event threads to exit gracefully
-#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
+        defined(CONFIG_OCRE_CONTAINER_MESSAGING)
     ocre_common_shutdown();
 #endif
 
@@ -324,18 +330,18 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
     }
 
 #ifdef CONFIG_OCRE_NETWORKING
-            #define ADDRESS_POOL_SIZE 1
-            const char *addr_pool[ADDRESS_POOL_SIZE] = {
-                "0.0.0.0/0",
-            };
-            wasm_runtime_set_wasi_addr_pool(curr_container_arguments->module, addr_pool, ADDRESS_POOL_SIZE);
+#define ADDRESS_POOL_SIZE 1
+    const char *addr_pool[ADDRESS_POOL_SIZE] = {
+            "0.0.0.0/0",
+    };
+    wasm_runtime_set_wasi_addr_pool(curr_container_arguments->module, addr_pool, ADDRESS_POOL_SIZE);
 #endif
 
 #ifdef CONFIG_OCRE_CONTAINER_FILESYSTEM
-            // Simple for now: map CONTAINER_FS_PATH to /
-            // TODO: eventually every container should probably have its own root folder, 
-            // however wasm_runtime_set_wasi_args expects constant values.        
-            #define DIR_LIST_SIZE 1
+// Simple for now: map CONTAINER_FS_PATH to /
+// TODO: eventually every container should probably have its own root folder,
+// however wasm_runtime_set_wasi_args expects constant values.
+#define DIR_LIST_SIZE 1
             static const char *dir_map_list[DIR_LIST_SIZE] = {
                 "/::" CONTAINER_FS_PATH
             };
@@ -368,7 +374,8 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
             free(curr_container_arguments->buffer);
             return CONTAINER_STATUS_ERROR;
         }
-#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
+        defined(CONFIG_OCRE_CONTAINER_MESSAGING)
         ocre_register_module(curr_container_arguments->module_inst);
 #endif
     }
@@ -449,9 +456,15 @@ ocre_container_status_t CS_stop_container(ocre_container_t *container, ocre_cont
 #ifdef CONFIG_OCRE_GPIO
         ocre_gpio_cleanup_container(curr_container_arguments->module_inst);
 #endif
-#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
+#ifdef CONFIG_OCRE_CONTAINER_MESSAGING
+        ocre_messaging_cleanup_container(curr_container_arguments->module_inst);
+#endif
+
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
+        defined(CONFIG_OCRE_CONTAINER_MESSAGING)
         ocre_unregister_module(curr_container_arguments->module_inst);
 #endif
+
         if (curr_container_arguments->module_inst) {
             wasm_runtime_deinstantiate(curr_container_arguments->module_inst);
             curr_container_arguments->module_inst = NULL;
