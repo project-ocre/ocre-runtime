@@ -15,6 +15,16 @@ RUN_MODE=false  # Default: Run mode disabled
 INPUT_FILES=()
 ZEPHYR_BOARD="native_sim"
 
+# resolve absolute paths (portable, no readlink -f)
+abs_path() {
+    local p="$1"
+    if [[ "$p" = /* ]]; then
+        echo "$p"
+    else
+        echo "$(cd "$(dirname "$p")" && pwd)/$(basename "$p")"
+    fi
+}
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -47,20 +57,27 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Normalize input files to absolute paths BEFORE any 'cd'
+if [[ ${#INPUT_FILES[@]} -gt 0 ]]; then
+    for i in "${!INPUT_FILES[@]}"; do
+        INPUT_FILES[$i]="$(abs_path "${INPUT_FILES[$i]}")"
+    done
+fi
+
 # Check if required argument is provided
 if [[ "$TARGET" == "z" ]]; then
     echo "Target is: Zephyr's $ZEPHYR_BOARD"
     cd ..
     if [[ ${#INPUT_FILES[@]} -gt 0 ]]; then
         echo "Input files provided: ${INPUT_FILES[*]}"
-        rm flash.bin 
-        west build -p -b $ZEPHYR_BOARD ./application -d build -- \
-        -DMODULE_EXT_ROOT=`pwd`/application -DOCRE_INPUT_FILE="${INPUT_FILES[0]}" -DTARGET_PLATFORM_NAME=Zephyr
+        rm -f flash.bin
+        west build -p -b "$ZEPHYR_BOARD" ./application -d build -- \
+        -DMODULE_EXT_ROOT="$(pwd)"/application -DOCRE_INPUT_FILE="${INPUT_FILES[0]}" -DTARGET_PLATFORM_NAME=Zephyr
         # Note: Only the first file is passed to OCRE_INPUT_FILE, adapt as needed for multiple files
     else
-        rm flash.bin
-        west build -p -b $ZEPHYR_BOARD  ./application -d build -- \
-        -DMODULE_EXT_ROOT=`pwd`/application -DTARGET_PLATFORM_NAME=Zephyr
+        rm -f flash.bin
+        west build -p -b "$ZEPHYR_BOARD" ./application -d build -- \
+        -DMODULE_EXT_ROOT="$(pwd)"/application -DTARGET_PLATFORM_NAME=Zephyr
     fi
 elif [[ "$TARGET" == "l" ]]; then
     echo "Target is: Linux x86_64"
