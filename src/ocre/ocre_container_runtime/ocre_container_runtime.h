@@ -8,15 +8,9 @@
 #ifndef OCRE_CONTAINER_RUNTIME_H
 #define OCRE_CONTAINER_RUNTIME_H
 
-#ifdef UNIT_TESTING
-#include "../../application/tests/ocre_container_runtime/stubs/container_healthcheck/ocre_container_healthcheck.h"
-#include "../../application/tests/ocre_container_runtime/stubs/k_sem/k_sem.h"
-#else
-#include "ocre_core_external.h"
-#endif
-
 #include <stdio.h>
 
+#include "ocre_core_external.h"
 #include "wasm_export.h"
 
 #define OCRE_CR_DEBUG_ON     0   // Debug flag for container runtime (0: OFF, 1: ON)

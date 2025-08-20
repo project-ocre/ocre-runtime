@@ -14,7 +14,6 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <unistd.h>
-int g_argc = 0;
 
 #include "ocre_core_external.h"
 #include <ocre/ocre.h>
@@ -42,7 +41,7 @@ int main(int argc, char *argv[]) {
         printf("\n\nOcre runtime started\n");
 
         if (argc > 1) {
-        g_argc = argc;
+        set_argc(argc);
         container_filename = argv[1]; // Use the filename as the container name/sha256
         }
         else {

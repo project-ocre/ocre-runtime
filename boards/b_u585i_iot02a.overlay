@@ -1,10 +1,175 @@
+#include <zephyr/dt-bindings/pinctrl/stm32-pinctrl.h>
+
 / {
-	devices{
-		rng_device: rng_0 {
-			compatible = "custom,rng-sensor";
-			label = "RNG Sensor";
-			status = "okay";
+    aliases {
+        psram0 = &psram;
+        rng0 = &rng_device;
+        led0 = &green_led_1;
+		led1 = &red_led_1;
+    };
+
+    leds {
+		compatible = "gpio-leds";
+		green_led_1: led_1 {
+			gpios = <&gpioh 7 GPIO_ACTIVE_LOW>;
+			label = "User LD7";
 		};
+		red_led_1: led_3 {
+			gpios = <&gpioh 6 GPIO_ACTIVE_LOW>;
+			label = "User LD6";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		user_button: button {
+			label = "User";
+			gpios = <&gpioc 13 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			zephyr,code = <INPUT_KEY_0>;
+		};
+	};
+
+    rng_device: rng_0 {
+        compatible = "custom,rng-sensor";
+        label = "RNG Sensor";
+        status = "okay";
+    };
+
+    devices {
+        compatible = "custom,devices";
+        status = "okay";
+        device_list = <&rng_device &ism330dhcx>;
+    };
+
+    reserved-memory {
+        #address-cells = <1>;
+        #size-cells = <1>;
+        ranges;
+
+        psram0: psram@90000000 {
+            compatible = "zephyr,memory-region";
+            reg = <0x90000000 0x00800000>;
+            zephyr,memory-region = "PSRAM";
+        };
+    };
+
+    chosen {
+        zephyr,memory-region = &psram0;
+    };
+};
+
+&octospi1 {
+    status = "okay";
+    pinctrl-0 = <&octospi1_clk &octospi1_ncs &octospi1_dqs 
+                 &octospi1_io0 &octospi1_io1 &octospi1_io2 &octospi1_io3
+                 &octospi1_io4 &octospi1_io5 &octospi1_io6 &octospi1_io7>;
+    pinctrl-names = "default";
+
+    psram: psram@0 {
+        compatible = "st,stm32-ospi-psram";
+        reg = <0x0 0x00800000>;
+        st,ospi-mode = <3>;          // Octal mode
+        st,ospi-clk-frequency = <104>;  // MHz
+        st,ospi-chip-select = <0>;   // CS0
+    };
+};
+
+/* OCTOSPI1 pinmux setup */
+&pinctrl {
+    octospi1_clk: octospi1_clk {
+        pinmux = <STM32_PINMUX('E', 10, AF10)>;
+        bias-disable;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+
+    octospi1_ncs: octospi1_ncs {
+        pinmux = <STM32_PINMUX('E', 11, AF10)>;
+        bias-disable;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+
+    octospi1_dqs: octospi1_dqs {
+        pinmux = <STM32_PINMUX('E', 12, AF10)>;
+        bias-disable;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+
+    octospi1_io0: octospi1_io0 {
+        pinmux = <STM32_PINMUX('E', 7, AF10)>;
+        bias-disable;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+
+    octospi1_io1: octospi1_io1 {
+        pinmux = <STM32_PINMUX('E', 8, AF10)>;
+        bias-disable;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+
+    octospi1_io2: octospi1_io2 {
+        pinmux = <STM32_PINMUX('E', 9, AF10)>;
+        bias-disable;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+
+    octospi1_io3: octospi1_io3 {
+        pinmux = <STM32_PINMUX('E', 13, AF10)>;
+        bias-disable;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+
+    octospi1_io4: octospi1_io4 {
+        pinmux = <STM32_PINMUX('E', 14, AF10)>;
+        bias-disable;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+
+    octospi1_io5: octospi1_io5 {
+        pinmux = <STM32_PINMUX('E', 15, AF10)>;
+        bias-disable;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+
+    octospi1_io6: octospi1_io6 {
+        pinmux = <STM32_PINMUX('E', 2, AF10)>;
+        bias-disable;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+
+    octospi1_io7: octospi1_io7 {
+        pinmux = <STM32_PINMUX('D', 7, AF10)>;
+        bias-disable;
+        drive-push-pull;
+        slew-rate = "very-high-speed";
+    };
+};
+
+&i2c2 {
+  pinctrl-0 = <&i2c2_scl_ph4 &i2c2_sda_ph5>;
+	pinctrl-names = "default";
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+
+    ism330dhcx: ism330dhcx@6b {
+		compatible = "st,ism330dhcx";
+		reg = <0x6b>;
+		drdy-gpios =  <&gpioe 11 GPIO_ACTIVE_HIGH>;
+        status = "okay";
+        label = "imu";
+        accel-odr = <4>;    // 104 Hz
+        accel-range = <4>;  // ±4 g
+        gyro-odr = <4>;     // 104 Hz
+        gyro-range = <250>; // ±250 dps
 	};
 };
 
@@ -20,6 +185,7 @@
     };
 };
 
+/* Optional: flash partitions */
 &flash0 {
     partitions {
         user_data_partition: partition@100000 {
@@ -29,7 +195,6 @@
     };
 };
 
-/* Add hts221 sensor configurations */
 &die_temp {
     status = "disabled";
 };

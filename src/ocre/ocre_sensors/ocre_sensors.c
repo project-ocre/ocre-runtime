@@ -35,21 +35,32 @@ typedef struct {
 
 static ocre_sensor_internal_t sensors[CONFIG_MAX_SENSORS] = {0};
 static int sensor_count = 0;
-static char sensor_names[CONFIG_MAX_SENSORS][CONFIG_MAX_SENSOR_NAME_LENGTH];
 
-static int set_opened_channels(const struct device *dev, sensor_channel_t *channels) {
+static int set_opened_channels(const struct device *dev, enum sensor_channel *channels) {
     if (!channels) {
         LOG_ERR("Channels array is NULL");
         return -EINVAL;
+    }
+
+    if (!device_is_ready(dev)) {
+        LOG_ERR("Device is not ready");
+        return -ENODEV;
+    }
+
+    if (sensor_sample_fetch(dev) < 0) {
+        LOG_WRN("Failed to fetch sensor data - sensor might not be initialized");
     }
 
     int count = 0;
     struct sensor_value value = {};
 
     for (int channel = 0; channel < SENSOR_CHAN_ALL && count < CONFIG_MAX_CHANNELS_PER_SENSOR; channel++) {
-        if (sensor_channel_get(dev, channel, &value) == 0) {
-            channels[count] = channel;
-            count++;
+        if (channel != SENSOR_CHAN_ACCEL_XYZ && channel != SENSOR_CHAN_GYRO_XYZ && channel != SENSOR_CHAN_MAGN_XYZ &&
+            channel != SENSOR_CHAN_POS_DXYZ) {
+            if (sensor_channel_get(dev, channel, &value) == 0) {
+                channels[count] = channel;
+                count++;
+            }
         }
     }
     return count;
@@ -57,7 +68,6 @@ static int set_opened_channels(const struct device *dev, sensor_channel_t *chann
 
 int ocre_sensors_init(wasm_exec_env_t exec_env) {
     memset(sensors, 0, sizeof(sensors));
-    memset(sensor_names, 0, sizeof(sensor_names));
     sensor_count = 0;
     return 0;
 }
@@ -78,7 +88,6 @@ int ocre_sensors_open(wasm_exec_env_t exec_env, ocre_sensor_handle_t handle) {
 
 int ocre_sensors_discover(wasm_exec_env_t exec_env) {
     memset(sensors, 0, sizeof(sensors));
-    memset(sensor_names, 0, sizeof(sensor_names));
     sensor_count = 0;
 
     const struct device *dev = NULL;
@@ -131,9 +140,8 @@ int ocre_sensors_discover(wasm_exec_env_t exec_env) {
         sensor->in_use = true;
         sensor->info.handle = sensor_count;
 
-        strncpy(sensor_names[sensor_count], dev[i].name, CONFIG_MAX_SENSOR_NAME_LENGTH - 1);
-        sensor_names[sensor_count][CONFIG_MAX_SENSOR_NAME_LENGTH - 1] = '\0';
-        sensor->info.sensor_name = sensor_names[sensor_count];
+        strncpy(sensor->info.sensor_name, dev[i].name, CONFIG_MAX_SENSOR_NAME_LENGTH - 1);
+        sensor->info.sensor_name[CONFIG_MAX_SENSOR_NAME_LENGTH - 1] = '\0';
 
         sensor->info.num_channels = set_opened_channels(&dev[i], sensor->info.channels);
         if (sensor->info.num_channels <= 0) {
@@ -186,7 +194,7 @@ int ocre_sensors_get_channel_type(wasm_exec_env_t exec_env, int sensor_id, int c
     return sensors[sensor_id].info.channels[channel_index];
 }
 
-int ocre_sensors_read(wasm_exec_env_t exec_env, int sensor_id, int channel_type) {
+double ocre_sensors_read(wasm_exec_env_t exec_env, int sensor_id, int channel_type) {
     if (sensor_id < 0 || sensor_id >= sensor_count || !sensors[sensor_id].in_use) {
         return -EINVAL;
     }
@@ -195,14 +203,16 @@ int ocre_sensors_read(wasm_exec_env_t exec_env, int sensor_id, int channel_type)
     struct sensor_value value = {};
 
     if (sensor_sample_fetch(dev) < 0) {
+        LOG_ERR("Failed to fetch sensor data");
         return -EIO;
     }
 
     if (sensor_channel_get(dev, channel_type, &value) < 0) {
+        LOG_ERR("Failed to get scalar channel data");
         return -EIO;
     }
 
-    return value.val1 * 1000 + value.val2 / 1000;
+    return sensor_value_to_double(&value);
 }
 
 static int find_sensor_by_name(const char *name) {
@@ -256,7 +266,7 @@ int ocre_sensors_get_channel_type_by_name(wasm_exec_env_t exec_env, const char *
     return ocre_sensors_get_channel_type(exec_env, sensor_id, channel_index);
 }
 
-int ocre_sensors_read_by_name(wasm_exec_env_t exec_env, const char *sensor_name, int channel_type) {
+double ocre_sensors_read_by_name(wasm_exec_env_t exec_env, const char *sensor_name, int channel_type) {
     int sensor_id = find_sensor_by_name(sensor_name);
     if (sensor_id < 0) {
         LOG_ERR("Sensor not found: %s", sensor_name);

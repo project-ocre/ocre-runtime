@@ -3,13 +3,14 @@ on:
   push:
     branches:
       - main
+      - staging
   pull_request:
     branches:
       - main
+      - staging
 jobs:
-  build:
+  build-zephyr:
     runs-on: zephyr-xlarge-runner
-
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
       options: --user root
@@ -21,6 +22,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: application
+          submodules: recursive
+          fetch-depth: 0
       
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
@@ -44,8 +47,26 @@ jobs:
           name: firmware
           path: build/zephyr/zephyr.bin
 
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: application
+
+      - name: Setup project for Linux Build
+        run: |
+          cd application
+          git submodule update --init --recursive
+
+      - name: Build Linux
+        run: |
+          cd application
+          ./build.sh -t l
+
   flash:
-    needs: build
+    needs: build-zephyr
     runs-on: zephyr-xlarge-runner
     steps:
       - name: Download firmware

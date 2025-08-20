@@ -232,6 +232,12 @@ void ocre_app_storage_init() {
     if (fs_stat(CONFIG_PATH, &entry) == -ENOENT) {
         fs_mkdir(CONFIG_PATH);
     }
+
+#ifdef CONFIG_OCRE_CONTAINER_FILESYSTEM
+        if (fs_stat(CONTAINER_FS_PATH, &entry) == -ENOENT) {
+            fs_mkdir(CONTAINER_FS_PATH);
+        }
+#endif
 }
 
 static int cmd_flash_format(const struct shell *shell, size_t argc, char *argv[]) {

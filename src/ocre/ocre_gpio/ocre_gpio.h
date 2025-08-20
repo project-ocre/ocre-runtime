@@ -112,8 +112,6 @@ int ocre_gpio_register_callback(int pin);
  */
 int ocre_gpio_unregister_callback(int pin);
 
-void ocre_gpio_register_module(wasm_module_inst_t module_inst);
-
 /**
  * Clean up GPIO resources for a WASM container.
  *
@@ -128,6 +126,40 @@ void ocre_gpio_cleanup_container(wasm_module_inst_t module_inst);
  */
 void ocre_gpio_set_dispatcher(wasm_exec_env_t exec_env);
 
+/**
+ * @brief Configure a GPIO pin by alias name
+ * 
+ * @param name GPIO alias name (e.g., "led0", "sw0")
+ * @param direction GPIO direction (OCRE_GPIO_DIR_INPUT or OCRE_GPIO_DIR_OUTPUT)
+ * @return int 0 on success, negative error code on failure
+ */
+int ocre_gpio_configure_by_name(const char *name, ocre_gpio_direction_t direction);
+
+/**
+ * @brief Set a GPIO pin state by alias name
+ * 
+ * @param name GPIO alias name (e.g., "led0", "sw0")
+ * @param state Pin state (OCRE_GPIO_PIN_SET or OCRE_GPIO_PIN_RESET)
+ * @return int 0 on success, negative error code on failure
+ */
+int ocre_gpio_set_by_name(const char *name, ocre_gpio_pin_state_t state);
+
+/**
+ * @brief Toggle a GPIO pin by alias name
+ * 
+ * @param name GPIO alias name (e.g., "led0", "sw0")
+ * @return int 0 on success, negative error code on failure
+ */
+int ocre_gpio_toggle_by_name(const char *name);
+
+/**
+ * @brief Get a GPIO pin state by alias name
+ * 
+ * @param name GPIO alias name (e.g., "led0", "sw0")
+ * @return ocre_gpio_pin_state_t Pin state or negative error code on failure
+ */
+ocre_gpio_pin_state_t ocre_gpio_get_by_name(const char *name);
+
 // WASM-exposed GPIO functions
 int ocre_gpio_wasm_init(wasm_exec_env_t exec_env);
 int ocre_gpio_wasm_configure(wasm_exec_env_t exec_env, int port, int P_pin, int direction);
@@ -136,5 +168,12 @@ int ocre_gpio_wasm_get(wasm_exec_env_t exec_env, int port, int P_pin);
 int ocre_gpio_wasm_toggle(wasm_exec_env_t exec_env, int port, int P_pin);
 int ocre_gpio_wasm_register_callback(wasm_exec_env_t exec_env, int port, int P_pin);
 int ocre_gpio_wasm_unregister_callback(wasm_exec_env_t exec_env, int port, int P_pin);
+
+int ocre_gpio_wasm_configure_by_name(wasm_exec_env_t exec_env, const char *name, int direction);
+int ocre_gpio_wasm_set_by_name(wasm_exec_env_t exec_env, const char *name, int state);
+int ocre_gpio_wasm_get_by_name(wasm_exec_env_t exec_env, const char *name);
+int ocre_gpio_wasm_toggle_by_name(wasm_exec_env_t exec_env, const char *name);
+int ocre_gpio_wasm_register_callback_by_name(wasm_exec_env_t exec_env, const char *name);
+int ocre_gpio_wasm_unregister_callback_by_name(wasm_exec_env_t exec_env, const char *name);
 
 #endif /* OCRE_GPIO_H */
