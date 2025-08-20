@@ -35,9 +35,9 @@ typedef enum {
  */
 typedef struct ocre_sensor_t {
     ocre_sensor_handle_t handle;
-    char *sensor_name;
+    char sensor_name[CONFIG_MAX_SENSOR_NAME_LENGTH];
     int num_channels;
-    sensor_channel_t channels[];
+    enum sensor_channel channels[CONFIG_MAX_CHANNELS_PER_SENSOR];
 } ocre_sensor_t;
 /**
  * @brief Initialize the sensor system
@@ -94,14 +94,14 @@ int ocre_sensors_get_channel_type(wasm_exec_env_t exec_env, int sensor_id, int c
  * @param channel_type Type of the channel to read
  * @return Sensor value in integer format, negative error code on failure
  */
-int ocre_sensors_read(wasm_exec_env_t exec_env, int sensor_id, int channel_type);
+double ocre_sensors_read(wasm_exec_env_t exec_env, int sensor_id, int channel_type);
 
 /* New string-based APIs */
 int ocre_sensors_open_by_name(wasm_exec_env_t exec_env, const char *sensor_name);
 int ocre_sensors_get_handle_by_name(wasm_exec_env_t exec_env, const char *sensor_name);
 int ocre_sensors_get_channel_count_by_name(wasm_exec_env_t exec_env, const char *sensor_name);
 int ocre_sensors_get_channel_type_by_name(wasm_exec_env_t exec_env, const char *sensor_name, int channel_index);
-int ocre_sensors_read_by_name(wasm_exec_env_t exec_env, const char *sensor_name, int channel_type);
+double ocre_sensors_read_by_name(wasm_exec_env_t exec_env, const char *sensor_name, int channel_type);
 
 /* Utility functions */
 int ocre_sensors_get_list(wasm_exec_env_t exec_env, char **name_list, int max_names);

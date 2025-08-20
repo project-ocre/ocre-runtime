@@ -19,11 +19,38 @@
 
 #define MAX_PATH_LEN 256
 
+/*
+When containers are passed locally, from the filesystem - we don't need to construct the path.
+Instead, we just use the original file's location. This is indicated whether the container was passed as a buffer,
+or as a program parameter. Encapsulation is used to avoid global variables.
+*/
+static int stored_argc = 0;
+
+void set_argc(int argc) {
+    stored_argc = argc;
+}
+
+
+/**
+ * @brief Retrieves the stored argc value.
+ *
+ * Returns the argc value previously set by set_argc().
+ * Useful for conditional logic based on argument count.
+ *
+ * @return The stored argc value.
+ */
+static int get_argc() {
+    return stored_argc;
+}
+
+
 int core_construct_filepath(char *path, size_t len, char *name) {
     char cwd[PATH_MAX];
-    if (getcwd(cwd, sizeof(cwd)) != NULL) 
-       printf("Current working dir: %s\n", cwd);
-    if (g_argc) {
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        // Shall be in /build folder
+       LOG_DBG("Current working dir: %s", cwd);
+       }
+    if (get_argc() > 1) {
         strcpy(path, name);
         return 0;
     } else {
@@ -78,16 +105,16 @@ static int lsdir(const char *path) {
 
     dirp = opendir(path);
     if (!dirp) {
-        printf("Error opening dir %s [%d]\n", path, errno);
+        LOG_ERR("Error opening dir %s [%d]", path, errno);
         return -errno;
     }
 
     while ((entry = readdir(dirp)) != NULL) {
-        printf("Found: %s", entry->d_name);
+        LOG_INF("Found: %s", entry->d_name);
     }
 
     if (closedir(dirp) < 0) {
-        printf("Error closing dir [%d]\n", errno);
+        LOG_ERR("Error closing dir [%d]", errno);
         return -errno;
     }
 
@@ -99,27 +126,35 @@ void ocre_app_storage_init() {
 
     if (stat(OCRE_BASE_PATH, &st) == -1) {
         if (mkdir(OCRE_BASE_PATH, 0755) < 0) {
-            printf("Failed to create directory %s [%d]\n", OCRE_BASE_PATH, errno);
+            LOG_ERR("Failed to create directory %s [%d]", OCRE_BASE_PATH, errno);
         }
     }
 
     if (stat(APP_RESOURCE_PATH, &st) == -1) {
         if (mkdir(APP_RESOURCE_PATH, 0755) < 0) {
-            printf("Failed to create directory %s [%d]\n", APP_RESOURCE_PATH, errno);
+            LOG_ERR("Failed to create directory %s [%d]", APP_RESOURCE_PATH, errno);
         }
     }
 
     if (stat(PACKAGE_BASE_PATH, &st) == -1) {
         if (mkdir(PACKAGE_BASE_PATH, 0755) < 0) {
-            printf("Failed to create directory %s [%d]\n", PACKAGE_BASE_PATH, errno);
+            LOG_ERR("Failed to create directory %s [%d]", PACKAGE_BASE_PATH, errno);
         }
     }
 
     if (stat(CONFIG_PATH, &st) == -1) {
         if (mkdir(CONFIG_PATH, 0755) < 0) {
-            printf("Failed to create directory %s [%d]\n", CONFIG_PATH, errno);
+            LOG_ERR("Failed to create directory %s [%d]", CONFIG_PATH, errno);
         }
     }
+
+#ifdef CONFIG_OCRE_CONTAINER_FILESYSTEM
+    if (stat(CONTAINER_FS_PATH, &st) == -1) {
+        if (mkdir(CONTAINER_FS_PATH, 0755) < 0) {
+            LOG_ERR("Failed to create directory %s [%d]", CONTAINER_FS_PATH, errno);
+        }
+    }
+#endif
 
     lsdir(OCRE_BASE_PATH);
 }

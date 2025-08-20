@@ -193,6 +193,12 @@ config MESSAGING_MAX_SUBSCRIPTIONS
     help
       Number of maximum subscriptions for Container Messaging
 
+config OCRE_CONTAINER_FILESYSTEM
+    bool "Enable OCRE Container File System support"
+    default n
+    help
+      Enable support for containers to access the flash filesystem
+
 config OCRE_SHELL
     bool "Enable OCRE Shell"
     default y
