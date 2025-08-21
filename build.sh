@@ -70,14 +70,14 @@ if [[ "$TARGET" == "z" ]]; then
     cd ..
     if [[ ${#INPUT_FILES[@]} -gt 0 ]]; then
         echo "Input files provided: ${INPUT_FILES[*]}"
-        rm -f flash.bin
-        west build -p -b "$ZEPHYR_BOARD" ./application -d build -- \
-        -DMODULE_EXT_ROOT="$(pwd)"/application -DOCRE_INPUT_FILE="${INPUT_FILES[0]}" -DTARGET_PLATFORM_NAME=Zephyr
+        rm flash.bin 
+        west build -p -b $ZEPHYR_BOARD ./application -d build -- \
+        -DMODULE_EXT_ROOT=`pwd`/application -DOCRE_INPUT_FILE="${INPUT_FILES[0]}" -DTARGET_PLATFORM_NAME=Zephyr || exit 1
         # Note: Only the first file is passed to OCRE_INPUT_FILE, adapt as needed for multiple files
     else
-        rm -f flash.bin
-        west build -p -b "$ZEPHYR_BOARD" ./application -d build -- \
-        -DMODULE_EXT_ROOT="$(pwd)"/application -DTARGET_PLATFORM_NAME=Zephyr
+        rm flash.bin
+        west build -p -b $ZEPHYR_BOARD  ./application -d build -- \
+        -DMODULE_EXT_ROOT=`pwd`/application -DTARGET_PLATFORM_NAME=Zephyr || exit 1
     fi
 elif [[ "$TARGET" == "l" ]]; then
     echo "Target is: Linux x86_64"
@@ -93,9 +93,12 @@ elif [[ "$TARGET" == "l" ]]; then
     if [[ $(tail -n 1 build.log) == "[100%] Built target app" ]]; then
         BUILD_SUCCESS=true
     fi
+    if [ "$BUILD_SUCCESS" == false ]; then
+        exit 1
+    fi
 else
     echo "Target does not contain 'z' or 'l': exit"
-    exit
+    exit 1
 fi
 
 # Execute run mode if -r flag is set and build was successful
