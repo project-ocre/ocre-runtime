@@ -2,7 +2,7 @@ manifest:
   projects:
     - name: zephyr
       revision: v4.2-branch
-      url: https://github.com/zephyrproject-rtos/zephyr
+      url: https://github.com/project-ocre/zephyr
       west-commands: scripts/west-commands.yml
       import: true
       
