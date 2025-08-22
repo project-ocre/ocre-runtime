@@ -148,7 +148,7 @@ Ocre provides a convenient `build.sh` script to simplify building and running fo
 
 ```sh
 west build -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=`pwd`/application
-west flash
+./build/zephyr/zephyr.exe
 ```
 
 #### Zephyr (b_u585i_iot02a)

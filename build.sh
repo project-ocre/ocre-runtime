@@ -15,6 +15,16 @@ RUN_MODE=false  # Default: Run mode disabled
 INPUT_FILES=()
 ZEPHYR_BOARD="native_sim"
 
+# resolve absolute paths (portable, no readlink -f)
+abs_path() {
+    local p="$1"
+    if [[ "$p" = /* ]]; then
+        echo "$p"
+    else
+        echo "$(cd "$(dirname "$p")" && pwd)/$(basename "$p")"
+    fi
+}
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -46,6 +56,13 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Normalize input files to absolute paths BEFORE any 'cd'
+if [[ ${#INPUT_FILES[@]} -gt 0 ]]; then
+    for i in "${!INPUT_FILES[@]}"; do
+        INPUT_FILES[$i]="$(abs_path "${INPUT_FILES[$i]}")"
+    done
+fi
 
 # Check if required argument is provided
 if [[ "$TARGET" == "z" ]]; then
