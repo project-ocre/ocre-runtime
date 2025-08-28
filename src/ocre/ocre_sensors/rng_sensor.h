@@ -14,7 +14,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define SENSOR_CHAN_CUSTOM 1
+#define SENSOR_CHAN_CUSTOM 12
 int rng_sensor_init(const struct device *dev);
 
 #ifdef __cplusplus

@@ -17,12 +17,24 @@
 #include <ocre/ocre_input_file.h>
 #endif
 
+#include <zephyr/net/net_if.h>
+
 void create_sample_container();
+int ocre_network_init();
 
 int main(int argc, char *argv[]) {
     ocre_cs_ctx ctx;
     ocre_container_init_arguments_t args;
     char *container_filename = "hello";
+
+#ifdef CONFIG_OCRE_NETWORKING
+    int net_status = ocre_network_init();
+    if (net_status < 0) {
+        printf("Unable to connect to network\n");
+    } else {
+        printf("Network is UP\n");
+    }
+#endif
 
     ocre_app_storage_init();
 
@@ -75,4 +87,24 @@ void create_sample_container(char *file_name) {
 
     fs_write(&f, &wasm_binary, wasm_binary_len);
     fs_close(&f);
+}
+
+int ocre_network_init() {
+
+    struct net_if *iface = net_if_get_default();
+    net_dhcpv4_start(iface);
+
+    printf("Waiting for network to be ready...\n");
+
+    int sleep_cnt = 0;
+    while (!net_if_is_up(iface) && (sleep_cnt < 10)) {
+        k_sleep(K_MSEC(200));
+        sleep_cnt++;
+    }
+
+    if (!net_if_is_up(iface)) {
+        return -ENOTCONN;
+    }
+
+    return 0;
 }

@@ -5,13 +5,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef UNIT_TESTING
-#include "../../application/tests/ocre_container_runtime/stubs/components/container_supervisor/cs_sm_impl.h"
-#include "../../application/tests/ocre_container_runtime/stubs/components/container_supervisor/cs_sm.h"
-#include "../../application/tests/ocre_container_runtime/stubs/wasm/wasm.h"
-#include "../../application/tests/ocre_container_runtime/stubs/ocre/fs/fs.h"
-#else
-
 #include <ocre/ocre.h>
 #include "ocre_core_external.h"
 #include "../components/container_supervisor/cs_sm.h"
@@ -19,7 +12,6 @@
 // WAMR includes
 // #include "coap_ext.h"
 #include "../api/ocre_api.h"
-#endif
 
 #include <stdlib.h>
 #include <string.h>

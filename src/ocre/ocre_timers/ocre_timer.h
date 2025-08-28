@@ -79,6 +79,5 @@ void ocre_timer_cleanup_container(wasm_module_inst_t module_inst);
  */
 void ocre_timer_init(void);
 
-void ocre_timer_register_module(wasm_module_inst_t module_inst);
 int ocre_timer_set_callback(wasm_exec_env_t exec_env, const char *callback_name);
 #endif /* OCRE_TIMER_H */

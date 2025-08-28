@@ -46,6 +46,11 @@
  */
 #define CONFIG_PATH           OCRE_BASE_PATH "/config/"
 
+/**
+ * @brief Path for container filesystem root
+ */
+#define CONTAINER_FS_PATH     OCRE_BASE_PATH "/cfs"
+
 // Constants
 
 /**

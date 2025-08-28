@@ -19,6 +19,7 @@
 // Config macros
 //#define CONFIG_OCRE_CONTAINER_MESSAGING   /*!< Enable container messaging support */
 #define CONFIG_OCRE_NETWORKING            /*!< Enable networking support */
+#define CONFIG_OCRE_CONTAINER_FILESYSTEM
 
 // Base paths for the application
 #define OCRE_BASE_PATH "./ocre"           /*!< Base directory for Ocre resources */
@@ -28,9 +29,20 @@
 #define CONFIG_PATH           OCRE_BASE_PATH "/config"     /*!< Path to configuration files */
 
 /**
+ * @brief Path for container filesystem root
+ */
+#define CONTAINER_FS_PATH     OCRE_BASE_PATH "/cfs"
+
+/**
  * @brief Ignore Zephyr's log module registration on POSIX.
  */
 #define LOG_MODULE_REGISTER(name, level)
+
+
+/**
+ * @brief Log a debug message.
+ */
+#define LOG_DBG(fmt, ...)   printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
 
 /**
  * @brief Log an error message.
@@ -50,9 +62,15 @@
 // Constants
 
 /**
- * @brief Global argument count, used for command-line argument handling.
+ * @brief Sets the value of argc for internal use.
+ *
+ * This function stores the argc value passed from main
+ * so that other functions in the module can access it
+ * without relying on global variables.
+ *
+ * @param argc The argument count from main.
  */
-extern int g_argc;
+void set_argc(int argc);
 
 /**
  * @brief Maximum length for SHA256 string representations.

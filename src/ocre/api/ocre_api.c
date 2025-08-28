@@ -21,10 +21,10 @@
 #ifdef CONFIG_OCRE_TIMER
 #include "../ocre_timers/ocre_timer.h"
 #endif
-#include "ocre/utils/utils.h"
-#include "../container_messaging/messaging.h"
 
-#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
+#include "ocre/utils/utils.h"
+
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) || defined(CONFIG_OCRE_CONTAINER_MESSAGING)
 #include "ocre_common.h"
 #endif 
 
@@ -36,6 +36,9 @@
 #include "../ocre_gpio/ocre_gpio.h"
 #endif
 
+#ifdef CONFIG_OCRE_CONTAINER_MESSAGING
+#include "../ocre_messaging/ocre_messaging.h"
+#endif
 
 int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name) {
     wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
@@ -91,15 +94,15 @@ int ocre_sleep(wasm_exec_env_t exec_env, int milliseconds) {
 NativeSymbol ocre_api_table[] = {
         {"uname", _ocre_posix_uname, "(*)i", NULL},
         {"ocre_sleep", ocre_sleep, "(i)i", NULL},
-#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
-        {"ocre_get_event", ocre_get_event, "(iiii)i", NULL},
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) || defined(CONFIG_OCRE_CONTAINER_MESSAGING)
+        {"ocre_get_event", ocre_get_event, "(iiiiii)i", NULL},
         {"ocre_register_dispatcher", ocre_register_dispatcher, "(i$)i", NULL},
-#endif
+#endif 
 // Container Messaging API
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
-        {"ocre_msg_system_init", ocre_msg_system_init, "()", NULL},
-        {"ocre_publish_message", ocre_publish_message, "(***i)i", NULL},
-        {"ocre_subscribe_message", ocre_subscribe_message, "(**)i", NULL},
+        {"ocre_publish_message", ocre_messaging_publish, "(***i)i", NULL},
+        {"ocre_subscribe_message", ocre_messaging_subscribe, "(*)i", NULL},
+        {"ocre_messaging_free_module_event_data", ocre_messaging_free_module_event_data, "(iii)i", NULL},
 #endif
 // Sensor API
 #ifdef CONFIG_OCRE_SENSORS
@@ -109,12 +112,12 @@ NativeSymbol ocre_api_table[] = {
         {"ocre_sensors_get_handle", ocre_sensors_get_handle, "(i)i", NULL},
         {"ocre_sensors_get_channel_count", ocre_sensors_get_channel_count, "(i)i", NULL},
         {"ocre_sensors_get_channel_type", ocre_sensors_get_channel_type, "(ii)i", NULL},
-        {"ocre_sensors_read", ocre_sensors_read, "(ii)i", NULL},
+        {"ocre_sensors_read", ocre_sensors_read, "(ii)F", NULL},
         {"ocre_sensors_open_by_name", ocre_sensors_open_by_name, "($)i", NULL},
         {"ocre_sensors_get_handle_by_name", ocre_sensors_get_handle_by_name, "($)i", NULL},
         {"ocre_sensors_get_channel_count_by_name", ocre_sensors_get_channel_count_by_name, "($)i", NULL},
         {"ocre_sensors_get_channel_type_by_name", ocre_sensors_get_channel_type_by_name, "($i)i", NULL},
-        {"ocre_sensors_read_by_name", ocre_sensors_read_by_name, "($i)i", NULL},
+        {"ocre_sensors_read_by_name", ocre_sensors_read_by_name, "($i)F", NULL},
         {"ocre_sensors_get_list", ocre_sensors_get_list, "($i)i", NULL},
 #endif
 // Timer API
@@ -134,6 +137,13 @@ NativeSymbol ocre_api_table[] = {
         {"ocre_gpio_pin_toggle", ocre_gpio_wasm_toggle, "(ii)i", NULL},
         {"ocre_gpio_register_callback", ocre_gpio_wasm_register_callback, "(ii)i", NULL},
         {"ocre_gpio_unregister_callback", ocre_gpio_wasm_unregister_callback, "(ii)i", NULL},
+
+        {"ocre_gpio_configure_by_name", ocre_gpio_wasm_configure_by_name, "($i)i", NULL},
+        {"ocre_gpio_set_by_name", ocre_gpio_wasm_set_by_name, "($i)i", NULL},
+        {"ocre_gpio_get_by_name", ocre_gpio_wasm_get_by_name, "($)i", NULL},
+        {"ocre_gpio_toggle_by_name", ocre_gpio_wasm_toggle_by_name, "($)i", NULL},
+        {"ocre_gpio_register_callback_by_name", ocre_gpio_wasm_register_callback_by_name, "($)i", NULL},
+        {"ocre_gpio_unregister_callback_by_name", ocre_gpio_wasm_unregister_callback_by_name, "($)i", NULL},
 #endif
 };
 
