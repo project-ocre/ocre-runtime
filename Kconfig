@@ -212,4 +212,10 @@ config IMU_SENSOR
     help
       Enable support for the custom IMU sensor.
 
+config OCRE_NETWORKING
+    bool "Enable container networking support"
+    default n
+    help
+        Enable networking support for containers.
+        
 endmenu

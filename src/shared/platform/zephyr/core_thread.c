@@ -18,7 +18,7 @@ static void thread_entry(void *arg1, void *arg2, void *arg3) {
 
 int core_thread_create(core_thread_t *thread, core_thread_func_t func, void *arg, const char *name, size_t stack_size, int priority) {
     if (!thread || !func) return -1;
-    thread->stack = k_malloc(K_THREAD_STACK_LEN(stack_size));
+    thread->stack = k_thread_stack_alloc(stack_size, 0);
     if (!thread->stack) return -1;
     thread->tid = k_thread_create(&thread->thread, thread->stack, stack_size,
                                   thread_entry, NULL, (void *)func, arg,
@@ -31,5 +31,5 @@ int core_thread_create(core_thread_t *thread, core_thread_func_t func, void *arg
 void core_thread_destroy(core_thread_t *thread) {
     if (!thread) return;
     k_thread_abort(thread->tid);
-    k_free(thread->stack);
+    k_thread_stack_free(thread->stack);
 }
