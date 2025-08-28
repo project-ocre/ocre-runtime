@@ -35,6 +35,13 @@ jobs:
         run: |
           west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
       
+      - name: Upload build native_sim artifact
+        if: job.status == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: zephyr-build-native-sim
+          path: build/
+
       - name: Build b_u585i_iot02a
         if: runner.environment == 'self-hosted'
         run: |
@@ -46,6 +53,40 @@ jobs:
         with:
           name: firmware
           path: build/zephyr/zephyr.bin
+
+  run-zephyr-native-sim:
+    runs-on: zephyr-xlarge-runner
+    needs: build-zephyr
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+      options: --user root
+    steps:
+      - name: Download Zephyr build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: zephyr-build-native-sim
+          path: build/
+
+      - name: Run Zephyr binary and check output
+        working-directory: build/zephyr/
+        run: |
+          EXPECTED_LOG="Hello World from Ocre!"
+          echo "Running Zephyr (native_sim)..."
+          chmod +x zephyr.exe
+          stdbuf -oL -eL timeout 20s ./zephyr.exe | tee zephyr_app.log
+          echo "===== Checking for expected log ====="
+          if grep -q "$EXPECTED_LOG" zephyr_app.log; then
+            echo "[OK] Found expected log: $EXPECTED_LOG"
+          else
+            echo "[ERROR] Expected log not found: $EXPECTED_LOG"
+            exit 1
+          fi
+
+      - name: Upload app logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: zephyr-app-log
+          path: build/zephyr/zephyr_app.log
 
   build-linux:
     runs-on: ubuntu-latest
@@ -64,6 +105,43 @@ jobs:
         run: |
           cd application
           ./build.sh -t l
+    
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: application/build/
+
+  run-linux:
+    runs-on: ubuntu-latest
+    needs: build-linux
+    steps:
+      - name: Download Linux build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-build
+          path: application/build/
+
+      - name: Run Linux binary and check output
+        working-directory: application/build
+        run: |
+          EXPECTED_LOG="Hello World from Ocre!"
+          chmod +x app
+          echo "Running application..."
+          stdbuf -oL -eL timeout 20s ./app | tee linux_app.log
+          echo "===== Checking for expected log ====="
+          if grep -q "$EXPECTED_LOG" linux_app.log; then
+            echo "[OK] Found expected log: $EXPECTED_LOG"
+          else
+            echo "[ERROR] Expected log not found: $EXPECTED_LOG"
+            exit 1
+          fi
+
+      - name: Upload app logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-app-log
+          path: application/build/linux_app.log
 
   flash:
     needs: build-zephyr
