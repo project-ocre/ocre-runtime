@@ -8,5 +8,4 @@ For governance guidelines and information on becoming a committer/maintainer, se
 | Name | GitHub Username | Email |
 |------|-------|-----------|
 | Stephen Berard | @sberard | stephen@atym.io |
-| Knox Lively | @gonzolively | knox@atym.io |
 | Artur | @ArturSir | artur@atym.io |
