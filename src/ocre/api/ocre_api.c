@@ -40,6 +40,10 @@
 #include "../ocre_messaging/ocre_messaging.h"
 #endif
 
+#ifdef CONFIG_OCRE_DISPLAY
+#include "../ocre_display/ocre_display.h"
+#endif
+
 int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name) {
     wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
     if (!module_inst) {
@@ -144,6 +148,15 @@ NativeSymbol ocre_api_table[] = {
         {"ocre_gpio_toggle_by_name", ocre_gpio_wasm_toggle_by_name, "($)i", NULL},
         {"ocre_gpio_register_callback_by_name", ocre_gpio_wasm_register_callback_by_name, "($)i", NULL},
         {"ocre_gpio_unregister_callback_by_name", ocre_gpio_wasm_unregister_callback_by_name, "($)i", NULL},
+#endif
+
+#ifdef CONFIG_OCRE_DISPLAY
+        {"display_input_read",  display_input_read,     "(*)i",     NULL},
+        {"display_flush",       display_flush,          "(iiii*)",  NULL},
+        {"display_fill",        display_fill,           "(iiii*)",  NULL},
+        {"display_vdb_write",   display_vdb_write,      "(*iii*i)", NULL},
+        {"display_map",         display_map,            "(iiii*)",  NULL},
+        {"time_get_ms",         time_get_ms,            "()i",      NULL}
 #endif
 };
 

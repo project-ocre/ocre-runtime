@@ -108,6 +108,10 @@ if(CONFIG_OCRE_CONTAINER_MESSAGING)
     list(APPEND lib_sources ${OCRE_ROOT_DIR}/src/ocre/ocre_messaging/ocre_messaging.c)
 endif()
 
+if(CONFIG_OCRE_DISPLAY)
+    list(APPEND ocre_lib_sources ${OCRE_ROOT_DIR}/src/ocre/ocre_display/ocre_display.c)
+endif()
+
 # Add all sources to the app target at once
 target_sources(app PRIVATE
     ${WAMR_RUNTIME_LIB_SOURCE}

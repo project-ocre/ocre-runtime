@@ -217,5 +217,11 @@ config OCRE_NETWORKING
     default n
     help
         Enable networking support for containers.
-        
+
+config OCRE_DISPLAY
+    bool "Enable OCRE Display support"
+    default n
+    help
+      Enable support for OCRE Display access
+
 endmenu
