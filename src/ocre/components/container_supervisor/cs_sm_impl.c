@@ -16,7 +16,8 @@
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
 #include "ocre_messaging/ocre_messaging.h"
 #endif
-#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS)
+#if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
+        defined(CONFIG_OCRE_CONTAINER_MESSAGING)
 #include "api/ocre_common.h"
 #endif
 
