@@ -330,35 +330,34 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
         return CONTAINER_STATUS_RUNNING;
     }
 
-#ifdef CONFIG_OCRE_NETWORKING
-#define ADDRESS_POOL_SIZE 1
-    const char *addr_pool[ADDRESS_POOL_SIZE] = {
-            "0.0.0.0/0",
-    };
-    wasm_runtime_set_wasi_addr_pool(curr_container_arguments->module, addr_pool, ADDRESS_POOL_SIZE);
-#endif
-
-#ifdef CONFIG_OCRE_CONTAINER_FILESYSTEM
-// Simple for now: map CONTAINER_FS_PATH to /
-// TODO: eventually every container should probably have its own root folder,
-// however wasm_runtime_set_wasi_args expects constant values.
-#define DIR_LIST_SIZE 1
-            static const char *dir_map_list[DIR_LIST_SIZE] = {
-                "/::" CONTAINER_FS_PATH
-            };
-            wasm_runtime_set_wasi_args(curr_container_arguments->module, 
-                                    NULL, 0,
-                                    dir_map_list, DIR_LIST_SIZE,
-                                    NULL, 0, NULL, 0);
-#endif
-
-
     if (container->container_runtime_status != CONTAINER_STATUS_CREATED &&
         container->container_runtime_status != CONTAINER_STATUS_STOPPED) {
         LOG_ERR("Container (ID: %d), is not in a valid state to run", curr_container_ID);
         container->container_runtime_status = CONTAINER_STATUS_ERROR;
         return CONTAINER_STATUS_ERROR;
     }
+
+    #ifdef CONFIG_OCRE_NETWORKING
+    #define ADDRESS_POOL_SIZE 1
+        const char *addr_pool[ADDRESS_POOL_SIZE] = {
+                "0.0.0.0/0",
+        };
+        wasm_runtime_set_wasi_addr_pool(curr_container_arguments->module, addr_pool, ADDRESS_POOL_SIZE);
+    #endif
+
+    #ifdef CONFIG_OCRE_CONTAINER_FILESYSTEM
+    // Simple for now: map CONTAINER_FS_PATH to /
+    // TODO: eventually every container should probably have its own root folder,
+    // however wasm_runtime_set_wasi_args expects constant values.
+    #define DIR_LIST_SIZE 1
+                static const char *dir_map_list[DIR_LIST_SIZE] = {
+                    "/::" CONTAINER_FS_PATH
+                };
+                wasm_runtime_set_wasi_args(curr_container_arguments->module, 
+                                        NULL, 0,
+                                        dir_map_list, DIR_LIST_SIZE,
+                                        NULL, 0, NULL, 0);
+    #endif
 
     if (curr_container_arguments->module_inst) {
         LOG_INF("WASM runtime already instantiated for container:%d", curr_container_ID);
