@@ -34,6 +34,16 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
 
+// External RAM support for WAMR heap on boards that have it
+#if defined(CONFIG_MEMC) 
+    #if defined(CONFIG_BOARD_ARDUINO_PORTENTA_H7)
+        __attribute__((section("SDRAM1"), aligned(32)))
+    #elif defined(CONFIG_BOARD_B_U585I_IOT02A)
+        __attribute__((section(".stm32_psram"), aligned(32)))
+    #elif defined(CONFIG_BOARD_MIMXRT1064_EVK)
+        __attribute__((section("SDRAM"), aligned(32)))
+    #endif // defined (<board>)
+#endif // defined(CONFIG_MEMC) 
 static char wamr_heap_buf[CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE] = {0};
 
 // Thread pool for container execution
