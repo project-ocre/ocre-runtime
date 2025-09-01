@@ -20,6 +20,7 @@
 //#define CONFIG_OCRE_CONTAINER_MESSAGING   /*!< Enable container messaging support */
 #define CONFIG_OCRE_NETWORKING            /*!< Enable networking support */
 #define CONFIG_OCRE_CONTAINER_FILESYSTEM
+#define CONFIG_OCRE_CONTAINER_WAMR_TERMINATION
 
 // Base paths for the application
 #define OCRE_BASE_PATH "./ocre"           /*!< Base directory for Ocre resources */
