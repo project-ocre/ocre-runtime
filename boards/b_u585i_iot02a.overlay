@@ -2,7 +2,6 @@
 
 / {
     aliases {
-        psram0 = &psram;
         rng0 = &rng_device;
         led0 = &green_led_1;
 		led1 = &red_led_1;
@@ -39,118 +38,6 @@
         compatible = "custom,devices";
         status = "okay";
         device_list = <&rng_device &ism330dhcx &lps22hh &hts221 &iis2mdc &veml6030>;
-    };
-
-    reserved-memory {
-        #address-cells = <1>;
-        #size-cells = <1>;
-        ranges;
-
-        psram0: psram@90000000 {
-            compatible = "zephyr,memory-region";
-            reg = <0x90000000 0x00800000>;
-            zephyr,memory-region = "PSRAM";
-        };
-    };
-
-    chosen {
-        zephyr,memory-region = &psram0;
-    };
-};
-
-&octospi1 {
-    status = "okay";
-    pinctrl-0 = <&octospi1_clk &octospi1_ncs &octospi1_dqs 
-                 &octospi1_io0 &octospi1_io1 &octospi1_io2 &octospi1_io3
-                 &octospi1_io4 &octospi1_io5 &octospi1_io6 &octospi1_io7>;
-    pinctrl-names = "default";
-
-    psram: psram@0 {
-        compatible = "st,stm32-ospi-psram";
-        reg = <0x0 0x00800000>;
-        st,ospi-mode = <3>;          // Octal mode
-        st,ospi-clk-frequency = <104>;  // MHz
-        st,ospi-chip-select = <0>;   // CS0
-    };
-};
-
-/* OCTOSPI1 pinmux setup */
-&pinctrl {
-    octospi1_clk: octospi1_clk {
-        pinmux = <STM32_PINMUX('E', 10, AF10)>;
-        bias-disable;
-        drive-push-pull;
-        slew-rate = "very-high-speed";
-    };
-
-    octospi1_ncs: octospi1_ncs {
-        pinmux = <STM32_PINMUX('E', 11, AF10)>;
-        bias-disable;
-        drive-push-pull;
-        slew-rate = "very-high-speed";
-    };
-
-    octospi1_dqs: octospi1_dqs {
-        pinmux = <STM32_PINMUX('E', 12, AF10)>;
-        bias-disable;
-        drive-push-pull;
-        slew-rate = "very-high-speed";
-    };
-
-    octospi1_io0: octospi1_io0 {
-        pinmux = <STM32_PINMUX('E', 7, AF10)>;
-        bias-disable;
-        drive-push-pull;
-        slew-rate = "very-high-speed";
-    };
-
-    octospi1_io1: octospi1_io1 {
-        pinmux = <STM32_PINMUX('E', 8, AF10)>;
-        bias-disable;
-        drive-push-pull;
-        slew-rate = "very-high-speed";
-    };
-
-    octospi1_io2: octospi1_io2 {
-        pinmux = <STM32_PINMUX('E', 9, AF10)>;
-        bias-disable;
-        drive-push-pull;
-        slew-rate = "very-high-speed";
-    };
-
-    octospi1_io3: octospi1_io3 {
-        pinmux = <STM32_PINMUX('E', 13, AF10)>;
-        bias-disable;
-        drive-push-pull;
-        slew-rate = "very-high-speed";
-    };
-
-    octospi1_io4: octospi1_io4 {
-        pinmux = <STM32_PINMUX('E', 14, AF10)>;
-        bias-disable;
-        drive-push-pull;
-        slew-rate = "very-high-speed";
-    };
-
-    octospi1_io5: octospi1_io5 {
-        pinmux = <STM32_PINMUX('E', 15, AF10)>;
-        bias-disable;
-        drive-push-pull;
-        slew-rate = "very-high-speed";
-    };
-
-    octospi1_io6: octospi1_io6 {
-        pinmux = <STM32_PINMUX('E', 2, AF10)>;
-        bias-disable;
-        drive-push-pull;
-        slew-rate = "very-high-speed";
-    };
-
-    octospi1_io7: octospi1_io7 {
-        pinmux = <STM32_PINMUX('D', 7, AF10)>;
-        bias-disable;
-        drive-push-pull;
-        slew-rate = "very-high-speed";
     };
 };
 
