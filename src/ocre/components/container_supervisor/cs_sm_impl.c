@@ -456,7 +456,17 @@ ocre_container_status_t CS_stop_container(ocre_container_t *container, ocre_cont
 
         for (int i = 0; i < CONTAINER_THREAD_POOL_SIZE; i++) {
             if (container_thread_active[i] && container_threads[i].user_options == curr_container_ID) {
+#if defined(CONFIG_OCRE_CONTAINER_WAMR_TERMINATION)
+/**
+ * wasm_runtime_terminate uses POSIX signals to terminate the thread from the outside; calling core_thread_destroy
+ * would try to destroy again the thread, and pthread_join() will never return, while freeing the stack would cause
+ * segfault. This separation is needed to distinguish platform supported by wamr with this features, 
+ * from those which aren't. Since this function exists on those platforms, but stubbed, config parameter is used.
+ */
+                wasm_runtime_terminate(curr_container_arguments->module_inst);
+#else
                 core_thread_destroy(&container_threads[i]);
+#endif
                 container_thread_active[i] = false;
             }
         }
