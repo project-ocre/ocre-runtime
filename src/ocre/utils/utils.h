@@ -6,9 +6,9 @@
  */
 
 #ifndef OCRE_UTILS_H_
-#define OCRE_UTILS_H
+#define OCRE_UTILS_H_
 
-#include <stdint.h>
+#include <stddef.h>
 
 /*
  * Appends src to string dst of size dsize (unlike strncat, dsize is the
