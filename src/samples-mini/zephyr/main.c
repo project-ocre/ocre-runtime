@@ -7,6 +7,8 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/fs/fs.h>
+#include <zephyr/net/net_if.h>
+#include <zephyr/net/dhcpv4.h>
 #include "ocre_core_external.h"
 #include <ocre/ocre.h>
 #include <ocre/ocre_container_runtime/ocre_container_runtime.h>
@@ -17,7 +19,6 @@
 #include <ocre/ocre_input_file.h>
 #endif
 
-#include <zephyr/net/net_if.h>
 
 void create_sample_container();
 int ocre_network_init();
@@ -49,7 +50,7 @@ int main(int argc, char *argv[]) {
         // Step 2:  Create the container, this allocates and loads the container binary
         ocre_container_data_t ocre_container_data;
         int container_ID;
-        ocre_container_runtime_cb callback;
+        ocre_container_runtime_cb callback = NULL;
 
         ocre_container_data.heap_size = 0;
         snprintf(ocre_container_data.name, sizeof(ocre_container_data.name), "Hello World");
