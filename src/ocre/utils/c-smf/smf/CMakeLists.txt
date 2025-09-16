@@ -1,4 +1,4 @@
-add_library(smf SHARED
+add_library(smf STATIC
     smf.c
 )
 
