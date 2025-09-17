@@ -501,14 +501,13 @@ ocre_container_status_t CS_stop_container(ocre_container_t *container, ocre_cont
 }
 
 ocre_container_status_t CS_destroy_container(ocre_container_t *container, ocre_container_runtime_cb callback) {
+    if (container->container_runtime_status != CONTAINER_STATUS_STOPPED) {
+        CS_stop_container(container, NULL);
+    }
+
     core_mutex_lock(&container->lock);
     {
         LOG_INF("Destroying container %d", container->container_ID);
-
-        if (container->container_runtime_status != CONTAINER_STATUS_STOPPED) {
-            CS_stop_container(container, NULL);
-        }
-
         if (container->ocre_runtime_arguments.module) {
             wasm_runtime_unload(container->ocre_runtime_arguments.module);
             container->ocre_runtime_arguments.module = NULL;
