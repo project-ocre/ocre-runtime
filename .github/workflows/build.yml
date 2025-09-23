@@ -72,7 +72,7 @@ jobs:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
       options: --user root
     steps:
-      - name: Download Zephyr build artifact(native_sim)
+      - name: Download Zephyr build artifact (native_sim)
         uses: actions/download-artifact@v4
         with:
           name: ocre-zephyr-native_sim-app
