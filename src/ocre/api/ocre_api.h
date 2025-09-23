@@ -10,7 +10,7 @@
 #ifndef OCRE_API_H
 #define OCRE_API_H
 
-#define OCRE_API_POSIX_BUF_SIZE 75
+#define OCRE_API_POSIX_BUF_SIZE 80
 
 #ifndef OCRE_SYSTEM_NAME
 #define OCRE_SYSTEM_NAME "Project Ocre"

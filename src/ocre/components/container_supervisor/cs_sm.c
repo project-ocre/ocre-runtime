@@ -28,7 +28,7 @@ static void runtime_uninitialized_entry(void *o) {
     ocre_component_send(&ocre_cs_component, &event);
 }
 
-static void runtime_uninitialized_run(void *o) {
+static enum smf_state_result runtime_uninitialized_run(void *o) {
 #if OCRE_CS_DEBUG_ON
     LOG_INF("HELLO runtime_uninitialized_run");
 #endif
@@ -46,6 +46,7 @@ static void runtime_uninitialized_run(void *o) {
             break;
     }
     SM_MARK_EVENT_HANDLED(o);
+    return SMF_EVENT_HANDLED;
 }
 
 static void runtime_running_entry(void *o) {
@@ -54,7 +55,7 @@ static void runtime_running_entry(void *o) {
 #endif
 }
 
-static void runtime_running_run(void *o) {
+static enum smf_state_result runtime_running_run(void *o) {
 #if OCRE_CS_DEBUG_ON
     LOG_INF("HELLO runtime_running_run");
 #endif
@@ -145,12 +146,14 @@ static void runtime_running_run(void *o) {
     }
 
     SM_MARK_EVENT_HANDLED(o);
+    return SMF_EVENT_HANDLED;
 }
 
-static void runtime_error_run(void *o) {
+static enum smf_state_result runtime_error_run(void *o) {
 #if OCRE_CS_DEBUG_ON
     LOG_INF("HELLO runtime_error_run");
 #endif
+    return SMF_EVENT_HANDLED;
 }
 
 static const struct smf_state hsm[] = {

@@ -35,7 +35,7 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include "cs_sm_impl.h"
 
 // External RAM support for WAMR heap on boards that have it
-#if defined(CONFIG_MEMC) 
+#if defined(CONFIG_MEMC)
     #if defined(CONFIG_BOARD_ARDUINO_PORTENTA_H7)
         __attribute__((section("SDRAM1"), aligned(32)))
     #elif defined(CONFIG_BOARD_B_U585I_IOT02A)
@@ -43,7 +43,7 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
     #elif defined(CONFIG_BOARD_MIMXRT1064_EVK)
         __attribute__((section("SDRAM"), aligned(32)))
     #endif // defined (<board>)
-#endif // defined(CONFIG_MEMC) 
+#endif // defined(CONFIG_MEMC)
 static char wamr_heap_buf[CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE] = {0};
 
 // Thread pool for container execution
@@ -111,8 +111,9 @@ static bool validate_container_memory(ocre_container_t *container) {
 }
 
 // Container thread entry function
-static void container_thread_entry(struct container_thread_args *args) {
-    ocre_container_t *container = args->container;
+static void container_thread_entry(void *args) {
+    struct container_thread_args *container_args = args;
+    ocre_container_t *container = container_args->container;
     wasm_module_inst_t module_inst = container->ocre_runtime_arguments.module_inst;
 
     // Initialize WASM runtime thread environment
@@ -197,7 +198,7 @@ static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_argument
         return -ENOMEM;
     }
 
-    LOG_INF("File path: %s, size: %d", filepath, file_size);
+    LOG_INF("File path: %s, size: %lu", filepath, (long unsigned int)file_size);
 
     ret = core_fileopen(filepath, &file_handle);
     if (ret < 0) {
@@ -363,7 +364,7 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
                 static const char *dir_map_list[DIR_LIST_SIZE] = {
                     "/::" CONTAINER_FS_PATH
                 };
-                wasm_runtime_set_wasi_args(curr_container_arguments->module, 
+                wasm_runtime_set_wasi_args(curr_container_arguments->module,
                                         NULL, 0,
                                         dir_map_list, DIR_LIST_SIZE,
                                         NULL, 0, NULL, 0);
@@ -460,7 +461,7 @@ ocre_container_status_t CS_stop_container(ocre_container_t *container, ocre_cont
 /**
  * wasm_runtime_terminate uses POSIX signals to terminate the thread from the outside; calling core_thread_destroy
  * would try to destroy again the thread, and pthread_join() will never return, while freeing the stack would cause
- * segfault. This separation is needed to distinguish platform supported by wamr with this features, 
+ * segfault. This separation is needed to distinguish platform supported by wamr with this features,
  * from those which aren't. Since this function exists on those platforms, but stubbed, config parameter is used.
  */
                 wasm_runtime_terminate(curr_container_arguments->module_inst);
@@ -501,14 +502,13 @@ ocre_container_status_t CS_stop_container(ocre_container_t *container, ocre_cont
 }
 
 ocre_container_status_t CS_destroy_container(ocre_container_t *container, ocre_container_runtime_cb callback) {
+    if (container->container_runtime_status != CONTAINER_STATUS_STOPPED) {
+        CS_stop_container(container, NULL);
+    }
+
     core_mutex_lock(&container->lock);
     {
         LOG_INF("Destroying container %d", container->container_ID);
-
-        if (container->container_runtime_status != CONTAINER_STATUS_STOPPED) {
-            CS_stop_container(container, NULL);
-        }
-
         if (container->ocre_runtime_arguments.module) {
             wasm_runtime_unload(container->ocre_runtime_arguments.module);
             container->ocre_runtime_arguments.module = NULL;

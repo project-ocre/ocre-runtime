@@ -81,7 +81,6 @@ set(lib_sources
     ${OCRE_ROOT_DIR}/src/ocre/api/ocre_api.c
     # Utils
     ${OCRE_ROOT_DIR}/src/ocre/utils/strlcat.c
-    ${OCRE_ROOT_DIR}/src/ocre/container_messaging_posix/messaging.c
 )
 
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
