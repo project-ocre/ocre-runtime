@@ -6,14 +6,17 @@ show_help() {
     echo "  -t <target>   (Required) Specify the target. z for Zephyr and l for Linux"
     echo "  -r            (Optional) Specify whether run after the build"
     echo "  -f <file(s)>  (Optional) Specify one or more input files"
-    echo "  -b            (Optional) Only Zephyr: build for b_u585i_iot02a instead of native_sim"
-    echo "  -h             Display help"
+    echo "  -b <board>    (Optional, Zephyr only) Select board:"
+    echo "                  uw  -> b_u585i_iot02a + W5500"
+    echo "                  ue  -> b_u585i_iot02a + ENC28J60"
+    echo "  note: when no board is selected, native_sim is the default target for Zephyr"
+    echo "  -h            Display help"
     exit 0
 }
 
 RUN_MODE=false  # Default: Run mode disabled
 INPUT_FILES=()
-ZEPHYR_BOARD="native_sim"
+BOARD_ARG="native_sim"
 
 # resolve absolute paths (portable, no readlink -f)
 abs_path() {
@@ -29,6 +32,10 @@ abs_path() {
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -t)
+            if [[ -z "$2" || "$2" =~ ^- ]]; then
+                echo "Error: -t requires a value (z or l)" >&2
+                exit 1
+            fi
             TARGET="$2"
             shift 2
             ;;
@@ -44,8 +51,12 @@ while [[ $# -gt 0 ]]; do
             done
             ;;
         -b)
-            ZEPHYR_BOARD=b_u585i_iot02a
-            shift
+            if [[ -z "$2" || "$2" =~ ^- ]]; then
+                echo "Error: -b requires a board argument" >&2
+                exit 1
+            fi
+            BOARD_ARG="$2"
+            shift 2
             ;;
         -h)
             show_help
@@ -66,21 +77,39 @@ fi
 
 # Check if required argument is provided
 if [[ "$TARGET" == "z" ]]; then
-    echo "Target is: Zephyr's $ZEPHYR_BOARD"
+    echo "Target is: Zephyr"
     cd ..
+    case "$BOARD_ARG" in
+        uw)
+            ZEPHYR_BOARD="b_u585i_iot02a"
+            CONF_EXTRA=""
+            echo "Building for b_u585i_iot02a with W5500 support"
+            ;;
+        ue)
+            ZEPHYR_BOARD="b_u585i_iot02a"
+            CONF_EXTRA="-DCONF_FILE=prj.conf\;boards/${ZEPHYR_BOARD}.conf\;boards/enc28j60.conf \
+                        -DDTC_OVERLAY_FILE=boards/${ZEPHYR_BOARD}.overlay\;boards/enc28j60.overlay"
+            echo "Building for b_u585i_iot02a with ENC28J60 support"
+            ;;
+        *)
+            ZEPHYR_BOARD="$BOARD_ARG"
+            CONF_EXTRA=""
+            echo "Building for board: $ZEPHYR_BOARD"
+            ;;
+    esac
+
     if [[ ${#INPUT_FILES[@]} -gt 0 ]]; then
         echo "Input files provided: ${INPUT_FILES[*]}"
-        rm flash.bin 
+        rm flash.bin
         west build -p -b $ZEPHYR_BOARD ./application -d build -- \
-        -DMODULE_EXT_ROOT=`pwd`/application -DOCRE_INPUT_FILE="${INPUT_FILES[0]}" -DTARGET_PLATFORM_NAME=Zephyr || exit 1
-        # Note: Only the first file is passed to OCRE_INPUT_FILE, adapt as needed for multiple files
+            -DMODULE_EXT_ROOT=`pwd`/application -DOCRE_INPUT_FILE="${INPUT_FILES[0]}" -DTARGET_PLATFORM_NAME=Zephyr $CONF_EXTRA || exit 1
     else
         rm flash.bin
-        west build -p -b $ZEPHYR_BOARD  ./application -d build -- \
-        -DMODULE_EXT_ROOT=`pwd`/application -DTARGET_PLATFORM_NAME=Zephyr || exit 1
+        west build -p -b $ZEPHYR_BOARD ./application -d build -- \
+            -DMODULE_EXT_ROOT=`pwd`/application -DTARGET_PLATFORM_NAME=Zephyr $CONF_EXTRA || exit 1
     fi
 elif [[ "$TARGET" == "l" ]]; then
-    echo "Target is: Linux x86_64"
+    echo "Target is: Linux"
     if [[ ! -d "build" ]]; then
         echo "build folder does not exist. Creating: build"
         mkdir -p "build"

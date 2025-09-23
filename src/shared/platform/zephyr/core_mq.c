@@ -13,6 +13,7 @@ int core_mq_init(core_mq_t *mq, const char *name, size_t msg_size, uint32_t max_
 {
     mq->msgq_buffer = k_malloc(msg_size * max_msgs);
     k_msgq_init(&mq->msgq, mq->msgq_buffer, msg_size, max_msgs);
+    return 0;
 }
 
 int core_mq_send(core_mq_t *mq, const void *data, size_t msg_len)

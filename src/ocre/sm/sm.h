@@ -14,7 +14,7 @@
 
 #define SM_RETURN_IF_EVENT_HANDLED(o)                                                                                  \
     if (((struct sm_ctx *)o)->event.handled)                                                                           \
-    return
+    return SMF_EVENT_HANDLED
 #define SM_MARK_EVENT_HANDLED(o) ((struct sm_ctx *)o)->event.handled = true
 #define SM_GET_EVENT(o)          ((struct sm_ctx *)o)->event.msg
 #define SM_GET_CUSTOM_CTX(o)     ((struct sm_ctx *)o)->custom_ctx

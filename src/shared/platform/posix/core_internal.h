@@ -38,6 +38,7 @@
  * @brief Ignore Zephyr's log module registration on POSIX.
  */
 #define LOG_MODULE_REGISTER(name, level)
+#define LOG_MODULE_DECLARE(name, level)
 
 
 /**
