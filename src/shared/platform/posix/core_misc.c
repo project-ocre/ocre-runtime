@@ -10,6 +10,7 @@
 #include <time.h>
 #include <errno.h>  
 #include <sched.h>
+#include <stdio.h>
 
 void core_sleep_ms(int milliseconds)
 {
@@ -19,7 +20,8 @@ void core_sleep_ms(int milliseconds)
     if (milliseconds < 0)
     {
         errno = EINVAL;
-        return -1;
+        fprintf(stderr, "core_sleep_ms: Invalid milliseconds value (%d)\n", milliseconds);
+        return;
     }
 
     ts.tv_sec = milliseconds / 1000;
@@ -27,9 +29,10 @@ void core_sleep_ms(int milliseconds)
 
     do {
         res = nanosleep(&ts, &ts);
+        if (res && errno != EINTR) {
+            fprintf(stderr, "core_sleep_ms: nanosleep failed (errno=%d)\n", errno);
+        }
     } while (res && errno == EINTR);
-
-    return res;
 }
 
 void core_yield(void) {
