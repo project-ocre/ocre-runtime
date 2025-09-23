@@ -33,26 +33,37 @@ jobs:
       
       - name: Build native_sim
         run: |
-          west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
+          west build --pristine -b native_sim ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application | tee zephyr_build_native_sim.log
       
-      - name: Upload build native_sim artifact
+      - name: Upload native_sim build artifact
         if: job.status == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: zephyr-build-native-sim
-          path: build/
+          name: ocre-zephyr-native_sim-app #TODO: modify when matrix will added
+          path: build/zephyr/zephyr.exe
 
-      - name: Build b_u585i_iot02a
-        if: runner.environment == 'self-hosted'
-        run: |
-          west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application
-            
-      - name: Upload firmware artifact
-        if: runner.environment == 'self-hosted' && job.status == 'success'
+      - name: Upload native_sim build log
         uses: actions/upload-artifact@v4
         with:
-          name: firmware
+          name: zephyr_build_native_sim_log
+          path: zephyr_build_native_sim.log
+
+      - name: Build b_u585i_iot02a
+        run: |
+          west build --pristine -b b_u585i_iot02a ./application -d build -- -DMODULE_EXT_ROOT=$(pwd)/application | tee zephyr_build_b_u585.log
+      
+      - name: Upload b_u585 build artifact
+        if: job.status == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocre-zephyr-b_u585-app #TODO: modify when matrix will added
           path: build/zephyr/zephyr.bin
+
+      - name: Upload b_u585 build log
+        uses: actions/upload-artifact@v4
+        with:
+          name: zephyr_build_b_u585_log
+          path: zephyr_build_b_u585.log
 
   run-zephyr-native-sim:
     runs-on: zephyr-xlarge-runner
@@ -61,32 +72,32 @@ jobs:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
       options: --user root
     steps:
-      - name: Download Zephyr build artifacts
+      - name: Download Zephyr build artifact(native_sim)
         uses: actions/download-artifact@v4
         with:
-          name: zephyr-build-native-sim
+          name: ocre-zephyr-native_sim-app
           path: build/
 
       - name: Run Zephyr binary and check output
-        working-directory: build/zephyr/
+        working-directory: build
         run: |
           EXPECTED_LOG="Hello World from Ocre!"
           echo "Running Zephyr (native_sim)..."
           chmod +x zephyr.exe
-          stdbuf -oL -eL timeout 20s ./zephyr.exe | tee zephyr_app.log
+          stdbuf -oL -eL timeout 20s ./zephyr.exe | tee zephyr_run_native_sim.log
           echo "===== Checking for expected log ====="
-          if grep -q "$EXPECTED_LOG" zephyr_app.log; then
+          if grep -q "$EXPECTED_LOG" zephyr_run_native_sim.log; then
             echo "[OK] Found expected log: $EXPECTED_LOG"
           else
             echo "[ERROR] Expected log not found: $EXPECTED_LOG"
             exit 1
           fi
 
-      - name: Upload app logs
+      - name: Upload run app logs
         uses: actions/upload-artifact@v4
         with:
-          name: zephyr-app-log
-          path: build/zephyr/zephyr_app.log
+          name: zephyr_run_native_sim_log
+          path: build/zephyr_run_native_sim.log
 
   build-linux:
     runs-on: ubuntu-latest
@@ -101,36 +112,45 @@ jobs:
           cd application
           git submodule update --init --recursive
 
-      - name: Build Linux
+      - name: Build Linux x86_64
         run: |
           cd application
-          ./build.sh -t l
+          ./build.sh -t l | tee linux_build.log
     
-      - name: Upload build artifacts
+      - name: Upload Linux build log
         uses: actions/upload-artifact@v4
         with:
-          name: linux-build
-          path: application/build/
+          name: linux_build_log
+          path: application/linux_build.log
+
+      - name: Upload x86_64 build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocre-ubuntu-x86_64-app
+          path: |
+            application/build/app
+            application/build/src
 
   run-linux:
     runs-on: ubuntu-latest
     needs: build-linux
     steps:
-      - name: Download Linux build artifacts
+      - name: Download Linux build artifact
         uses: actions/download-artifact@v4
         with:
-          name: linux-build
+          name: ocre-ubuntu-x86_64-app
           path: application/build/
 
       - name: Run Linux binary and check output
         working-directory: application/build
         run: |
+          ls -l
           EXPECTED_LOG="Hello World from Ocre!"
           chmod +x app
           echo "Running application..."
-          stdbuf -oL -eL timeout 20s ./app | tee linux_app.log
+          stdbuf -oL -eL timeout 20s ./app | tee linux_run.log
           echo "===== Checking for expected log ====="
-          if grep -q "$EXPECTED_LOG" linux_app.log; then
+          if grep -q "$EXPECTED_LOG" linux_run.log; then
             echo "[OK] Found expected log: $EXPECTED_LOG"
           else
             echo "[ERROR] Expected log not found: $EXPECTED_LOG"
@@ -140,18 +160,18 @@ jobs:
       - name: Upload app logs
         uses: actions/upload-artifact@v4
         with:
-          name: linux-app-log
-          path: application/build/linux_app.log
+          name: linux_run_log
+          path: application/build/linux_run.log
 
   flash:
     needs: build-zephyr
     runs-on: zephyr-xlarge-runner
     steps:
-      - name: Download firmware
+      - name: Download Zephyr build artifact(b_u585i_iot02a)
         if: runner.environment == 'self-hosted'
         uses: actions/download-artifact@v4
         with:
-          name: firmware
+          name: ocre-zephyr-b_u585-app
           
       - name: Flash b_u585i_iot02a
         if: runner.environment == 'self-hosted'
