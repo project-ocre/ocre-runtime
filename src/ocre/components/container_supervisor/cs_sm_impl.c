@@ -21,6 +21,11 @@
 #include "api/ocre_common.h"
 #endif
 
+#if defined(CONFIG_OCRE_DISPLAY)
+#include "ocre_display/ocre_display.h"
+const struct device *display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
+#endif
+
 
 #ifdef CONFIG_OCRE_SHELL
 #include "ocre/shell/ocre_shell.h"
@@ -35,15 +40,15 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include "cs_sm_impl.h"
 
 // External RAM support for WAMR heap on boards that have it
-#if defined(CONFIG_MEMC) 
-    #if defined(CONFIG_BOARD_ARDUINO_PORTENTA_H7)
-        __attribute__((section("SDRAM1"), aligned(32)))
-    #elif defined(CONFIG_BOARD_B_U585I_IOT02A)
-        __attribute__((section(".stm32_psram"), aligned(32)))
-    #elif defined(CONFIG_BOARD_MIMXRT1064_EVK)
-        __attribute__((section("SDRAM"), aligned(32)))
-    #endif // defined (<board>)
-#endif // defined(CONFIG_MEMC) 
+// #if defined(CONFIG_MEMC) 
+//     #if defined(CONFIG_BOARD_ARDUINO_PORTENTA_H7)
+//         __attribute__((section("SDRAM1"), aligned(32)))
+//     #elif defined(CONFIG_BOARD_B_U585I_IOT02A)
+//         __attribute__((section(".stm32_psram"), aligned(32)))
+//     #elif defined(CONFIG_BOARD_MIMXRT1064_EVK)
+//         __attribute__((section("SDRAM"), aligned(32)))
+//     #endif // defined (<board>)
+// #endif // defined(CONFIG_MEMC) 
 static char wamr_heap_buf[CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE] = {0};
 
 // Thread pool for container execution
@@ -57,6 +62,10 @@ static core_mutex_t container_mutex;
 struct container_thread_args {
     ocre_container_t *container;
 };
+
+// TEST
+wasm_shared_heap_t *_shared_heap = NULL;
+unsigned char *test_heap_buf = NULL;
 
 #ifdef CONFIG_OCRE_MEMORY_CHECK_ENABLED
 static size_t ocre_get_available_memory(void) {
@@ -127,6 +136,16 @@ static void container_thread_entry(struct container_thread_args *args) {
 #endif
     // Run the WASM main function
     bool success = wasm_application_execute_main(module_inst, 0, NULL);
+    if (!success){
+        LOG_ERR("Container %d execution failed", container->container_ID);
+    } else {
+        LOG_INF("Container %d execution completed successfully", container->container_ID);
+    }
+
+    const char *exception = wasm_runtime_get_exception(module_inst);
+    if (exception) {
+        LOG_ERR("WAMR Exception: %s", exception);
+    }
 
     // Update container status
     container->container_runtime_status = success ? CONTAINER_STATUS_STOPPED : CONTAINER_STATUS_ERROR;
@@ -256,7 +275,7 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
         return RUNTIME_STATUS_ERROR;
     }
 
-    bh_log_set_verbose_level(BH_LOG_LEVEL_WARNING);
+    bh_log_set_verbose_level(BH_LOG_LEVEL_VERBOSE);
 
     if (!wasm_runtime_register_natives("env", ocre_api_table, ocre_api_table_size)) {
         LOG_ERR("Failed to register the API's");
@@ -268,6 +287,31 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
     ocre_messaging_init();
 #endif
+
+#ifdef CONFIG_OCRE_DISPLAY
+    ocre_display_init();
+#endif
+
+    #define SHARED_HEAP_TEST_SIZE 262144
+    SharedHeapInitArgs heap_init_args;
+    memset(&heap_init_args, 0, sizeof(SharedHeapInitArgs));
+    test_heap_buf = (unsigned char*)malloc(SHARED_HEAP_TEST_SIZE);
+    if (!test_heap_buf){
+        LOG_ERR("Failed to allocate memory for test heap");
+        return RUNTIME_STATUS_ERROR;
+    }
+    test_heap_buf[0] = 0xAA;
+    test_heap_buf[1] = 0xBB;
+    test_heap_buf[2] = 0xCC;
+    test_heap_buf[3] = 0xDD;
+    heap_init_args.pre_allocated_addr = (void *)test_heap_buf;
+    heap_init_args.size = SHARED_HEAP_TEST_SIZE; // should be 262144
+    _shared_heap = wasm_runtime_create_shared_heap(&heap_init_args);
+    if (!_shared_heap) {
+        LOG_ERR("Failed to create shared test heap");
+        return RUNTIME_STATUS_ERROR;
+    }
+
     return RUNTIME_STATUS_INITIALIZED;
 }
 
@@ -384,6 +428,32 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
             free(curr_container_arguments->buffer);
             return CONTAINER_STATUS_ERROR;
         }
+
+// #if defined(CONFIG_OCRE_DISPLAY)
+//     wasm_shared_heap_t fb_heap = ocre_display_get_shared_heap();
+//     if (fb_heap) {
+//         if (!wasm_runtime_attach_shared_heap(curr_container_arguments->module_inst, fb_heap)) {
+//             LOG_WRN("Failed to attach shared heap for display framebuffer");
+//             return CONTAINER_STATUS_ERROR;
+//         }
+//         LOG_INF("Attached shared heap for display framebuffer");
+//         /* Add a log of the app-side address so you can paste it into the test app */
+//         // size_t heap_addr = wasm_runtime_addr_native_to_app(curr_container_arguments->module_inst, fb_heap->base_addr);
+//         // LOG_INF("FB shared heap in WASM: base=%u", heap_addr);
+//     } else {
+//         LOG_WRN("No shared heap for display framebuffer available");
+//     }
+// #endif
+
+        if ((!wasm_runtime_attach_shared_heap(curr_container_arguments->module_inst, _shared_heap))) {
+            LOG_WRN("Failed to attach shared test heap");
+            return CONTAINER_STATUS_ERROR;
+        }
+        LOG_INF("Attached shared test heap");
+
+        uint32_t shared_heap_base_addr = wasm_runtime_addr_native_to_app(curr_container_arguments->module_inst, test_heap_buf);
+        LOG_INF("Test shared heap in WASM: base=0x%08X", shared_heap_base_addr);
+
 #if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
         defined(CONFIG_OCRE_CONTAINER_MESSAGING)
         ocre_register_module(curr_container_arguments->module_inst);

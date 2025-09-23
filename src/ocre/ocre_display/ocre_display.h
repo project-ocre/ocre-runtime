@@ -4,8 +4,8 @@
 #include "wasm_export.h"
 
 // TODO: pull in an LVGL header instead of redefining types here
+#define LV_COLOR_DEPTH  16  // Matches NXP display
 
-#define USE_MOUSE 1
 typedef union {
     struct {
         uint8_t blue;
@@ -16,27 +16,33 @@ typedef union {
     uint32_t full;
 } lv_color32_t;
 
+typedef union
+{
+    struct
+    {
+#if LV_COLOR_16_SWAP == 0
+        uint16_t blue : 5;
+        uint16_t green : 6;
+        uint16_t red : 5;
+#else
+        uint16_t green_h : 3;
+        uint16_t red : 5;
+        uint16_t blue : 5;
+        uint16_t green_l : 3;
+#endif
+    } ch;
+    uint16_t full;
+} lv_color16_t;
+
+#if LV_COLOR_DEPTH == 32
 typedef lv_color32_t lv_color_t;
+#else
+typedef lv_color16_t lv_color_t;
+#endif
+
 typedef uint8_t lv_indev_state_t;
 typedef int16_t lv_coord_t;
 typedef uint8_t lv_opa_t;
-typedef struct {
-    lv_coord_t x;
-    lv_coord_t y;
-} lv_point_t;
-
-typedef struct {
-    union {
-        lv_point_t
-            point;    /*For LV_INDEV_TYPE_POINTER the currently pressed point*/
-        uint32_t key; /*For LV_INDEV_TYPE_KEYPAD the currently pressed key*/
-        uint32_t btn; /*For LV_INDEV_TYPE_BUTTON the currently pressed button*/
-        int16_t enc_diff; /*For LV_INDEV_TYPE_ENCODER number of steps since the
-                             previous read*/
-    };
-    void *user_data;        /*'lv_indev_drv_t.priv' for this driver*/
-    lv_indev_state_t state; /*LV_INDEV_STATE_REL or LV_INDEV_STATE_PR*/
-} lv_indev_data_t;
 
 enum { LV_INDEV_STATE_REL = 0, LV_INDEV_STATE_PR };
 enum {
@@ -55,8 +61,13 @@ enum {
     LV_OPA_COVER = 255,
 };
 
+void ocre_display_init(void);
+wasm_shared_heap_t ocre_display_get_shared_heap(void);
+
 extern int
 time_get_ms(wasm_exec_env_t exec_env);
+
+extern void display_init(void);
 
 extern void
 display_flush(wasm_exec_env_t exec_env, int32_t x1, int32_t y1, int32_t x2,
@@ -70,9 +81,4 @@ extern void
 display_map(wasm_exec_env_t exec_env, int32_t x1, int32_t y1, int32_t x2,
             int32_t y2, const lv_color_t *color);
 
-extern bool
-display_input_read(wasm_exec_env_t exec_env, void *data);
-
-void
-display_vdb_write(wasm_exec_env_t exec_env, void *buf, lv_coord_t buf_w,
-                  lv_coord_t x, lv_coord_t y, lv_color_t *color, lv_opa_t opa);
+extern void display_input_read(wasm_exec_env_t exec_env, int32_t *x, int32_t *y, bool *pressed, bool *more);

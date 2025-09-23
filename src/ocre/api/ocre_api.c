@@ -151,11 +151,9 @@ NativeSymbol ocre_api_table[] = {
 #endif
 
 #ifdef CONFIG_OCRE_DISPLAY
-        {"display_input_read",  display_input_read,     "(*)i",     NULL},
+        {"display_init",        display_init,           "()",       NULL},        
+        {"display_input_read",  display_input_read,     "(****)",   NULL},
         {"display_flush",       display_flush,          "(iiii*)",  NULL},
-        {"display_fill",        display_fill,           "(iiii*)",  NULL},
-        {"display_vdb_write",   display_vdb_write,      "(*iii*i)", NULL},
-        {"display_map",         display_map,            "(iiii*)",  NULL},
         {"time_get_ms",         time_get_ms,            "()i",      NULL}
 #endif
 };
