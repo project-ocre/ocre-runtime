@@ -23,8 +23,13 @@
 
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
-#define MONITOR_HOR_RES 480
-#define MONITOR_VER_RES 272
+// For NXP RT1064 with 480x272 LCD
+// #define MONITOR_HOR_RES 480
+// #define MONITOR_VER_RES 272
+
+// For H747 Disco
+#define MONITOR_HOR_RES 800
+#define MONITOR_VER_RES 480
 
 #define TOUCH_EVENT_QUEUE_SIZE 8
 
