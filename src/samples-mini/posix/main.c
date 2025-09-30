@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 
 void create_sample_container(char *file_name) {
     static char file_path[64];
-    snprintf(file_path, sizeof(file_path), "./ocre/images/%s.bin", file_name);
+    snprintf(file_path, sizeof(file_path), "./%s/%s.bin", APP_RESOURCE_PATH, file_name);
 
     // Create directories if they don't exist
     mkdir("./ocre", 0755);
