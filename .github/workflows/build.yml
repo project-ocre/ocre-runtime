@@ -12,7 +12,7 @@ jobs:
   build-zephyr-base:
     runs-on: zephyr-xlarge-runner
     container:
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+      image: ghcr.io/zephyrproject-rtos/ci:v0.28-branch
       options: --user root
     strategy:
       matrix:
@@ -32,7 +32,7 @@ jobs:
         uses: zephyrproject-rtos/action-zephyr-setup@v1
         with:
           app-path: application
-          sdk-version: 0.16.8
+          sdk-version: 0.17.2
       
       - name: Build ${{ matrix.board }}
         run: |
@@ -51,7 +51,7 @@ jobs:
     runs-on: zephyr-xlarge-runner
     needs: build-zephyr-base
     container:
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+      image: ghcr.io/zephyrproject-rtos/ci:v0.28-branch
       options: --user root
     steps:
       - name: Download Zephyr build artifact (native_sim)
@@ -220,7 +220,7 @@ jobs:
   build-and-run-zephyr-sample:
     runs-on: zephyr-xlarge-runner
     container:
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+      image: ghcr.io/zephyrproject-rtos/ci:v0.28-branch
       options: --user root
     strategy:
       matrix:
@@ -248,7 +248,7 @@ jobs:
         uses: zephyrproject-rtos/action-zephyr-setup@v1
         with:
           app-path: application
-          sdk-version: 0.16.8
+          sdk-version: 0.17.2
 
       - name: Install tools (xxd + WASI SDK)
         run: |
