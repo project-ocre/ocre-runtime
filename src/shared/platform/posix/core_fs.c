@@ -54,7 +54,7 @@ int core_construct_filepath(char *path, size_t len, char *name) {
         strcpy(path, name);
         return 0;
     } else {
-        return snprintf(path, len, "%s/ocre/images/%s.bin", cwd, name);
+        return snprintf(path, len, "%s/%s/%s.bin", cwd, APP_RESOURCE_PATH, name);
     }
 }
 

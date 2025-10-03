@@ -36,13 +36,12 @@ static enum smf_state_result runtime_uninitialized_run(void *o) {
 
     switch (msg->event) {
         case EVENT_CS_INITIALIZE:
+#if OCRE_CS_DEBUG_ON
             LOG_INF("Transitioning from state STATE_RUNTIME_UNINITIALIZED_RUN to state STATE_RUNTIME_RUNNING");
+#endif
             sm_transition(&ocre_cs_state_machine, STATE_RUNTIME_RUNNING);
             break;
-
         default:
-
-            LOG_INF("EVENT:%d", msg->event);
             break;
     }
     SM_MARK_EVENT_HANDLED(o);
