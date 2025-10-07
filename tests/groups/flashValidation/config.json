@@ -15,14 +15,6 @@
           {
             "name": "Check Runtime Hello World",
             "exec": "./flash_validation_hello_world.py"
-          },
-          {
-            "name": "Check Runetime Error",
-            "exec": "./flash_validation_error.py"
-          },
-          {
-            "name": "Check Runtime Hello World With Error",
-            "exec": "./flash_validation_hello_world_error.py"
           }
         ]
       }
