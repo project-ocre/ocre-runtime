@@ -62,7 +62,6 @@ enum {
 };
 
 void ocre_display_init(void);
-wasm_shared_heap_t ocre_display_get_shared_heap(void);
 
 extern int
 time_get_ms(wasm_exec_env_t exec_env);

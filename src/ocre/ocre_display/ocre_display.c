@@ -23,14 +23,6 @@
 
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
-// For NXP RT1064 with 480x272 LCD
-// #define MONITOR_HOR_RES 480
-// #define MONITOR_VER_RES 272
-
-// For H747 Disco
-#define MONITOR_HOR_RES 800
-#define MONITOR_VER_RES 480
-
 #define TOUCH_EVENT_QUEUE_SIZE 8
 
 static char *lcd_get_pixel_format_str(enum display_pixel_format pix_fmt)
@@ -50,9 +42,6 @@ static char *lcd_get_pixel_format_str(enum display_pixel_format pix_fmt)
 static int lcd_initialized = 0;
 static const struct device *const display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 static const struct device *const touch_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_touch));
-
-static void *fb = NULL;
-static wasm_shared_heap_t _fb_heap;
 
 static uint8_t g_bpp = 0;
 struct touch_evt {
@@ -139,13 +128,28 @@ void ocre_display_init(void) {
     }
 
     // Backlight off, clear display
-    display_set_pixel_format(display_dev, PIXEL_FORMAT_BGR_565);
     display_blanking_on(display_dev);
     display_clear(display_dev);
 
     // Query display capabilities
     struct display_capabilities capabilities;
 	display_get_capabilities(display_dev, &capabilities);
+
+    // Currently we are only handling 16bpp formats
+    if (capabilities.supported_pixel_formats & PIXEL_FORMAT_RGB_565) {
+        display_set_pixel_format(display_dev, PIXEL_FORMAT_RGB_565);
+        LOG_INF("Set pixel format to RGB565");
+    } else if (capabilities.supported_pixel_formats & PIXEL_FORMAT_BGR_565) {
+        display_set_pixel_format(display_dev, PIXEL_FORMAT_BGR_565);
+        LOG_INF("Set pixel format to BGR565");
+    } else {
+        LOG_ERR("Fail: only RGB565 or BGR565 supported for now");
+        return;
+    }
+
+    // Refresh after setting pixel format
+    display_get_capabilities(display_dev, &capabilities);
+    
     LOG_INF("Display capabilities:");
     LOG_INF("\tResolution: %dx%d", capabilities.x_resolution, capabilities.y_resolution);
     LOG_INF("\tPixel format: %s (%d)", lcd_get_pixel_format_str(capabilities.current_pixel_format), capabilities.current_pixel_format);
@@ -155,45 +159,8 @@ void ocre_display_init(void) {
     display_set_runtime_bpp_from_caps(&capabilities);
     LOG_INF("\tBPP: %d", g_bpp);
 
-    // // Calculate framebuffer size
-    // uint32_t fb_size = (uint32_t)capabilities.x_resolution * (uint32_t)capabilities.y_resolution * (uint32_t)g_bpp;
-    // LOG_INF("Calculated framebuffer size: %d bytes", fb_size);
-
-    // // FOR NXP RT1064:
-    // // 261120 bytes + 512 bytes overhead from NXP driver = 261632
-    // // However must be aligned to system page size of 4096, so round up to 262144
-    // uint32_t aligned_size = (fb_size + 4095) & ~4095;
-    // LOG_INF("Aligned size %u", aligned_size);
-
-    // // void *fb = display_get_framebuffer(display_dev);
-    // fb = malloc(aligned_size);
-    // if (fb) {
-    //     LOG_INF("Display framebuffer address: %p", fb);
-    // } else {
-    //     LOG_WRN("Could not get display framebuffer. Shared heap will be unavailable.");
-    //     return;
-    // }
-
-    // // Create shared heap for framebuffer
-    // SharedHeapInitArgs fb_heap_init_args;
-    // memset(&fb_heap_init_args, 0, sizeof(SharedHeapInitArgs));
-    // fb_heap_init_args.pre_allocated_addr = fb;    
-    // fb_heap_init_args.size = aligned_size; // should be 262144
-    // _fb_heap = wasm_runtime_create_shared_heap(&fb_heap_init_args);
-    // if (!_fb_heap) {
-    //     LOG_ERR("Failed to create shared heap for framebuffer");
-    //     _fb_heap = NULL;
-    //     free(fb);
-    //     return;
-    // }
-
     LOG_INF("ocre_display_init: OK");
     lcd_initialized = 1;
-}
-
-wasm_shared_heap_t ocre_display_get_shared_heap(void)
-{
-    return (lcd_initialized == 1) ? _fb_heap : NULL;
 }
 
 void

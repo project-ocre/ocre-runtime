@@ -23,7 +23,6 @@
 
 #if defined(CONFIG_OCRE_DISPLAY)
 #include "ocre_display/ocre_display.h"
-const struct device *display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 #endif
 
 
@@ -66,8 +65,45 @@ struct container_thread_args {
 };
 
 // TEST
-wasm_shared_heap_t *_shared_heap = NULL;
-unsigned char *test_heap_buf = NULL;
+#include <zephyr/sys/util.h>   // ROUND_UP
+#include <zephyr/devicetree.h>
+#include <zephyr/device.h>
+
+#if defined(CONFIG_OCRE_DISPLAY)
+const struct device *display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
+
+#define LCD_NODE   DT_NODELABEL(zephyr_lcd_controller)
+#define LCD_WIDTH  DT_PROP(LCD_NODE, width)
+#define LCD_HEIGHT DT_PROP(LCD_NODE, height)
+#define LCD_PF     DT_PROP(LCD_NODE, pixel_format)
+
+/* Map DT pixel-format → bits-per-pixel at compile time */
+#if (LCD_PF == PANEL_PIXEL_FORMAT_RGB_565) || (LCD_PF == PANEL_PIXEL_FORMAT_BGR_565)
+    #define LCD_BPP 16
+#else
+    #error "Only 16-bit pixel formats are supported"
+#endif
+
+/* Framebuffer size in bytes, rounded up to 4 KiB (WAMR page size) */
+#define PAGE_SIZE                      4096u
+#define FRAMEBUFFER_SIZE_RAW_BYTES     ((size_t)LCD_WIDTH * (size_t)LCD_HEIGHT * (LCD_BPP / 8))
+#define FRAMEBUFFER_SIZE_ALIGNED_BYTES ROUND_UP(FRAMEBUFFER_SIZE_RAW_BYTES, PAGE_SIZE)
+
+/* Allocate framebuffer from external RAM, base aligned to 4 KiB as well */
+#if defined(CONFIG_BOARD_MIMXRT1064_EVK)
+    __attribute__((section("SDRAM")))
+#elif defined(CONFIG_BOARD_STM32H747I_DISCO)
+    __attribute__((section("SDRAM2")))
+#endif
+__attribute__((aligned(PAGE_SIZE)))
+static uint8_t framebuffer[FRAMEBUFFER_SIZE_ALIGNED_BYTES];
+
+wasm_shared_heap_t _shared_heap;
+
+/* Optional: compile-time sanity checks */
+BUILD_ASSERT((LCD_BPP % 8) == 0, "BPP must be byte-addressable");
+BUILD_ASSERT((PAGE_SIZE & (PAGE_SIZE - 1)) == 0, "PAGE_SIZE must be a power of two");
+#endif
 
 #ifdef CONFIG_OCRE_MEMORY_CHECK_ENABLED
 static size_t ocre_get_available_memory(void) {
@@ -292,27 +328,22 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 
 #ifdef CONFIG_OCRE_DISPLAY
     ocre_display_init();
-#endif
 
-    #define SHARED_HEAP_TEST_SIZE 262144
     SharedHeapInitArgs heap_init_args;
     memset(&heap_init_args, 0, sizeof(SharedHeapInitArgs));
-    test_heap_buf = (unsigned char*)malloc(SHARED_HEAP_TEST_SIZE);
-    if (!test_heap_buf){
+    if (sizeof(framebuffer) == 0){
         LOG_ERR("Failed to allocate memory for test heap");
         return RUNTIME_STATUS_ERROR;
     }
-    test_heap_buf[0] = 0xAA;
-    test_heap_buf[1] = 0xBB;
-    test_heap_buf[2] = 0xCC;
-    test_heap_buf[3] = 0xDD;
-    heap_init_args.pre_allocated_addr = (void *)test_heap_buf;
-    heap_init_args.size = SHARED_HEAP_TEST_SIZE; // should be 262144
+    heap_init_args.pre_allocated_addr = (void *)framebuffer;
+    heap_init_args.size = sizeof(framebuffer);
     _shared_heap = wasm_runtime_create_shared_heap(&heap_init_args);
     if (!_shared_heap) {
         LOG_ERR("Failed to create shared test heap");
         return RUNTIME_STATUS_ERROR;
     }
+    LOG_INF("Created shared heap for framebuffer of size %lu", FRAMEBUFFER_SIZE_ALIGNED_BYTES);
+#endif
 
     return RUNTIME_STATUS_INITIALIZED;
 }
@@ -453,7 +484,7 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
         }
         LOG_INF("Attached shared test heap");
 
-        uint32_t shared_heap_base_addr = wasm_runtime_addr_native_to_app(curr_container_arguments->module_inst, test_heap_buf);
+        uint32_t shared_heap_base_addr = wasm_runtime_addr_native_to_app(curr_container_arguments->module_inst, framebuffer);
         LOG_INF("Test shared heap in WASM: base=0x%08X", shared_heap_base_addr);
 
 #if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
