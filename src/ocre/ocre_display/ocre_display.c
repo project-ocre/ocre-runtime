@@ -23,36 +23,25 @@
 
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
-#define TOUCH_EVENT_QUEUE_SIZE 8
-
-static char *lcd_get_pixel_format_str(enum display_pixel_format pix_fmt)
-{
-    switch (pix_fmt) {
-        case PIXEL_FORMAT_ARGB_8888: return "ARGB8888";
-        case PIXEL_FORMAT_RGB_888:   return "RGB888";
-        case PIXEL_FORMAT_RGB_565:   return "RGB565";
-        case PIXEL_FORMAT_BGR_565:   return "BGR565";
-        case PIXEL_FORMAT_L_8:       return "L8";
-        case PIXEL_FORMAT_MONO01:    return "MONO01";
-        case PIXEL_FORMAT_MONO10:    return "MONO10";
-        default:                     return "Unknown";
-    }
-}
-
+// LCD display device
 static int lcd_initialized = 0;
 static const struct device *const display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
-static const struct device *const touch_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_touch));
 
 static uint8_t g_bpp = 0;
+static uint32_t g_width = 0;
+static uint32_t g_height = 0;
+static ocre_color_mode_t g_color_mode = COLOR_MODE_UNKNOWN;
+
+// Touch device
+#define TOUCH_EVENT_QUEUE_SIZE 8
+static const struct device *const touch_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_touch));
 struct touch_evt {
     uint16_t x;
     uint16_t y;
     uint8_t  pressed; // 0/1
 };
-
-K_MSGQ_DEFINE(touch_q, sizeof(struct touch_evt), TOUCH_EVENT_QUEUE_SIZE, 4);
-
 static struct touch_evt last_evt = {0, 0, 0};
+K_MSGQ_DEFINE(touch_q, sizeof(struct touch_evt), TOUCH_EVENT_QUEUE_SIZE, 4);
 
 static void touch_event_callback(struct input_event *evt, void *user_data)
 {
@@ -87,29 +76,18 @@ static void touch_event_callback(struct input_event *evt, void *user_data)
 // Requires CONFIG_INPUT_MODE_SYNCHRONOUS=y
 INPUT_CALLBACK_DEFINE(touch_dev, touch_event_callback, NULL);
 
-// LVGL supports LV_COLOR_DEPTH of 1, 4, 8, 16, or 32
-// Supporting 16 and 32 only for now
-void display_set_runtime_bpp_from_caps(const struct display_capabilities *caps)
+static int32_t display_set_runtime_bpp_from_caps(const struct display_capabilities *caps)
 {
     switch (caps->current_pixel_format) {
-        case PIXEL_FORMAT_RGB_565:
-        case PIXEL_FORMAT_BGR_565:
-            g_bpp = 2;
-            break;
-        case PIXEL_FORMAT_RGB_888:
-        case PIXEL_FORMAT_ARGB_8888:
-            g_bpp = 4;
-            break;
-        default:
-            LOG_ERR("Unsupported display pixel format %s (%d), cannot continue",
-                    lcd_get_pixel_format_str(caps->current_pixel_format),
-                    caps->current_pixel_format);
-            g_bpp = 0;
-            break;
+        case PIXEL_FORMAT_RGB_565:   return 2;
+        case PIXEL_FORMAT_BGR_565:   return 2;
+        case PIXEL_FORMAT_RGB_888:   return 3;
+        case PIXEL_FORMAT_ARGB_8888: return 4;
+        default:                     return 0;
     }
 }
 
-void ocre_display_init(void) {
+void ocre_display_init_internal(void) {
 
     if (lcd_initialized != 0) {
         return;
@@ -135,43 +113,77 @@ void ocre_display_init(void) {
     struct display_capabilities capabilities;
 	display_get_capabilities(display_dev, &capabilities);
 
+    LOG_INF("Display capabilities:");
+    LOG_INF("\tResolution: %dx%d", capabilities.x_resolution, capabilities.y_resolution);
+    g_width = capabilities.x_resolution;
+    g_height = capabilities.y_resolution;
+
     // Currently we are only handling 16bpp formats
     if (capabilities.supported_pixel_formats & PIXEL_FORMAT_RGB_565) {
         display_set_pixel_format(display_dev, PIXEL_FORMAT_RGB_565);
-        LOG_INF("Set pixel format to RGB565");
+        g_color_mode = COLOR_MODE_RGB565;
+        LOG_INF("\tPixel mode: RGB565");
     } else if (capabilities.supported_pixel_formats & PIXEL_FORMAT_BGR_565) {
         display_set_pixel_format(display_dev, PIXEL_FORMAT_BGR_565);
-        LOG_INF("Set pixel format to BGR565");
+        g_color_mode = COLOR_MODE_BGR565;
+        LOG_INF("\tPixel mode: BGR565");
     } else {
-        LOG_ERR("Fail: only RGB565 or BGR565 supported for now");
+        g_color_mode = COLOR_MODE_UNKNOWN;
+        LOG_ERR("\tPixel mode: Unknown (only RGB565 or BGR565 supported for now)");
         return;
-    }
+    }  
 
-    // Refresh after setting pixel format
-    display_get_capabilities(display_dev, &capabilities);
-    
-    LOG_INF("Display capabilities:");
-    LOG_INF("\tResolution: %dx%d", capabilities.x_resolution, capabilities.y_resolution);
-    LOG_INF("\tPixel format: %s (%d)", lcd_get_pixel_format_str(capabilities.current_pixel_format), capabilities.current_pixel_format);
     LOG_INF("\tOrientation: %d", capabilities.current_orientation);
 
     // Set internal bpp based on pixel format
-    display_set_runtime_bpp_from_caps(&capabilities);
+    g_bpp = display_set_runtime_bpp_from_caps(&capabilities);
     LOG_INF("\tBPP: %d", g_bpp);
 
     LOG_INF("ocre_display_init: OK");
     lcd_initialized = 1;
 }
 
-void
-display_init(void)
+int32_t ocre_display_init(wasm_exec_env_t exec_env)
 {
-    display_blanking_off(display_dev);    
+    /* Ensure platform init happened and devices are ready */
+    if (!display_dev || !device_is_ready(display_dev)) {
+        return -1;
+    }
+    if (lcd_initialized == 0) {
+        /* ocre_display_init() runs earlier in system bring-up. If it
+        * failed to cache caps/bpp, signal NOT_READY so the app can retry.
+        */
+        return -1;
+    }
+    display_blanking_off(display_dev);
+    return 0;
+}
+
+int32_t
+ocre_display_get_capabilities(wasm_exec_env_t exec_env,
+                              uint32_t *out_width,
+                              uint32_t *out_height,
+                              uint32_t *out_cpp,
+                              ocre_color_mode_t *out_color_mode)
+{
+    if (!out_width || !out_height || !out_cpp || !out_color_mode) {
+        return -1;
+    }
+
+    if (lcd_initialized == 0 || g_bpp == 0 || g_color_mode == COLOR_MODE_UNKNOWN) {
+        return -1;
+    }
+
+    *out_width      = g_width;
+    *out_height     = g_height;
+    *out_cpp        = (uint32_t)g_bpp;
+    *out_color_mode = g_color_mode;
+    return 0;
 }
 
 void
-display_flush(wasm_exec_env_t exec_env, int32_t x1, int32_t y1, int32_t x2,
-              int32_t y2, lv_color_t *color)
+ocre_display_flush(wasm_exec_env_t exec_env, int32_t x1, int32_t y1, int32_t x2,
+              int32_t y2, uint8_t *color)
 {
     wasm_module_inst_t module_inst = get_module_inst(exec_env);
     struct display_buffer_descriptor desc;
@@ -181,7 +193,7 @@ display_flush(wasm_exec_env_t exec_env, int32_t x1, int32_t y1, int32_t x2,
 
     /* keep your current minimal validation */
     if (!wasm_runtime_validate_native_addr(module_inst, color,
-                                           (uint64_t)sizeof(lv_color_t)))
+                                           (uint64_t)sizeof(uint8_t)))
         return;
 
     uint16_t w = (uint16_t)(x2 - x1 + 1);
@@ -195,7 +207,7 @@ display_flush(wasm_exec_env_t exec_env, int32_t x1, int32_t y1, int32_t x2,
     display_write(display_dev, (uint16_t)x1, (uint16_t)y1, &desc, (void *)color);
 }
 
-void display_input_read(wasm_exec_env_t exec_env,
+void ocre_display_input_read(wasm_exec_env_t exec_env,
                         int32_t *x, int32_t *y,
                         bool *pressed, bool *more)
 {
@@ -216,12 +228,8 @@ void display_input_read(wasm_exec_env_t exec_env,
     }
 }
 
-void
-display_deinit(wasm_exec_env_t exec_env)
-{}
-
 int
-time_get_ms(wasm_exec_env_t exec_env)
+ocre_time_get_ms(wasm_exec_env_t exec_env)
 {
     return k_uptime_get_32();
 }

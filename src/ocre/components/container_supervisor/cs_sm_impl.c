@@ -327,7 +327,7 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 #endif
 
 #ifdef CONFIG_OCRE_DISPLAY
-    ocre_display_init();
+    ocre_display_init_internal();
 
     SharedHeapInitArgs heap_init_args;
     memset(&heap_init_args, 0, sizeof(SharedHeapInitArgs));
