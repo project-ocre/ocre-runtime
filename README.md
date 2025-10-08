@@ -103,8 +103,6 @@ cd ocre-runtime
 git submodule update --init --recursive
 ```
 
----
-
 ## Building and Running
 
 ### Using the `build.sh` Script (Recommended)
@@ -114,13 +112,16 @@ Ocre provides a convenient `build.sh` script to simplify building and running fo
 #### Usage
 
 ```sh
-./build.sh -t <target> [-r] [-f <file1> [file2 ...]] [-b] [-h]
+./build.sh -t <target> [-r] [-f <file1> [file2 ...]] [-b] <board> [-h]
 ```
 
 - `-t <target>`: **Required**. `z` for Zephyr, `l` for Linux.
 - `-r`: Run after build (optional).
 - `-f <file(s)>`: Specify one or more input files (optional).
-- `-b`: (Zephyr only) Build for `b_u585i_iot02a` board instead of `native_sim`.
+- `-b <board>`: (Zephyr only) Select a zephyr board instead of the default `native_sim`:
+    - `uw`          -> b_u585i_iot02a + W5500
+    - `ue`          -> b_u585i_iot02a + ENC28J60
+    - `your_option` -> any Zephyr-supported board
 - `-h`: Show help.
 
 #### Examples
@@ -179,7 +180,34 @@ make
 - The script checks build success and only runs the application if the build completes successfully.
 - The `mini-samples` directory contains a "Hello World" container, which is hardcoded as a C array. When Ocre is run without input file arguments, it executes this sample container by default. If an input file is provided, Zephyr will convert that file into a C array at build time and run it as a container. On Linux, this conversion does not occur — instead, Ocre simply opens and reads the provided file(s) directly from the filesystem.
 
----
+## Sample Output
+
+#### Zephyr (b_u585i_iot02a)
+```sh
+./build.sh -t z -r -b ue
+```
+
+##### Output
+```sh
+Target is: Zephyr
+Building for b_u585i_iot02a with ENC28J60 support
+Linking C executable zephyr/zephyr.elf
+Ocre runtime started
+Hello World from Ocre!
+```
+
+#### Linux
+```sh
+./build.sh -t l -r
+```
+
+##### Output
+```sh
+Target is: Linux
+[100%] Built target app
+Ocre runtime started
+Hello World from Ocre!
+```
 
 ## License
 

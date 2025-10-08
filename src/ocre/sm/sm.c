@@ -7,6 +7,7 @@
 
 #include <ocre/ocre.h>
 #include "ocre_core_external.h"
+#include "ocre/component/component.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -40,7 +41,8 @@ int sm_run(state_machine_t *sm, int initial_state) {
         }
 
         if (!sm->ctx.event.handled) {
-            LOG_ERR("Unhandled event");
+            struct ocre_message const *msg = SM_GET_EVENT(&sm->ctx);
+            LOG_ERR("Unhandled event: msg type or data = %d", msg->event);
         }
 
         // Yield the current thread to allow the queue events to be processed

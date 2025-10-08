@@ -20,9 +20,10 @@
 //#define CONFIG_OCRE_CONTAINER_MESSAGING   /*!< Enable container messaging support */
 #define CONFIG_OCRE_NETWORKING            /*!< Enable networking support */
 #define CONFIG_OCRE_CONTAINER_FILESYSTEM
+#define CONFIG_OCRE_CONTAINER_WAMR_TERMINATION
 
 // Base paths for the application
-#define OCRE_BASE_PATH "./ocre"           /*!< Base directory for Ocre resources */
+#define OCRE_BASE_PATH "./ocre_data"           /*!< Base directory for Ocre resources */
 
 #define APP_RESOURCE_PATH     OCRE_BASE_PATH "/images"     /*!< Path to container images */
 #define PACKAGE_BASE_PATH     OCRE_BASE_PATH "/manifests"  /*!< Path to package manifests */
@@ -37,6 +38,7 @@
  * @brief Ignore Zephyr's log module registration on POSIX.
  */
 #define LOG_MODULE_REGISTER(name, level)
+#define LOG_MODULE_DECLARE(name, level)
 
 
 /**

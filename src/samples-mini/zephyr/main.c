@@ -8,6 +8,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/fs/fs.h>
 #include "ocre_core_external.h"
+#include <zephyr/net/net_if.h>
+#include <zephyr/net/dhcpv4.h>
+
 #include <ocre/ocre.h>
 #include <ocre/ocre_container_runtime/ocre_container_runtime.h>
 
@@ -16,8 +19,6 @@
 #else
 #include <ocre/ocre_input_file.h>
 #endif
-
-#include <zephyr/net/net_if.h>
 
 void create_sample_container();
 int ocre_network_init();
@@ -49,16 +50,15 @@ int main(int argc, char *argv[]) {
         // Step 2:  Create the container, this allocates and loads the container binary
         ocre_container_data_t ocre_container_data;
         int container_ID;
-        ocre_container_runtime_cb callback;
 
         ocre_container_data.heap_size = 0;
         snprintf(ocre_container_data.name, sizeof(ocre_container_data.name), "Hello World");
         snprintf(ocre_container_data.sha256, sizeof(ocre_container_data.sha256), "%s", container_filename);
         ocre_container_data.timers = 0;
-        ocre_container_runtime_create_container(&ctx, &ocre_container_data, &container_ID, callback);
+        ocre_container_runtime_create_container(&ctx, &ocre_container_data, &container_ID, NULL);
 
         // Step 3:  Execute the container
-        ocre_container_runtime_run_container(container_ID, callback);
+        ocre_container_runtime_run_container(container_ID, NULL);
         // Loop forever, without this the application will exit and stop all execution
         while (true) {
             core_sleep_ms(1000);
