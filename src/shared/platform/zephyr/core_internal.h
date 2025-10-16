@@ -15,9 +15,9 @@
 #include <zephyr/device.h>
 #include <zephyr/kernel/mm.h>
 
-#include <version.h>
-#include <app_version.h>
-#include <autoconf.h>
+#include <zephyr/version.h>
+#include <zephyr/app_version.h>
+#include <zephyr/autoconf.h>
 
 // clang-format off
 

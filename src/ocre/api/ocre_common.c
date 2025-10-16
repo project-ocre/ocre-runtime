@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
-#include <autoconf.h>
+#include <zephyr/autoconf.h>
 #include "../../../../../wasm-micro-runtime/core/iwasm/include/lib_export.h"
 #include "bh_log.h"
 #include "../ocre_timers/ocre_timer.h"
