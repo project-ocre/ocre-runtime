@@ -29,3 +29,19 @@ jobs:
             with:
                 name: "FlashValidation.log"
                 path: /tmp/flashValidation.log
+          
+          - name: Modbus Server Validation Tests
+            run: |
+              cd tests && bash beginTests.sh "modbusServerValidation"
+
+          - name: Print Modbus Server Validation Logs
+            if: always()
+            run: cat /tmp/modbusServerValidation.log
+
+          - name: Upload log file as artifact
+            if: always()
+            uses: actions/upload-artifact@v4
+            with:
+                name: "ModbusServerValidation.log"
+                path: /tmp/modbusServerValidation.log
+          
