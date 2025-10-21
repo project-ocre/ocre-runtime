@@ -27,7 +27,7 @@ def main():
     time.sleep(5)
 
     print("----* Reading client connection status *----")
-    client_remote = ModbusTcpClient("132.177.122.245", port=1502)
+    client_remote = ModbusTcpClient("ocre-b-u585i.lfedge.iol.unh.edu", port=1502)
     client_remote.connect()
 
     connection_results = [client_remote.connected, client_remote.is_socket_open()]
