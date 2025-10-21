@@ -45,8 +45,6 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
         __attribute__((section("SDRAM1"), aligned(32)))
     #elif defined(CONFIG_BOARD_B_U585I_IOT02A)
         __attribute__((section(".stm32_psram"), aligned(32)))
-    #elif defined(CONFIG_BOARD_MIMXRT1064_EVK)
-        __attribute__((section("SDRAM"), aligned(32)))
     #elif defined(CONFIG_BOARD_STM32H747I_DISCO)
         __attribute__((section("SDRAM2"), aligned(32)))
     #endif // defined (<board>)
