@@ -136,11 +136,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ocre-zephyr-b_u585i_iot02a-app
-          
+
       - name: Flash b_u585i_iot02a
         if: runner.environment == 'self-hosted'
         run: |
-          STM32_Programmer_CLI -c port=swd -w zephyr.bin 0x08000000 -v -rst
+          STM32_Programmer_CLI -c port=swd -e all -w zephyr.bin 0x08000000 -v -rst
 
   build-and-run-linux-sample:
     runs-on: ubuntu-latest
@@ -316,3 +316,47 @@ jobs:
             echo "[FAIL] ${{ matrix.sample.name }} did not produce expected log: ${{ matrix.sample.expected }}"
             exit 1
           fi
+  flash-validation-tests:
+    needs: flash-zephyr-base-b_u585i_iot02a
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Flash Validation Tests
+        run: |
+          cd tests && bash beginTests.sh "flashValidation"
+
+      - name: Print Flash Validation Logs
+        if: always()
+        run: cat /tmp/flashValidation.log
+
+      - name: Upload log file as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "FlashValidation.log"
+          path: /tmp/flashValidation.log
+
+  modbus-server-validation-tests:
+    needs: flash-zephyr-base-b_u585i_iot02a
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Modbus Validation Tests
+        run: |
+          cd tests && bash beginTests.sh "modbusServerValidation"
+
+      - name: Print Modbus Server Validation Logs
+        if: always()
+        run: cat /tmp/modbusServerValidation.log
+
+      - name: Upload log file as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+            name: "ModbusServerValidation.log"
+            path: /tmp/modbusServerValidation.log
+      
