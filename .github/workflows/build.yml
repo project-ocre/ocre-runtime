@@ -153,10 +153,13 @@ jobs:
         sample:
           - name: generic-hello-world
             path: generic/hello-world
+            filename: hello-world.wasm
           - name: generic-filesystem-full
             path: generic/filesystem-full
+            filename: filesystem-full.wasm
           - name: b_u585i-modbus-server
             path: board_specific/b_u585i_iot02a/modbus-server
+            filename: modbus-server.wasm
     steps:
       - name: Cleanup workspace
         uses: eviden-actions/clean-self-hosted-runner@v1
@@ -217,7 +220,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: "${{ matrix.sample.name }}.wasm"
-          path: "$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build/*.wasm"
+          path: "$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}"
 
   build-and-run-linux-sample:
     needs: build-wasm-files
@@ -246,8 +249,7 @@ jobs:
         if: runner.environment == 'self-hosted'
         uses: actions/download-artifact@v4
         with:
-          name: "{{ matrix.sample.name }}.wasm"
-          path: /tmp/built-wasm/
+          name: "${{ matrix.sample.name }}.wasm"
       
       - name: Update Submodules
         working-directory: application
