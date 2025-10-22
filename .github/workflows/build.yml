@@ -172,6 +172,11 @@ jobs:
           repository: project-ocre/ocre-sdk
           path: ocre-sdk
 
+      - name: Update Submodules
+        working-directory: application
+        run: |
+          git submodule update --init --recursive
+
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
         with:
@@ -211,8 +216,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: "{{ matrix.sample.name }}.wasm"
-          path: "/tmp/built-wasm/{{ matrix.sample.name }}.wasm"
+          name: "${{ matrix.sample.name }}.wasm"
+          path: "$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build/*.wasm"
 
   build-and-run-linux-sample:
     needs: build-wasm-files
