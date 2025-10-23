@@ -12,7 +12,7 @@ typedef enum {
 void ocre_display_init_internal(void);
 
 // Exported WASM functions
-extern int32_t ocre_display_init(wasm_exec_env_t exec_env);
+extern void ocre_display_init(wasm_exec_env_t exec_env);
 
 extern int32_t ocre_display_get_capabilities(wasm_exec_env_t exec_env, uint32_t *out_width, 
                                  uint32_t *out_height, uint32_t *out_cpp,

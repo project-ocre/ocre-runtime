@@ -143,7 +143,7 @@ void ocre_display_init_internal(void) {
     lcd_initialized = 1;
 }
 
-int32_t ocre_display_init(wasm_exec_env_t exec_env)
+void ocre_display_init(wasm_exec_env_t exec_env)
 {
     /* Ensure platform init happened and devices are ready */
     if (!display_dev || !device_is_ready(display_dev)) {
