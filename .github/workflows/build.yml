@@ -180,6 +180,13 @@ jobs:
         run: |
           git submodule update --init --recursive
 
+      # Needed in order for board specific modules to build successfully
+      - name: Copy wasm submodule 
+        working-directory: ocre-sdk
+        run: |
+          git submodule update --init --recursive
+          cp -r wasm-micro-runtime board_specific/wasm-micro-runtime
+
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
         with:
@@ -203,6 +210,14 @@ jobs:
       - name: Build WASM sample
         run: |
           echo $GITHUB_WORKSPACE
+          pwd
+          ls $GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build
+          echo "----"
+          ls
+          echo "----"
+          ls $GITHUB_WORKSPACE
+          echo "----"
+
           SAMPLE_DIR=$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}
           if [ ! -d "$SAMPLE_DIR" ]; then
             echo "Directory not found: $SAMPLE_DIR"
@@ -211,13 +226,16 @@ jobs:
 
           mkdir -p "$SAMPLE_DIR/build"
           cd "$SAMPLE_DIR/build"
+          echo "----"
+          ls ../../../wasm-micro-runtime/core/
+          echo "----"
           cmake .. -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake
           make
           pwd
           ls $GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build
           ls
           ls $GITHUB_WORKSPACE
-          
+
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
 
@@ -226,7 +244,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: "${{ matrix.sample.name }}.wasm"
-          path: "$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}"
+          path: "ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}"
 
   build-and-run-linux-sample:
     needs: build-wasm-files
