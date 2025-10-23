@@ -4,7 +4,16 @@ manifest:
       revision: staging
       url: https://github.com/project-ocre/zephyr
       west-commands: scripts/west-commands.yml
-      import: true
+      import:
+        name-allowlist:
+          - littlefs
+          - picolibc
+          - mcuboot
+          - zcbor
+          - hal_stm32
+          - hal_st
+          - mbedtls
+          - cmsis_6
       
   self:
     path: application   
