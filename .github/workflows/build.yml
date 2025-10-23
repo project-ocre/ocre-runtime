@@ -209,14 +209,6 @@ jobs:
 
       - name: Build WASM sample
         run: |
-          echo $GITHUB_WORKSPACE
-          pwd
-          ls $GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}
-          echo "----"
-          ls
-          echo "----"
-          ls $GITHUB_WORKSPACE
-          echo "----"
 
           SAMPLE_DIR=$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}
           if [ ! -d "$SAMPLE_DIR" ]; then
@@ -274,6 +266,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: "${{ matrix.sample.name }}.wasm"
+          path: $GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm
       
       - name: Update Submodules
         working-directory: application
@@ -341,9 +334,9 @@ jobs:
         if: runner.environment == 'self-hosted'
         uses: actions/download-artifact@v4
         with:
-          name: "{{ matrix.sample.name }}.wasm"
-          path: /tmp/built-wasm/
-
+          name: "${{ matrix.sample.name }}.wasm"
+          path: $GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm
+          
       - name: Update Submodules
         working-directory: application
         run: |
@@ -413,12 +406,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: b_u585i-modbus-server.wasm
+          path: $GITHUB_WORKSPACE/b_u585i-modbus-server.wasm
 
       - name: Flash b_u585i_iot02a
         if: runner.environment == 'self-hosted'
         run: |
           WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server.wasm
-          west build --pristine -b native_sim ./application -d build -- \
+          west build --pristine -b b_u585i_iot02a ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
             -DOCRE_INPUT_FILE=$WASM_FILE
 
