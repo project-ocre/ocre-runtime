@@ -211,7 +211,7 @@ jobs:
         run: |
           echo $GITHUB_WORKSPACE
           pwd
-          ls $GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build
+          ls $GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}
           echo "----"
           ls
           echo "----"
