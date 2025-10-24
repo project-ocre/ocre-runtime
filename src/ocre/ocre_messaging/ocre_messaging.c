@@ -6,55 +6,147 @@
  */
 
 #include <ocre/ocre.h>
+#include "ocre_core_external.h"
 #include <ocre/api/ocre_common.h>
 #include <ocre/ocre_messaging/ocre_messaging.h>
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/spinlock.h>
 #include <string.h>
 
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
-#define MESSAGING_MAX_SUBSCRIPTIONS CONFIG_MESSAGING_MAX_SUBSCRIPTIONS
+/* ========== OCRE MESSAGING FUNCTIONALITY ========== */
 
-// Structure to hold the subscription information
+#ifndef CONFIG_MESSAGING_MAX_SUBSCRIPTIONS
+#define CONFIG_MESSAGING_MAX_SUBSCRIPTIONS 32
+#endif
+#define OCRE_MAX_TOPIC_LEN 64
+
+/* Messaging subscription structure */
 typedef struct {
-    void *topic; // Topic pointer
+    char topic[OCRE_MAX_TOPIC_LEN];
     wasm_module_inst_t module_inst;
     bool is_active;
-} messaging_subscription_t;
+} ocre_messaging_subscription_t;
 
 typedef struct {
-    messaging_subscription_t info[MESSAGING_MAX_SUBSCRIPTIONS];
-    uint16_t subscriptions_number;
-} messaging_subscription_list;
+    ocre_messaging_subscription_t subscriptions[CONFIG_MESSAGING_MAX_SUBSCRIPTIONS];
+    uint16_t subscription_count;
+    core_mutex_t mutex;
+} ocre_messaging_system_t;
 
-static messaging_subscription_list subscription_list = {0};
+static ocre_messaging_system_t messaging_system = {0};
 static bool messaging_system_initialized = false;
 
+/* Initialize messaging system */
 int ocre_messaging_init(void) {
     if (messaging_system_initialized) {
         LOG_INF("Messaging system already initialized");
-        return -1;
+        return 0;
     }
-    if (!common_initialized && ocre_common_init() != 0) {
-        LOG_ERR("Failed to initialize common subsystem");
-        return -2;
-    }
-
-    memset(&subscription_list, 0, sizeof(messaging_subscription_list));
+    
+    memset(&messaging_system, 0, sizeof(ocre_messaging_system_t));
+    
+    core_mutex_init(&messaging_system.mutex);
+    
     ocre_register_cleanup_handler(OCRE_RESOURCE_TYPE_MESSAGING, ocre_messaging_cleanup_container);
     messaging_system_initialized = true;
-
     LOG_INF("Messaging system initialized");
     return 0;
 }
 
-int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_type, void *payload, int payload_len) {
+/* Cleanup messaging resources for a module */
+void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst) {
+    if (!messaging_system_initialized || !module_inst) {
+        return;
+    }
+    
+    core_mutex_lock(&messaging_system.mutex);
+    
+    for (int i = 0; i < CONFIG_MESSAGING_MAX_SUBSCRIPTIONS; i++) {
+        if (messaging_system.subscriptions[i].is_active && 
+            messaging_system.subscriptions[i].module_inst == module_inst) {
+            messaging_system.subscriptions[i].is_active = false;
+            messaging_system.subscriptions[i].module_inst = NULL;
+            messaging_system.subscriptions[i].topic[0] = '\0';
+            messaging_system.subscription_count--;
+            ocre_decrement_resource_count(module_inst, OCRE_RESOURCE_TYPE_MESSAGING);
+            LOG_INF("Cleaned up subscription %d for module %p", i, (void *)module_inst);
+        }
+    }
+    
+    core_mutex_unlock(&messaging_system.mutex);
+    
+    LOG_INF("Cleaned up messaging resources for module %p", (void *)module_inst);
+}
+
+/* Subscribe to a topic */
+int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic) {
     if (!messaging_system_initialized) {
-        LOG_ERR("Messaging system not initialized");
+        if (ocre_messaging_init() != 0) {
+            LOG_ERR("Failed to initialize messaging system");
+            return -EINVAL;
+        }
+    }
+    
+    if (!topic || ((char *)topic)[0] == '\0') {
+        LOG_ERR("Topic is NULL or empty");
         return -EINVAL;
     }
+    
+    wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
+    if (!module_inst) {
+        LOG_ERR("No module instance for exec_env");
+        return -EINVAL;
+    }
+    
+    ocre_module_context_t *ctx = ocre_get_module_context(module_inst);
+    if (!ctx) {
+        LOG_ERR("Module context not found for module instance %p", (void *)module_inst);
+        return -EINVAL;
+    }
+    
+    core_mutex_lock(&messaging_system.mutex);
+    
+    // Check if already subscribed
+    for (int i = 0; i < CONFIG_MESSAGING_MAX_SUBSCRIPTIONS; i++) {
+        if (messaging_system.subscriptions[i].is_active &&
+            messaging_system.subscriptions[i].module_inst == module_inst &&
+            strcmp(messaging_system.subscriptions[i].topic, (char *)topic) == 0) {
+            LOG_INF("Already subscribed to topic: %s", (char *)topic);
+            core_mutex_unlock(&messaging_system.mutex);
+            return 0;
+        }
+    }
+    
+    // Find a free slot
+    for (int i = 0; i < CONFIG_MESSAGING_MAX_SUBSCRIPTIONS; i++) {
+        if (!messaging_system.subscriptions[i].is_active) {
+            strncpy(messaging_system.subscriptions[i].topic, (char *)topic, OCRE_MAX_TOPIC_LEN - 1);
+            messaging_system.subscriptions[i].topic[OCRE_MAX_TOPIC_LEN - 1] = '\0';
+            messaging_system.subscriptions[i].module_inst = module_inst;
+            messaging_system.subscriptions[i].is_active = true;
+            messaging_system.subscription_count++;
+            ocre_increment_resource_count(module_inst, OCRE_RESOURCE_TYPE_MESSAGING);
+            LOG_INF("Subscribed to topic: %s, module: %p", (char *)topic, (void *)module_inst);
+            core_mutex_unlock(&messaging_system.mutex);
+            return 0;
+        }
+    }
+    
+    core_mutex_unlock(&messaging_system.mutex);
+    
+    LOG_ERR("No free subscription slots available");
+    return -ENOMEM;
+}
+
+/* Publish a message */
+int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_type, void *payload, int payload_len) {
+    if (!messaging_system_initialized) {
+        if (ocre_messaging_init() != 0) {
+            LOG_ERR("Failed to initialize messaging system");
+            return -EINVAL;
+        }
+    }
+    
     if (!topic || ((char *)topic)[0] == '\0') {
         LOG_ERR("Topic is NULL or empty");
         return -EINVAL;
@@ -67,52 +159,52 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
         LOG_ERR("Payload is NULL or payload_len is invalid");
         return -EINVAL;
     }
-
-    if ((uintptr_t)ocre_event_queue_buffer_ptr % 4 != 0) {
-        LOG_ERR("ocre_event_queue_buffer misaligned: %p", (void *)ocre_event_queue_buffer_ptr);
-        return -EPIPE;
-    }
-    wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
-    if (!module_inst) {
+    
+    wasm_module_inst_t publisher_module = wasm_runtime_get_module_inst(exec_env);
+    if (!publisher_module) {
         LOG_ERR("No module instance for exec_env");
         return -EINVAL;
     }
+    
     static uint32_t message_id = 0;
-    bool posted = false;
-
-    // Iterate through subscriptions to find matching topics
-    for (int i = 0; i < MESSAGING_MAX_SUBSCRIPTIONS; i++) {
-        if (!subscription_list.info[i].is_active) {
+    bool message_sent = false;
+    
+    core_mutex_lock(&messaging_system.mutex);
+    
+    // Find matching subscriptions
+    for (int i = 0; i < CONFIG_MESSAGING_MAX_SUBSCRIPTIONS; i++) {
+        if (!messaging_system.subscriptions[i].is_active) {
             continue;
         }
-
-        char *subscribed_topic = (char *)subscription_list.info[i].topic;
+        
+        // Check if the published topic matches the subscription (prefix match)
+        const char *subscribed_topic = messaging_system.subscriptions[i].topic;
         size_t subscribed_len = strlen(subscribed_topic);
-
+        
         if (strncmp(subscribed_topic, (char *)topic, subscribed_len) != 0) {
             continue; // No prefix match
         }
-
-        wasm_module_inst_t target_module = subscription_list.info[i].module_inst;
+        
+        wasm_module_inst_t target_module = messaging_system.subscriptions[i].module_inst;
         if (!target_module) {
             LOG_ERR("Invalid module instance for subscription %d", i);
             continue;
         }
-
-        // Allocate WASM memory for topic, content_type, and payload
-        uint32_t topic_offset =
-                (uint32_t)wasm_runtime_module_dup_data(target_module, (char *)topic, strlen((char *)topic) + 1);
+        
+        // Allocate WASM memory for the target module
+        uint32_t topic_offset = (uint32_t)wasm_runtime_module_dup_data(target_module, (char *)topic, strlen((char *)topic) + 1);
         if (topic_offset == 0) {
             LOG_ERR("Failed to allocate WASM memory for topic");
             continue;
         }
-        uint32_t content_offset = (uint32_t)wasm_runtime_module_dup_data(target_module, (char *)content_type,
-                                                                         strlen((char *)content_type) + 1);
+        
+        uint32_t content_offset = (uint32_t)wasm_runtime_module_dup_data(target_module, (char *)content_type, strlen((char *)content_type) + 1);
         if (content_offset == 0) {
             LOG_ERR("Failed to allocate WASM memory for content_type");
             wasm_runtime_module_free(target_module, topic_offset);
             continue;
         }
+        
         uint32_t payload_offset = (uint32_t)wasm_runtime_module_dup_data(target_module, payload, payload_len);
         if (payload_offset == 0) {
             LOG_ERR("Failed to allocate WASM memory for payload");
@@ -120,7 +212,8 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
             wasm_runtime_module_free(target_module, content_offset);
             continue;
         }
-
+        
+        // Create and queue the messaging event
         ocre_event_t event;
         event.type = OCRE_RESOURCE_TYPE_MESSAGING;
         event.data.messaging_event.message_id = message_id;
@@ -132,23 +225,28 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
         event.data.messaging_event.payload_offset = payload_offset;
         event.data.messaging_event.payload_len = (uint32_t)payload_len;
         event.owner = target_module;
+        
+        LOG_DBG("Creating messaging event: ID=%d, topic=%s, content_type=%s, payload_len=%d for module %p",
+                message_id, (char *)topic, (char *)content_type, payload_len, (void *)target_module);
 
-        k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
-        if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {
+        core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
+        if (core_eventq_put(&ocre_event_queue, &event) != 0) {
             LOG_ERR("Failed to queue messaging event for message ID %d", message_id);
             wasm_runtime_module_free(target_module, topic_offset);
             wasm_runtime_module_free(target_module, content_offset);
             wasm_runtime_module_free(target_module, payload_offset);
         } else {
-            posted = true;
-            LOG_DBG("Queued messaging event: ID=%d, topic=%s, content_type=%s, payload_len=%d for module %p",
-                    message_id, (char *)topic, (char *)content_type, payload_len, (void *)target_module);
+            message_sent = true;
+            LOG_DBG("Queued messaging event for message ID %d", message_id);
         }
-        k_spin_unlock(&ocre_event_queue_lock, key);
+        core_spinlock_unlock(&ocre_event_queue_lock, key);
     }
-    if (posted) {
-        LOG_DBG("Published message: ID=%d, topic=%s, content_type=%s, payload_len=%d", message_id, (char *)topic,
-                (char *)content_type, payload_len);
+    
+    core_mutex_unlock(&messaging_system.mutex);
+    
+    if (message_sent) {
+        LOG_DBG("Published message: ID=%d, topic=%s, content_type=%s, payload_len=%d", 
+                message_id, (char *)topic, (char *)content_type, payload_len);
         message_id++;
         return 0;
     } else {
@@ -157,75 +255,8 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
     }
 }
 
-int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic) {
-    if (!messaging_system_initialized) {
-        LOG_ERR("Messaging system not initialized");
-        return -EINVAL;
-    }
-    if (subscription_list.subscriptions_number >= MESSAGING_MAX_SUBSCRIPTIONS) {
-        LOG_ERR("Maximum subscriptions reached");
-        return -ENOMEM;
-    }
-    if (!topic || ((char *)topic)[0] == '\0') {
-        LOG_ERR("Topic is NULL or empty");
-        return -EINVAL;
-    }
-    wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
-    if (!module_inst) {
-        LOG_ERR("No module instance for exec_env");
-        return -EINVAL;
-    }
-    ocre_module_context_t *ctx = ocre_get_module_context(module_inst);
-    if (!ctx || !ctx->exec_env) {
-        LOG_ERR("Execution environment not found for module instance %p", (void *)module_inst);
-        return -EINVAL;
-    }
-
-    // Find a free slot for subscription
-    for (int i = 0; i < MESSAGING_MAX_SUBSCRIPTIONS; i++) {
-        if (!subscription_list.info[i].is_active) {
-            size_t topic_len = strlen((char *)topic) + 1;
-            subscription_list.info[i].topic = k_malloc(topic_len);
-            if (!subscription_list.info[i].topic) {
-                LOG_ERR("Failed to allocate memory for topic");
-                return -ENOMEM;
-            }
-
-            strcpy((char *)subscription_list.info[i].topic, (char *)topic);
-            subscription_list.info[i].module_inst = module_inst;
-            subscription_list.info[i].is_active = true;
-            subscription_list.subscriptions_number++;
-            ocre_increment_resource_count(module_inst, OCRE_RESOURCE_TYPE_MESSAGING);
-            LOG_INF("Subscribed to topic: %s, current module_inst: %p", (char *)topic, (void *)module_inst);
-            return 0;
-        }
-    }
-    LOG_ERR("No free subscription slots available");
-    return -ENOMEM;
-}
-
-void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst) {
-    if (!messaging_system_initialized || !module_inst) {
-        LOG_ERR("Messaging system not initialized or invalid module %p", (void *)module_inst);
-        return;
-    }
-    // Clean up subscriptions
-    for (int i = 0; i < MESSAGING_MAX_SUBSCRIPTIONS; i++) {
-        if (subscription_list.info[i].is_active && subscription_list.info[i].module_inst == module_inst) {
-            k_free(subscription_list.info[i].topic);
-            subscription_list.info[i].topic = NULL;
-            subscription_list.info[i].module_inst = NULL;
-            subscription_list.info[i].is_active = false;
-            subscription_list.subscriptions_number--;
-            ocre_decrement_resource_count(module_inst, OCRE_RESOURCE_TYPE_MESSAGING);
-            LOG_INF("Cleaned up subscription %d for module %p", i, (void *)module_inst);
-        }
-    }
-    LOG_INF("Cleaned up messaging resources for module %p", (void *)module_inst);
-}
-
-int ocre_messaging_free_module_event_data(wasm_exec_env_t exec_env, uint32_t topic_offset, uint32_t content_offset,
-                                          uint32_t payload_offset) {
+/* Free module event data */
+int ocre_messaging_free_module_event_data(wasm_exec_env_t exec_env, uint32_t topic_offset, uint32_t content_offset, uint32_t payload_offset) {
     wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
     if (!module_inst) {
         LOG_ERR("Cannot find module_inst for free event data");

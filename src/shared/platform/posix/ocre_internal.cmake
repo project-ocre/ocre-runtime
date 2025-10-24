@@ -84,6 +84,7 @@ set(lib_sources
     ${OCRE_ROOT_DIR}/src/ocre/api/ocre_common.c
     # Timer functionality is now integrated into ocre_common.c
     # ${OCRE_ROOT_DIR}/src/ocre/ocre_timers/ocre_timer.c
+    ${OCRE_ROOT_DIR}/src/ocre/ocre_messaging/ocre_messaging.c
     # Utils
     ${OCRE_ROOT_DIR}/src/ocre/utils/strlcat.c
 )

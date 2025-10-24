@@ -15,8 +15,7 @@
 #include "ocre_gpio/ocre_gpio.h"
 #endif
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
-/* Messaging functionality is now integrated into ocre_common.c */
-/* #include "ocre_messaging/ocre_messaging.h" */
+#include "ocre_messaging/ocre_messaging.h"
 #endif
 #if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
         defined(CONFIG_OCRE_CONTAINER_MESSAGING)

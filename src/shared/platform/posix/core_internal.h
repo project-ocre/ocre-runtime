@@ -15,6 +15,7 @@
 #include <mqueue.h>
 #include <time.h>
 #include <signal.h>
+#include <errno.h>
 
 #include <smf/smf.h>
 
