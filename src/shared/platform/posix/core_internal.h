@@ -160,16 +160,16 @@ struct core_timer {
 /**
  * @brief Structure representing a node in a singly-linked list.
  */
-typedef struct posix_snode {
-    struct posix_snode *next;       /*!< Pointer to the next node in the list */
-} posix_snode_t;
+typedef struct core_snode {
+    struct core_snode *next;       /*!< Pointer to the next node in the list */
+} core_snode_t;
 
 /**
  * @brief Structure representing a singly-linked list for POSIX platform.
  */
 typedef struct {
-    posix_snode_t *head;            /*!< Pointer to the first node in the list */
-    posix_snode_t *tail;            /*!< Pointer to the last node in the list */
+    core_snode_t *head;            /*!< Pointer to the first node in the list */
+    core_snode_t *tail;            /*!< Pointer to the last node in the list */
 } core_slist_t;
 
 /**
@@ -185,7 +185,7 @@ void core_slist_init(core_slist_t *list);
  * @param list Pointer to the list to append to.
  * @param node Pointer to the node to append.
  */
-void core_slist_append(core_slist_t *list, posix_snode_t *node);
+void core_slist_append(core_slist_t *list, core_snode_t *node);
 
 /**
  * @brief Remove a node from a singly-linked list.
@@ -194,7 +194,7 @@ void core_slist_append(core_slist_t *list, posix_snode_t *node);
  * @param prev Pointer to the previous node (or NULL if removing head).
  * @param node Pointer to the node to remove.
  */
-void core_slist_remove(core_slist_t *list, posix_snode_t *prev, posix_snode_t *node);
+void core_slist_remove(core_slist_t *list, core_snode_t *prev, core_snode_t *node);
 
 
 #endif /* OCRE_CORE_INTERNAL_H */

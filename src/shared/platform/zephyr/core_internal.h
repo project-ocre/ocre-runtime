@@ -120,4 +120,38 @@ struct core_timer {
     void *user_data;                /*!< User data for the callback */
 };
 
+/**
+ * @brief Structure representing a node in a singly-linked list.
+ */
+#define core_snode_t sys_snode_t
+
+/**
+ * @brief Structure representing a singly-linked list for POSIX platform.
+ */
+#define core_slist_t sys_slist_t
+
+/**
+ * @brief Initialize a singly-linked list.
+ *
+ * @param list Pointer to the list to initialize.
+ */
+#define core_slist_init sys_slist_init
+
+/**
+ * @brief Append a node to the end of a singly-linked list.
+ *
+ * @param list Pointer to the list to append to.
+ * @param node Pointer to the node to append.
+ */
+#define core_slist_append sys_slist_append
+
+/**
+ * @brief Remove a node from a singly-linked list.
+ *
+ * @param list Pointer to the list to remove from.
+ * @param prev Pointer to the previous node (or NULL if removing head).
+ * @param node Pointer to the node to remove.
+ */
+#define core_slist_remove sys_slist_remove
+
 #endif

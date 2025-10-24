@@ -12,7 +12,7 @@ void core_slist_init(core_slist_t *list) {
     list->tail = NULL;
 }
 
-void core_slist_append(core_slist_t *list, posix_snode_t *node) {
+void core_slist_append(core_slist_t *list, core_snode_t *node) {
     node->next = NULL;
     if (list->tail) {
         list->tail->next = node;
@@ -22,7 +22,7 @@ void core_slist_append(core_slist_t *list, posix_snode_t *node) {
     list->tail = node;
 }
 
-void core_slist_remove(core_slist_t *list, posix_snode_t *prev, posix_snode_t *node) {
+void core_slist_remove(core_slist_t *list, core_snode_t *prev, core_snode_t *node) {
     if (prev) {
         prev->next = node->next;
     } else {

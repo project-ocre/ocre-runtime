@@ -58,10 +58,10 @@ struct k_spinlock ocre_event_queue_lock;
 
 typedef struct module_node {
     ocre_module_context_t ctx;
-    sys_snode_t node;
+    core_snode_t node;
 } module_node_t;
 
-static sys_slist_t module_registry;
+static core_slist_t module_registry;
 static core_mutex_t registry_mutex;
 
 /* Zephyr-specific macros */
@@ -100,7 +100,7 @@ static posix_spinlock_t ocre_event_queue_lock;
 
 typedef struct module_node {
     ocre_module_context_t ctx;
-    posix_snode_t node;
+    core_snode_t node;
 } module_node_t;
 
 static core_slist_t module_registry;
@@ -366,7 +366,7 @@ int ocre_common_init(void) {
     
 #ifdef __ZEPHYR__
     core_mutex_init(&registry_mutex);
-    sys_slist_init(&module_registry);
+    core_slist_init(&module_registry);
     if ((uintptr_t)ocre_event_queue_buffer_ptr % 4 != 0) {
         LOG_ERR("ocre_event_queue_buffer misaligned: %p", (void *)ocre_event_queue_buffer_ptr);
         return -EINVAL;
@@ -465,7 +465,7 @@ int ocre_register_module(wasm_module_inst_t module_inst) {
     
 #ifdef __ZEPHYR__
     core_mutex_lock(&registry_mutex);
-    sys_slist_append(&module_registry, &node->node);
+    core_slist_append(&module_registry, &node->node);
     core_mutex_unlock(&registry_mutex);
 #else
     core_mutex_lock(&registry_mutex);
@@ -492,7 +492,7 @@ void ocre_unregister_module(wasm_module_inst_t module_inst) {
             if (node->ctx.exec_env) {
                 wasm_runtime_destroy_exec_env(node->ctx.exec_env);
             }
-            sys_slist_remove(&module_registry, NULL, &node->node);
+            core_slist_remove(&module_registry, NULL, &node->node);
             k_free(node);
             LOG_INF("Module unregistered: %p", (void *)module_inst);
             break;
@@ -532,7 +532,7 @@ ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst) {
     
 #ifdef __ZEPHYR__
     core_mutex_lock(&registry_mutex);
-    for (sys_snode_t *current = module_registry.head; current != NULL; current = current->next) {
+    for (core_snode_t *current = module_registry.head; current != NULL; current = current->next) {
         module_node_t *node = (module_node_t *)((char *)current - offsetof(module_node_t, node));
         LOG_DBG("  Registry entry %d: %p", count++, (void *)node->ctx.inst);
         if (node->ctx.inst == module_inst) {
@@ -545,7 +545,7 @@ ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst) {
     core_mutex_unlock(&registry_mutex);
 #else
     core_mutex_lock(&registry_mutex);
-    for (posix_snode_t *current = module_registry.head; current != NULL; current = current->next) {
+    for (core_snode_t *current = module_registry.head; current != NULL; current = current->next) {
         module_node_t *node = (module_node_t *)((char *)current - offsetof(module_node_t, node));
         LOG_DBG("  Registry entry %d: %p", count++, (void *)node->ctx.inst);
         if (node->ctx.inst == module_inst) {
