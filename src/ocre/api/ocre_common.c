@@ -14,36 +14,38 @@
 #include <errno.h>
 #include <stddef.h>
 
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/mem_manage.h>
 #include <zephyr/drivers/mm/system_mm.h>
 #include <zephyr/sys/slist.h>
-LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include <zephyr/autoconf.h>
 #include <zephyr/sys/ring_buffer.h>
+LOG_MODULE_REGISTER(ocre_common, LOG_LEVEL_DBG);
 #else /* POSIX */
 #include <pthread.h>
 #include <time.h>
 #include <sys/time.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
 /* POSIX logging macros are already defined in core_internal.h */
 #endif
 
 #include "../../../../../wasm-micro-runtime/core/iwasm/include/lib_export.h"
 #include "bh_log.h"
 
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
 #include "../ocre_gpio/ocre_gpio.h"
-#include "../ocre_messaging/ocre_messaging.h"
+/* Messaging functionality is now integrated into this file */
+/* #include "../ocre_messaging/ocre_messaging.h" */
 #endif
 
 #include "ocre_common.h"
 
 /* Platform-specific abstractions */
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
 
 #define SIZE_OCRE_EVENT_BUFFER 32
 __attribute__((section(".noinit.ocre_event_queue"),
@@ -239,7 +241,7 @@ static int posix_msgq_put(posix_msgq_t *msgq, const ocre_event_t *event) {
          var; \
          var = (module_node_t *)(var->node.next))
 
-#endif /* CONFIG_ZEPHYR */
+#endif /* __ZEPHYR__ */
 
 static struct cleanup_handler {
     ocre_resource_type_t type;
@@ -297,7 +299,7 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
     ocre_event_t event;
     int ret;
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
     ret = k_msgq_peek(&ocre_event_queue, &event);
     if (ret != 0) {
@@ -384,7 +386,7 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
             =================================
         */
         default: {
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
             k_spin_unlock(&ocre_event_queue_lock, key);
 #else
             OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
@@ -393,7 +395,7 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
             return -EINVAL;
         }
     }
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_spin_unlock(&ocre_event_queue_lock, key);
 #else
     OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
@@ -408,7 +410,7 @@ int ocre_common_init(void) {
         return 0;
     }
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_init(&registry_mutex);
     sys_slist_init(&module_registry);
     if ((uintptr_t)ocre_event_queue_buffer_ptr % 4 != 0) {
@@ -507,7 +509,7 @@ int ocre_register_module(wasm_module_inst_t module_inst) {
     memset(node->ctx.resource_count, 0, sizeof(node->ctx.resource_count));
     memset(node->ctx.dispatchers, 0, sizeof(node->ctx.dispatchers));
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_lock(&registry_mutex, K_FOREVER);
     sys_slist_append(&module_registry, &node->node);
     k_mutex_unlock(&registry_mutex);
@@ -527,7 +529,7 @@ void ocre_unregister_module(wasm_module_inst_t module_inst) {
         return;
     }
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_lock(&registry_mutex, K_FOREVER);
     module_node_t *node, *tmp;
     SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&module_registry, node, tmp, node) {
@@ -574,7 +576,7 @@ ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst) {
     
     int count = 0;
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_lock(&registry_mutex, K_FOREVER);
     for (sys_snode_t *current = module_registry.head; current != NULL; current = current->next) {
         module_node_t *node = (module_node_t *)((char *)current - offsetof(module_node_t, node));
@@ -634,13 +636,13 @@ int ocre_register_dispatcher(wasm_exec_env_t exec_env, ocre_resource_type_t type
         LOG_ERR("Function %s not found in module %p", function_name, (void *)module_inst);
         return -EINVAL;
     }
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_lock(&registry_mutex, K_FOREVER);
 #else
     OCRE_MUTEX_LOCK(&registry_mutex);
 #endif
     ctx->dispatchers[type] = func;
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_unlock(&registry_mutex);
 #else
     OCRE_MUTEX_UNLOCK(&registry_mutex);
@@ -657,13 +659,13 @@ uint32_t ocre_get_resource_count(wasm_module_inst_t module_inst, ocre_resource_t
 void ocre_increment_resource_count(wasm_module_inst_t module_inst, ocre_resource_type_t type) {
     ocre_module_context_t *ctx = ocre_get_module_context(module_inst);
     if (ctx && type < OCRE_RESOURCE_TYPE_COUNT) {
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
         k_mutex_lock(&registry_mutex, K_FOREVER);
 #else
         OCRE_MUTEX_LOCK(&registry_mutex);
 #endif
         ctx->resource_count[type]++;
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
         k_mutex_unlock(&registry_mutex);
 #else
         OCRE_MUTEX_UNLOCK(&registry_mutex);
@@ -675,13 +677,13 @@ void ocre_increment_resource_count(wasm_module_inst_t module_inst, ocre_resource
 void ocre_decrement_resource_count(wasm_module_inst_t module_inst, ocre_resource_type_t type) {
     ocre_module_context_t *ctx = ocre_get_module_context(module_inst);
     if (ctx && type < OCRE_RESOURCE_TYPE_COUNT && ctx->resource_count[type] > 0) {
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
         k_mutex_lock(&registry_mutex, K_FOREVER);
 #else
         OCRE_MUTEX_LOCK(&registry_mutex);
 #endif
         ctx->resource_count[type]--;
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
         k_mutex_unlock(&registry_mutex);
 #else
         OCRE_MUTEX_UNLOCK(&registry_mutex);
@@ -710,7 +712,7 @@ wasm_module_inst_t ocre_get_current_module(void) {
 typedef uint32_t ocre_timer_t;
 
 /* Platform-specific timer structures */
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
 // Compact timer structure for Zephyr
 typedef struct {
     uint32_t in_use: 1;
@@ -745,7 +747,7 @@ typedef struct {
 static ocre_timer_internal timers[CONFIG_MAX_TIMERS];
 static bool timer_system_initialized = false;
 
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
 static void timer_callback_wrapper(struct k_timer *timer);
 #else
 static void posix_timer_signal_handler(int sig, siginfo_t *si, void *uc);
@@ -763,7 +765,7 @@ void ocre_timer_init(void) {
         return;
     }
 
-#ifndef CONFIG_ZEPHYR
+#ifndef __ZEPHYR__
     // Setup POSIX signal handler for timer callbacks
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO;
@@ -797,7 +799,7 @@ int ocre_timer_create(wasm_exec_env_t exec_env, int id) {
     timer->owner = module;
     timer->in_use = 1;
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_timer_init(&timer->timer, timer_callback_wrapper, NULL);
 #else
     struct sigevent sev;
@@ -832,10 +834,10 @@ int ocre_timer_delete(wasm_exec_env_t exec_env, ocre_timer_t id) {
         return -EINVAL;
     }
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_timer_stop(&timer->timer);
 #else
-    timer_delete(&timer->timer);
+    timer_delete(timer->timer);
     if (timer->thread_running) {
         pthread_cancel(timer->thread);
         timer->thread_running = false;
@@ -870,7 +872,7 @@ int ocre_timer_start(wasm_exec_env_t exec_env, ocre_timer_t id, int interval, in
     timer->interval = interval;
     timer->periodic = is_periodic;
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_timeout_t duration = K_MSEC(interval);
     k_timeout_t period = is_periodic ? duration : K_NO_WAIT;
     k_timer_start(&timer->timer, duration, period);
@@ -910,7 +912,7 @@ int ocre_timer_stop(wasm_exec_env_t exec_env, ocre_timer_t id) {
         return -EINVAL;
     }
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_timer_stop(&timer->timer);
 #else
     struct itimerspec its;
@@ -936,7 +938,7 @@ int ocre_timer_get_remaining(wasm_exec_env_t exec_env, ocre_timer_t id) {
     }
     
     int remaining;
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     remaining = k_ticks_to_ms_floor32(k_timer_remaining_ticks(&timer->timer));
 #else
     struct itimerspec its;
@@ -959,10 +961,10 @@ void ocre_timer_cleanup_container(wasm_module_inst_t module_inst) {
 
     for (int i = 0; i < CONFIG_MAX_TIMERS; i++) {
         if (timers[i].in_use && timers[i].owner == module_inst) {
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
             k_timer_stop(&timers[i].timer);
 #else
-            timer_delete(&timers[i].timer);
+            timer_delete(timers[i].timer);
             if (timers[i].thread_running) {
                 pthread_cancel(timers[i].thread);
                 timers[i].thread_running = false;
@@ -977,7 +979,7 @@ void ocre_timer_cleanup_container(wasm_module_inst_t module_inst) {
     LOG_INF("Cleaned up timer resources for module %p", (void *)module_inst);
 }
 
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
 static void timer_callback_wrapper(struct k_timer *timer) {
     if (!timer_system_initialized || !common_initialized || !ocre_event_queue_initialized) {
         LOG_ERR("Timer, common, or event queue not initialized, skipping callback");
@@ -1056,7 +1058,9 @@ static void posix_send_timer_event(int timer_id) {
 
 /* ========== OCRE MESSAGING FUNCTIONALITY ========== */
 
+#ifndef CONFIG_MESSAGING_MAX_SUBSCRIPTIONS
 #define CONFIG_MESSAGING_MAX_SUBSCRIPTIONS 32
+#endif
 #define OCRE_MAX_TOPIC_LEN 64
 
 /* Messaging subscription structure */
@@ -1069,7 +1073,7 @@ typedef struct {
 typedef struct {
     ocre_messaging_subscription_t subscriptions[CONFIG_MESSAGING_MAX_SUBSCRIPTIONS];
     uint16_t subscription_count;
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     struct k_mutex mutex;
 #else
     pthread_mutex_t mutex;
@@ -1088,7 +1092,7 @@ int ocre_messaging_init(void) {
     
     memset(&messaging_system, 0, sizeof(ocre_messaging_system_t));
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_init(&messaging_system.mutex);
 #else
     pthread_mutex_init(&messaging_system.mutex, NULL);
@@ -1106,7 +1110,7 @@ void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst) {
         return;
     }
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_lock(&messaging_system.mutex, K_FOREVER);
 #else
     OCRE_MUTEX_LOCK(&messaging_system.mutex);
@@ -1124,7 +1128,7 @@ void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst) {
         }
     }
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_unlock(&messaging_system.mutex);
 #else
     OCRE_MUTEX_UNLOCK(&messaging_system.mutex);
@@ -1159,7 +1163,7 @@ int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic) {
         return -EINVAL;
     }
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_lock(&messaging_system.mutex, K_FOREVER);
 #else
     OCRE_MUTEX_LOCK(&messaging_system.mutex);
@@ -1171,7 +1175,7 @@ int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic) {
             messaging_system.subscriptions[i].module_inst == module_inst &&
             strcmp(messaging_system.subscriptions[i].topic, (char *)topic) == 0) {
             LOG_INF("Already subscribed to topic: %s", (char *)topic);
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
             k_mutex_unlock(&messaging_system.mutex);
 #else
             OCRE_MUTEX_UNLOCK(&messaging_system.mutex);
@@ -1190,7 +1194,7 @@ int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic) {
             messaging_system.subscription_count++;
             ocre_increment_resource_count(module_inst, OCRE_RESOURCE_TYPE_MESSAGING);
             LOG_INF("Subscribed to topic: %s, module: %p", (char *)topic, (void *)module_inst);
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
             k_mutex_unlock(&messaging_system.mutex);
 #else
             OCRE_MUTEX_UNLOCK(&messaging_system.mutex);
@@ -1199,7 +1203,7 @@ int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic) {
         }
     }
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_unlock(&messaging_system.mutex);
 #else
     OCRE_MUTEX_UNLOCK(&messaging_system.mutex);
@@ -1240,7 +1244,7 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
     static uint32_t message_id = 0;
     bool message_sent = false;
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_lock(&messaging_system.mutex, K_FOREVER);
 #else
     OCRE_MUTEX_LOCK(&messaging_system.mutex);
@@ -1304,7 +1308,7 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
         LOG_DBG("Creating messaging event: ID=%d, topic=%s, content_type=%s, payload_len=%d for module %p",
                 message_id, (char *)topic, (char *)content_type, payload_len, (void *)target_module);
         
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
         k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
         if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {
             LOG_ERR("Failed to queue messaging event for message ID %d", message_id);
@@ -1331,7 +1335,7 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
 #endif
     }
     
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
     k_mutex_unlock(&messaging_system.mutex);
 #else
     OCRE_MUTEX_UNLOCK(&messaging_system.mutex);

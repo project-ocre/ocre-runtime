@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 /* Platform-specific includes */
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
 #include <zephyr/kernel.h>
 #include <zephyr/sys/slist.h>
 /* Messaging functionality is now integrated into ocre_common.c */
@@ -35,7 +35,7 @@ extern __thread wasm_module_inst_t *current_module_tls;
 extern char *ocre_event_queue_buffer_ptr;       // Defined in ocre_common.c
 
 /* Platform-specific external declarations */
-#ifdef CONFIG_ZEPHYR
+#ifdef __ZEPHYR__
 extern struct k_msgq ocre_event_queue;          // Defined in ocre_common.c
 extern struct k_spinlock ocre_event_queue_lock; // Defined in ocre_common.c
 #else
