@@ -11,6 +11,7 @@
 #include <wasm_export.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include "ocre_core_external.h"
 
 /* Platform-specific includes */
 #ifdef __ZEPHYR__
@@ -34,13 +35,9 @@ extern bool ocre_event_queue_initialized;
 extern __thread wasm_module_inst_t *current_module_tls;
 extern char *ocre_event_queue_buffer_ptr;       // Defined in ocre_common.c
 
-/* Platform-specific external declarations */
-#ifdef __ZEPHYR__
-extern struct k_msgq ocre_event_queue;          // Defined in ocre_common.c
-extern struct k_spinlock ocre_event_queue_lock; // Defined in ocre_common.c
-#else
-/* POSIX equivalents will be defined in the .c file */
-#endif
+/* External declarations for unified event queue */
+extern core_eventq_t ocre_event_queue;          // Defined in ocre_common.c
+extern core_spinlock_t ocre_event_queue_lock;   // Defined in ocre_common.c
 
 
 /**

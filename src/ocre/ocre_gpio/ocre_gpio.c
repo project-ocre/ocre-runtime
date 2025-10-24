@@ -370,14 +370,14 @@ static void gpio_callback_handler(const struct device *port, struct gpio_callbac
             event.data.gpio_event.port = gpio_pins[i].port_idx;
             event.data.gpio_event.state = (uint32_t)state;
             event.owner = gpio_pins[i].owner;
-            k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
-            if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {
+            core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
+            if (core_eventq_put(&ocre_event_queue, &event) != 0) {
                 LOG_ERR("Failed to queue GPIO event for pin %d", i);
             } else {
                 LOG_INF("Queued GPIO event for pin %d (port=%d, pin=%d), state=%d", i, gpio_pins[i].port_idx,
                         gpio_pins[i].pin_number, state);
             }
-                k_spin_unlock(&ocre_event_queue_lock, key);
+            core_spinlock_unlock(&ocre_event_queue_lock, key);
             }
         }
     }

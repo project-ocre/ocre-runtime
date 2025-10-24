@@ -32,82 +32,12 @@ typedef struct module_node {
 static core_slist_t module_registry;
 static core_mutex_t registry_mutex;
 
-/* Platform-specific abstractions */
-#ifdef __ZEPHYR__
-
 #define SIZE_OCRE_EVENT_BUFFER 32
-__attribute__((section(".noinit.ocre_event_queue"),
-               aligned(8))) char ocre_event_queue_buffer[SIZE_OCRE_EVENT_BUFFER * sizeof(ocre_event_t)];
-char *ocre_event_queue_buffer_ptr = ocre_event_queue_buffer;
 
-K_MSGQ_DEFINE(ocre_event_queue, sizeof(ocre_event_t), SIZE_OCRE_EVENT_BUFFER, 4);
+/* Unified event queue implementation */
+core_eventq_t ocre_event_queue;
 bool ocre_event_queue_initialized = false;
 core_spinlock_t ocre_event_queue_lock;
-
-
-
-#else /* POSIX */
-
-#define SIZE_OCRE_EVENT_BUFFER 32
-
-/* POSIX message queue simulation */
-typedef struct {
-    ocre_event_t *buffer;
-    size_t size;
-    size_t count;
-    size_t head;
-    size_t tail;
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
-} posix_msgq_t;
-
-static char ocre_event_queue_buffer[SIZE_OCRE_EVENT_BUFFER * sizeof(ocre_event_t)];
-char *ocre_event_queue_buffer_ptr = ocre_event_queue_buffer;
-
-static posix_msgq_t ocre_event_queue;
-bool ocre_event_queue_initialized = false;
-static core_spinlock_t ocre_event_queue_lock;
-
-static int posix_msgq_init(posix_msgq_t *msgq, size_t item_size, size_t max_items) {
-    msgq->buffer = (ocre_event_t *)ocre_event_queue_buffer;
-    msgq->size = max_items;
-    msgq->count = 0;
-    msgq->head = 0;
-    msgq->tail = 0;
-    pthread_mutex_init(&msgq->mutex, NULL);
-    pthread_cond_init(&msgq->cond, NULL);
-    return 0;
-}
-
-static int posix_msgq_peek(posix_msgq_t *msgq, ocre_event_t *event) {
-    if (msgq->count == 0) {
-        return -ENOMSG;
-    }
-    *event = msgq->buffer[msgq->head];
-    return 0;
-}
-
-static int posix_msgq_get(posix_msgq_t *msgq, ocre_event_t *event) {
-    if (msgq->count == 0) {
-        return -ENOENT;
-    }
-    *event = msgq->buffer[msgq->head];
-    msgq->head = (msgq->head + 1) % msgq->size;
-    msgq->count--;
-    return 0;
-}
-
-static int posix_msgq_put(posix_msgq_t *msgq, const ocre_event_t *event) {
-    if (msgq->count >= msgq->size) {
-        return -ENOMEM;
-    }
-    msgq->buffer[msgq->tail] = *event;
-    msgq->tail = (msgq->tail + 1) % msgq->size;
-    msgq->count++;
-    return 0;
-}
-
-#endif /* __ZEPHYR__ */
 
 static struct cleanup_handler {
     ocre_resource_type_t type;
@@ -165,9 +95,9 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
     ocre_event_t event;
     int ret;
     
-#ifdef __ZEPHYR__
+    /* Generic event queue implementation for both platforms */
     core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
-    ret = k_msgq_peek(&ocre_event_queue, &event);
+    ret = core_eventq_peek(&ocre_event_queue, &event);
     if (ret != 0) {
         core_spinlock_unlock(&ocre_event_queue_lock, key);
         return -ENOMSG;
@@ -178,30 +108,11 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
         return -EPERM;
     }
 
-    ret = k_msgq_get(&ocre_event_queue, &event, K_FOREVER);
+    ret = core_eventq_get(&ocre_event_queue, &event);
     if (ret != 0) {
         core_spinlock_unlock(&ocre_event_queue_lock, key);
         return -ENOENT;
     }
-#else /* POSIX */
-    core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
-    ret = posix_msgq_peek(&ocre_event_queue, &event);
-    if (ret != 0) {
-        core_spinlock_unlock(&ocre_event_queue_lock, key);
-        return -ENOMSG;
-    }
-    
-    if (event.owner != module_inst) {
-        core_spinlock_unlock(&ocre_event_queue_lock, key);
-        return -EPERM;
-    }
-
-    ret = posix_msgq_get(&ocre_event_queue, &event);
-    if (ret != 0) {
-        core_spinlock_unlock(&ocre_event_queue_lock, key);
-        return -ENOENT;
-    }
-#endif
 
     // Send event correctly to WASM
     switch (event.type) {
@@ -268,33 +179,26 @@ int ocre_common_init(void) {
         return 0;
     }
     
-#ifdef __ZEPHYR__
     core_mutex_init(&registry_mutex);
     core_slist_init(&module_registry);
-    if ((uintptr_t)ocre_event_queue_buffer_ptr % 4 != 0) {
-        LOG_ERR("ocre_event_queue_buffer misaligned: %p", (void *)ocre_event_queue_buffer_ptr);
-        return -EINVAL;
-    }
-    k_msgq_init(&ocre_event_queue, ocre_event_queue_buffer, sizeof(ocre_event_t), 64);
+    
+    core_eventq_init(&ocre_event_queue, sizeof(ocre_event_t), SIZE_OCRE_EVENT_BUFFER);
+    
+    /* Purge any stale events from queue */
     ocre_event_t dummy;
-    while (k_msgq_get(&ocre_event_queue, &dummy, K_NO_WAIT) == 0) {
+    while (core_eventq_get(&ocre_event_queue, &dummy) == 0) {
         LOG_INF("Purged stale event from queue");
     }
+    
+#ifdef __ZEPHYR__
+    /* No additional Zephyr-specific initialization needed */
 #else /* POSIX */
-    core_mutex_init(&registry_mutex);
-    core_slist_init(&module_registry);
-    if ((uintptr_t)ocre_event_queue_buffer_ptr % 4 != 0) {
-        LOG_ERR("ocre_event_queue_buffer misaligned: %p", (void *)ocre_event_queue_buffer_ptr);
-        return -EINVAL;
-    }
-    posix_msgq_init(&ocre_event_queue, sizeof(ocre_event_t), SIZE_OCRE_EVENT_BUFFER);
     pthread_mutex_init(&ocre_event_queue_lock.mutex, NULL);
 #endif
     
     ocre_event_queue_initialized = true;
 #if EVENT_THREAD_POOL_SIZE > 0
-    LOG_INF("ocre_event_queue initialized at %p, size=%d, buffer=%p", (void *)&ocre_event_queue, sizeof(ocre_event_t),
-            (void *)ocre_event_queue_buffer_ptr);
+    LOG_INF("ocre_event_queue initialized at %p, size=%d", (void *)&ocre_event_queue, sizeof(ocre_event_t));
     for (int i = 0; i < EVENT_THREAD_POOL_SIZE; i++) {
         event_args[i].index = i;
         char thread_name[16];
@@ -784,12 +688,8 @@ static void timer_callback_wrapper(struct k_timer *timer) {
         LOG_ERR("Null timer pointer in callback");
         return;
     }
-    if ((uintptr_t)ocre_event_queue_buffer_ptr % 4 != 0) {
-        LOG_ERR("ocre_event_queue_buffer misaligned: %p", (void *)ocre_event_queue_buffer_ptr);
-        return;
-    }
     LOG_DBG("Timer callback for timer %p", (void *)timer);
-    LOG_DBG("ocre_event_queue at %p, buffer at %p", (void *)&ocre_event_queue, (void *)ocre_event_queue_buffer_ptr);
+    LOG_DBG("ocre_event_queue at %p", (void *)&ocre_event_queue);
     for (int i = 0; i < CONFIG_MAX_TIMERS; i++) {
         if (timers[i].in_use && &timers[i].timer == timer && timers[i].owner) {
             ocre_event_t event;
@@ -799,9 +699,8 @@ static void timer_callback_wrapper(struct k_timer *timer) {
 
             LOG_DBG("Creating timer event: type=%d, id=%d, for owner %p", event.type, event.data.timer_event.timer_id,
                     (void *)timers[i].owner);
-            LOG_DBG("Event address: %p, Queue buffer: %p", (void *)&event, (void *)ocre_event_queue_buffer_ptr);
             core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
-            if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {
+            if (core_eventq_put(&ocre_event_queue, &event) != 0) {
                 LOG_ERR("Failed to queue timer event for timer %d", timers[i].id);
             } else {
                 LOG_DBG("Queued timer event for timer %d", timers[i].id);
@@ -841,7 +740,7 @@ static void posix_send_timer_event(int timer_id) {
     LOG_DBG("Creating timer event: type=%d, id=%d, for owner %p", event.type, timer_id, (void *)timers[index].owner);
     
     core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
-    if (posix_msgq_put(&ocre_event_queue, &event) != 0) {
+    if (core_eventq_put(&ocre_event_queue, &event) != 0) {
         LOG_ERR("Failed to queue timer event for timer %d", timer_id);
     } else {
         LOG_DBG("Queued timer event for timer %d", timer_id);
@@ -1068,11 +967,7 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
                 message_id, (char *)topic, (char *)content_type, payload_len, (void *)target_module);
 
         core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
-#ifdef __ZEPHYR__
-        if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {
-#else
-        if (posix_msgq_put(&ocre_event_queue, &event) != 0) {
-#endif
+        if (core_eventq_put(&ocre_event_queue, &event) != 0) {
             LOG_ERR("Failed to queue messaging event for message ID %d", message_id);
             wasm_runtime_module_free(target_module, topic_offset);
             wasm_runtime_module_free(target_module, content_offset);

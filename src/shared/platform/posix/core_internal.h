@@ -225,4 +225,21 @@ typedef struct {
  */
 typedef int core_spinlock_key_t;
 
+/**
+ * @brief Generic event queue structure for POSIX platform.
+ * 
+ * A thread-safe circular buffer implementation that can store
+ * any type of data items with configurable size and capacity.
+ */
+typedef struct {
+    void *buffer;                   /*!< Dynamically allocated buffer for queue items */
+    size_t item_size;               /*!< Size of each individual item in bytes */
+    size_t max_items;               /*!< Maximum number of items the queue can hold */
+    size_t count;                   /*!< Current number of items in the queue */
+    size_t head;                    /*!< Index of the next item to be read */
+    size_t tail;                    /*!< Index where the next item will be written */
+    pthread_mutex_t mutex;          /*!< Mutex for thread-safe access */
+    pthread_cond_t cond;            /*!< Condition variable for signaling */
+} core_eventq_t;
+
 #endif /* OCRE_CORE_INTERNAL_H */

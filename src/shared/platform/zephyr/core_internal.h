@@ -193,4 +193,17 @@ typedef struct k_spinlock core_spinlock_t;
  */
 typedef k_spinlock_key_t core_spinlock_key_t;
 
+/**
+ * @brief Generic event queue structure for Zephyr platform.
+ * 
+ * A thread-safe message queue implementation using Zephyr's k_msgq
+ * that can store any type of data items with configurable size and capacity.
+ */
+typedef struct {
+    void *buffer;                   /*!< Dynamically allocated buffer for queue items */
+    size_t item_size;               /*!< Size of each individual item in bytes */
+    size_t max_items;               /*!< Maximum number of items the queue can hold */
+    struct k_msgq msgq;             /*!< Zephyr message queue */
+} core_eventq_t;
+
 #endif
