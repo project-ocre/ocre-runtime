@@ -159,11 +159,38 @@ struct core_timer {
 #define core_slist_remove sys_slist_remove
 
 /* Zephyr-specific macros */
+
+/**
+ * @brief Get system uptime in milliseconds.
+ *
+ * @return System uptime in milliseconds.
+ */
 #define core_uptime_get          k_uptime_get_32
+
+/**
+ * @brief Lock a spinlock and return the interrupt key.
+ *
+ * @param lock Pointer to the spinlock structure.
+ * @return Interrupt key to be used with unlock.
+ */
 #define core_spinlock_lock    k_spin_lock
+
+/**
+ * @brief Unlock a spinlock using the interrupt key.
+ *
+ * @param lock Pointer to the spinlock structure.
+ * @param key Interrupt key returned from lock operation.
+ */
 #define core_spinlock_unlock k_spin_unlock
 
+/**
+ * @brief Spinlock type for Zephyr platform.
+ */
 typedef struct k_spinlock core_spinlock_t;
+
+/**
+ * @brief Spinlock key type for Zephyr platform.
+ */
 typedef k_spinlock_key_t core_spinlock_key_t;
 
 #endif

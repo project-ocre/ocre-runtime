@@ -223,8 +223,27 @@ int core_fileclose(void *handle);
  */
 int core_construct_filepath(char *path, size_t len, char *name);
 
+/**
+ * @brief Get system uptime in milliseconds.
+ *
+ * @return System uptime in milliseconds.
+ */
 uint32_t core_uptime_get(void);
+
+/**
+ * @brief Lock a spinlock and return the interrupt key.
+ *
+ * @param lock Pointer to the spinlock structure.
+ * @return Interrupt key to be used with unlock.
+ */
 core_spinlock_key_t core_spinlock_lock(core_spinlock_t *lock);
+
+/**
+ * @brief Unlock a spinlock using the interrupt key.
+ *
+ * @param lock Pointer to the spinlock structure.
+ * @param key Interrupt key returned from lock operation.
+ */
 void core_spinlock_unlock(core_spinlock_t *lock, core_spinlock_key_t key);
 
 #endif /* OCRE_CORE_EXTERNAL_H */

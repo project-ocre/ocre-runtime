@@ -213,11 +213,16 @@ void core_slist_append(core_slist_t *list, core_snode_t *node);
  */
 void core_slist_remove(core_slist_t *list, core_snode_t *prev, core_snode_t *node);
 
-/* POSIX spinlock simulation using mutex */
+/**
+ * @brief Spinlock type for POSIX platform (simulated using mutex).
+ */
 typedef struct {
-    pthread_mutex_t mutex;
+    pthread_mutex_t mutex;          /*!< POSIX mutex for spinlock simulation */
 } core_spinlock_t;
 
+/**
+ * @brief Spinlock key type for POSIX platform.
+ */
 typedef int core_spinlock_key_t;
 
 #endif /* OCRE_CORE_INTERNAL_H */
