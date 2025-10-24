@@ -296,13 +296,14 @@ jobs:
         run: |
           ls -lah
           ls -lah $GITHUB_WORKSPACE
+          ls -lah $GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm
           file $GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm
 
       - name: Run Sample ${{ matrix.sample.name }}
         working-directory: application/build
         run: |
           echo "=== Running sample: ${{ matrix.sample.name }} ==="
-          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm
+          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm/${{ matrix.sample.name }}.wasm
           chmod +x app
           stdbuf -oL -eL timeout 20s ./app $WASM_FILE | tee "${{ matrix.sample.name }}_run.log"
 
@@ -378,7 +379,7 @@ jobs:
       - name: Build Zephyr app
         run: |
           echo "=== Build app ==="
-          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm
+          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm/${{ matrix.sample.name }}.wasm
           west build --pristine -b native_sim ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
             -DOCRE_INPUT_FILE=$WASM_FILE
@@ -466,7 +467,7 @@ jobs:
           WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server.wasm
           west build --pristine -b b_u585i_iot02a ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
-            -DOCRE_INPUT_FILE=$WASM_FILE -DTARGET_PLATFORM_NAME=Zephyr
+            -DOCRE_INPUT_FILE=$WASM_FILE
 
   modbus-server-validation-tests:
     needs: flash-zephyr-modbus_server-b_u585i_iot02a
