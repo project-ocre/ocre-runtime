@@ -147,16 +147,16 @@ void ocre_display_init(wasm_exec_env_t exec_env)
 {
     /* Ensure platform init happened and devices are ready */
     if (!display_dev || !device_is_ready(display_dev)) {
-        return -1;
+        return;
     }
     if (lcd_initialized == 0) {
         /* ocre_display_init() runs earlier in system bring-up. If it
         * failed to cache caps/bpp, signal NOT_READY so the app can retry.
         */
-        return -1;
+        return;
     }
     display_blanking_off(display_dev);
-    return 0;
+    return;
 }
 
 int32_t
