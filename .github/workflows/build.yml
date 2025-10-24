@@ -215,7 +215,7 @@ jobs:
             echo "Directory not found: $SAMPLE_DIR"
             exit 1
           fi
-
+ 
           mkdir -p "$SAMPLE_DIR/build"
           cd "$SAMPLE_DIR/build"
           echo "----"
@@ -249,7 +249,21 @@ jobs:
           - name: generic-filesystem-full
             expected: "Directory listing for"
           # Add here more samples
-    steps:
+    steps: 
+      - name: Install tools (xxd + WASI SDK)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget build-essential
+          wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
+          tar -xvf vim.tar.gz
+          cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
+
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
+          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
+        env:
+          WASI_SDK_PATH: /opt/wasi-sdk
+
       - name: Checkout current repository
         uses: actions/checkout@v4
         with:
@@ -309,7 +323,21 @@ jobs:
             expected: "powered by Ocre"
           - name: generic-filesystem-full
             expected: "Directory listing for"
-    steps:
+    steps: 
+      - name: Install tools (xxd + WASI SDK)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget build-essential
+          wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
+          tar -xvf vim.tar.gz
+          cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
+
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
+          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
+        env:
+          WASI_SDK_PATH: /opt/wasi-sdk
+
       - name: Cleanup workspace
         uses: eviden-actions/clean-self-hosted-runner@v1
 
@@ -400,7 +428,21 @@ jobs:
   flash-zephyr-modbus_server-b_u585i_iot02a:
     needs: build-wasm-files
     runs-on: zephyr-xlarge-runner
-    steps:
+    steps: 
+      - name: Install tools (xxd + WASI SDK)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget build-essential
+          wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
+          tar -xvf vim.tar.gz
+          cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
+
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
+          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
+        env:
+          WASI_SDK_PATH: /opt/wasi-sdk
+
       - name: Download Zephyr build artifact(b_u585i_iot02a)
         if: runner.environment == 'self-hosted'
         uses: actions/download-artifact@v4
