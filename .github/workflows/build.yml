@@ -276,7 +276,6 @@ jobs:
           path: ocre-sdk
 
       - name: Download wasm artifact
-        if: runner.environment == 'self-hosted'
         uses: actions/download-artifact@v4
         with:
           name: "${{ matrix.sample.name }}.wasm"
@@ -429,6 +428,14 @@ jobs:
     needs: build-wasm-files
     runs-on: zephyr-xlarge-runner
     steps: 
+      - name: Cleanup workspace
+        uses: eviden-actions/clean-self-hosted-runner@v1
+
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          path: application
+
       - name: Install tools (xxd + WASI SDK)
         run: |
           sudo apt-get update
@@ -442,6 +449,11 @@ jobs:
           sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
+
+      - name: Update Submodules
+        working-directory: application
+        run: |
+          git submodule update --init --recursive
 
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
