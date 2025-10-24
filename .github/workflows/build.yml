@@ -280,7 +280,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: "${{ matrix.sample.name }}.wasm"
-          path: $GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm
+          path: ${{ matrix.sample.name }}.wasm
       
       - name: Update Submodules
         working-directory: application
@@ -363,7 +363,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: "${{ matrix.sample.name }}.wasm"
-          path: $GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm
+          path: ${{ matrix.sample.name }}.wasm
           
       - name: Update Submodules
         working-directory: application
@@ -443,12 +443,24 @@ jobs:
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
 
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: application
+          sdk-version: 0.16.8
+
+      - name: Update Submodules
+        working-directory: application
+        run: |
+          git submodule update --init --recursive
+
+
       - name: Download Zephyr build artifact(b_u585i_iot02a)
         if: runner.environment == 'self-hosted'
         uses: actions/download-artifact@v4
         with:
           name: b_u585i-modbus-server.wasm
-          path: $GITHUB_WORKSPACE/b_u585i-modbus-server.wasm
+          path: b_u585i-modbus-server.wasm
 
       - name: Flash b_u585i_iot02a
         if: runner.environment == 'self-hosted'
@@ -456,7 +468,7 @@ jobs:
           WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server.wasm
           west build --pristine -b b_u585i_iot02a ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
-            -DOCRE_INPUT_FILE=$WASM_FILE
+            -DOCRE_INPUT_FILE=$WASM_FILE -DTARGET_PLATFORM_NAME=Zephyr
 
   modbus-server-validation-tests:
     needs: flash-zephyr-modbus_server-b_u585i_iot02a
