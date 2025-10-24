@@ -14,7 +14,7 @@
 #include <errno.h>
 #include <stddef.h>
 
-LOG_MODULE_REGISTER(ocre_common, LOG_LEVEL_DBG);
+LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
 #ifdef CONFIG_OCRE_GPIO
 #include "../ocre_gpio/ocre_gpio.h"
