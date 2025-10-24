@@ -44,6 +44,14 @@ LOG_MODULE_REGISTER(ocre_common, LOG_LEVEL_DBG);
 
 #include "ocre_common.h"
 
+typedef struct module_node {
+    ocre_module_context_t ctx;
+    core_snode_t node;
+} module_node_t;
+
+static core_slist_t module_registry;
+static core_mutex_t registry_mutex;
+
 /* Platform-specific abstractions */
 #ifdef __ZEPHYR__
 
@@ -55,14 +63,6 @@ char *ocre_event_queue_buffer_ptr = ocre_event_queue_buffer;
 K_MSGQ_DEFINE(ocre_event_queue, sizeof(ocre_event_t), SIZE_OCRE_EVENT_BUFFER, 4);
 bool ocre_event_queue_initialized = false;
 struct k_spinlock ocre_event_queue_lock;
-
-typedef struct module_node {
-    ocre_module_context_t ctx;
-    core_snode_t node;
-} module_node_t;
-
-static core_slist_t module_registry;
-static core_mutex_t registry_mutex;
 
 /* Zephyr-specific macros */
 #define OCRE_UPTIME_GET()           k_uptime_get_32()
@@ -97,14 +97,6 @@ char *ocre_event_queue_buffer_ptr = ocre_event_queue_buffer;
 static posix_msgq_t ocre_event_queue;
 bool ocre_event_queue_initialized = false;
 static posix_spinlock_t ocre_event_queue_lock;
-
-typedef struct module_node {
-    ocre_module_context_t ctx;
-    core_snode_t node;
-} module_node_t;
-
-static core_slist_t module_registry;
-static core_mutex_t registry_mutex;
 
 /* POSIX-specific macros */
 #define OCRE_UPTIME_GET()           posix_uptime_get()
@@ -254,21 +246,21 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
     int ret;
     
 #ifdef __ZEPHYR__
-    k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
+    k_spinlock_key_t key = OCRE_SPINLOCK_LOCK(&ocre_event_queue_lock);
     ret = k_msgq_peek(&ocre_event_queue, &event);
     if (ret != 0) {
-        k_spin_unlock(&ocre_event_queue_lock, key);
+        OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
         return -ENOMSG;
     }
     
     if (event.owner != module_inst) {
-        k_spin_unlock(&ocre_event_queue_lock, key);
+        OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
         return -EPERM;
     }
 
     ret = k_msgq_get(&ocre_event_queue, &event, K_FOREVER);
     if (ret != 0) {
-        k_spin_unlock(&ocre_event_queue_lock, key);
+        OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
         return -ENOENT;
     }
 #else /* POSIX */
@@ -341,7 +333,7 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
         */
         default: {
 #ifdef __ZEPHYR__
-            k_spin_unlock(&ocre_event_queue_lock, key);
+            OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
 #else
             OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
 #endif
@@ -350,7 +342,7 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
         }
     }
 #ifdef __ZEPHYR__
-    k_spin_unlock(&ocre_event_queue_lock, key);
+    OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
 #else
     OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
 #endif
@@ -530,20 +522,6 @@ ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst) {
     
     int count = 0;
     
-#ifdef __ZEPHYR__
-    core_mutex_lock(&registry_mutex);
-    for (core_snode_t *current = module_registry.head; current != NULL; current = current->next) {
-        module_node_t *node = (module_node_t *)((char *)current - offsetof(module_node_t, node));
-        LOG_DBG("  Registry entry %d: %p", count++, (void *)node->ctx.inst);
-        if (node->ctx.inst == module_inst) {
-            node->ctx.last_activity = k_uptime_get_32();
-            core_mutex_unlock(&registry_mutex);
-            LOG_DBG("Found module context for %p", (void *)module_inst);
-            return &node->ctx;
-        }
-    }
-    core_mutex_unlock(&registry_mutex);
-#else
     core_mutex_lock(&registry_mutex);
     for (core_snode_t *current = module_registry.head; current != NULL; current = current->next) {
         module_node_t *node = (module_node_t *)((char *)current - offsetof(module_node_t, node));
@@ -556,7 +534,6 @@ ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst) {
         }
     }
     core_mutex_unlock(&registry_mutex);
-#endif
     
     LOG_ERR("Module context not found for %p", (void *)module_inst);
     return NULL;
