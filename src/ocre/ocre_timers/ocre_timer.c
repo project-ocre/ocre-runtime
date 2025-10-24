@@ -20,33 +20,17 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 /* Timer type definition */
 typedef uint32_t ocre_timer_t;
 
-/* Platform-specific timer structures */
-#ifdef __ZEPHYR__
-// Compact timer structure for Zephyr
+/* Unified timer structure using core_timer API */
 typedef struct {
     uint32_t in_use: 1;
     uint32_t id: 8;        // Up to 256 timers
     uint32_t interval: 16; // Up to 65s intervals
     uint32_t periodic: 1;
-    struct k_timer timer; 
+    uint32_t running: 1;   // Track if timer is currently running
+    uint32_t start_time;   // Start time for remaining time calculations
+    core_timer_t timer;    // Unified core timer
     wasm_module_inst_t owner;
 } ocre_timer_internal;
-
-#else /* POSIX */
-// POSIX timer structure
-typedef struct {
-    uint32_t in_use: 1;
-    uint32_t id: 8;        // Up to 256 timers
-    uint32_t interval: 16; // Up to 65s intervals
-    uint32_t periodic: 1;
-    timer_t timer;
-    pthread_t thread;
-    bool thread_running;
-    wasm_module_inst_t owner;
-} ocre_timer_internal;
-
-/* POSIX timer thread function - not used currently */
-#endif
 
 #ifndef CONFIG_MAX_TIMER
 #define CONFIG_MAX_TIMERS 5
@@ -56,12 +40,7 @@ typedef struct {
 static ocre_timer_internal timers[CONFIG_MAX_TIMERS];
 static bool timer_system_initialized = false;
 
-#ifdef __ZEPHYR__
-static void timer_callback_wrapper(struct k_timer *timer);
-#else
-static void posix_timer_signal_handler(int sig, siginfo_t *si, void *uc);
-static void posix_send_timer_event(int timer_id);
-#endif
+static void unified_timer_callback(void *user_data);
 
 void ocre_timer_init(void) {
     if (timer_system_initialized) {
@@ -73,18 +52,6 @@ void ocre_timer_init(void) {
         LOG_ERR("Failed to initialize common subsystem");
         return;
     }
-
-#ifndef __ZEPHYR__
-    // Setup POSIX signal handler for timer callbacks
-    struct sigaction sa;
-    sa.sa_flags = SA_SIGINFO;
-    sa.sa_sigaction = posix_timer_signal_handler;
-    sigemptyset(&sa.sa_mask);
-    if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        LOG_ERR("Failed to setup POSIX timer signal handler");
-        return;
-    }
-#endif
 
     ocre_register_cleanup_handler(OCRE_RESOURCE_TYPE_TIMER, ocre_timer_cleanup_container);
     timer_system_initialized = true;
@@ -108,22 +75,12 @@ int ocre_timer_create(wasm_exec_env_t exec_env, int id) {
     timer->owner = module;
     timer->in_use = 1;
     
-#ifdef __ZEPHYR__
-    k_timer_init(&timer->timer, timer_callback_wrapper, NULL);
-#else
-    struct sigevent sev;
-    memset(&sev, 0, sizeof(sev));
-    sev.sigev_notify = SIGEV_SIGNAL;
-    sev.sigev_signo = SIGALRM;
-    sev.sigev_value.sival_int = id;
-    
-    if (timer_create(CLOCK_REALTIME, &sev, &timer->timer) == -1) {
-        LOG_ERR("Failed to create POSIX timer %d", id);
+    // Initialize unified core timer
+    if (core_timer_init(&timer->timer, unified_timer_callback, timer) != 0) {
+        LOG_ERR("Failed to initialize core timer %d", id);
         timer->in_use = 0;
         return -EINVAL;
     }
-    timer->thread_running = false;
-#endif
     
     ocre_increment_resource_count(module, OCRE_RESOURCE_TYPE_TIMER);
     LOG_INF("Created timer %d for module %p", id, (void *)module);
@@ -143,17 +100,11 @@ int ocre_timer_delete(wasm_exec_env_t exec_env, ocre_timer_t id) {
         return -EINVAL;
     }
     
-#ifdef __ZEPHYR__
-    k_timer_stop(&timer->timer);
-#else
-    timer_delete(timer->timer);
-    if (timer->thread_running) {
-        pthread_cancel(timer->thread);
-        timer->thread_running = false;
-    }
-#endif
+    // Stop unified core timer
+    core_timer_stop(&timer->timer);
     
     timer->in_use = 0;
+    timer->running = 0;
     timer->owner = NULL;
     ocre_decrement_resource_count(module, OCRE_RESOURCE_TYPE_TIMER);
     LOG_INF("Deleted timer %d", id);
@@ -180,29 +131,16 @@ int ocre_timer_start(wasm_exec_env_t exec_env, ocre_timer_t id, int interval, in
 
     timer->interval = interval;
     timer->periodic = is_periodic;
+    timer->start_time = core_uptime_get();
+    timer->running = 1;
     
-#ifdef __ZEPHYR__
-    k_timeout_t duration = K_MSEC(interval);
-    k_timeout_t period = is_periodic ? duration : K_NO_WAIT;
-    k_timer_start(&timer->timer, duration, period);
-#else
-    struct itimerspec its;
-    its.it_value.tv_sec = interval / 1000;
-    its.it_value.tv_nsec = (interval % 1000) * 1000000;
-    
-    if (is_periodic) {
-        its.it_interval.tv_sec = its.it_value.tv_sec;
-        its.it_interval.tv_nsec = its.it_value.tv_nsec;
-    } else {
-        its.it_interval.tv_sec = 0;
-        its.it_interval.tv_nsec = 0;
-    }
-    
-    if (timer_settime(timer->timer, 0, &its, NULL) == -1) {
-        LOG_ERR("Failed to start POSIX timer %d", id);
+    // Start unified core timer
+    int period_ms = is_periodic ? interval : 0;
+    if (core_timer_start(&timer->timer, interval, period_ms) != 0) {
+        LOG_ERR("Failed to start core timer %d", id);
+        timer->running = 0;
         return -EINVAL;
     }
-#endif
     
     LOG_INF("Started timer %d with interval %dms, periodic=%d", id, interval, is_periodic);
     return 0;
@@ -221,13 +159,9 @@ int ocre_timer_stop(wasm_exec_env_t exec_env, ocre_timer_t id) {
         return -EINVAL;
     }
     
-#ifdef __ZEPHYR__
-    k_timer_stop(&timer->timer);
-#else
-    struct itimerspec its;
-    memset(&its, 0, sizeof(its));
-    timer_settime(timer->timer, 0, &its, NULL);
-#endif
+    // Stop unified core timer
+    core_timer_stop(&timer->timer);
+    timer->running = 0;
     
     LOG_INF("Stopped timer %d", id);
     return 0;
@@ -247,16 +181,17 @@ int ocre_timer_get_remaining(wasm_exec_env_t exec_env, ocre_timer_t id) {
     }
     
     int remaining;
-#ifdef __ZEPHYR__
-    remaining = k_ticks_to_ms_floor32(k_timer_remaining_ticks(&timer->timer));
-#else
-    struct itimerspec its;
-    if (timer_gettime(timer->timer, &its) == -1) {
-        LOG_ERR("Failed to get remaining time for timer %d", id);
-        return -EINVAL;
+    if (!timer->running) {
+        remaining = 0;
+    } else {
+        uint32_t current_time = core_uptime_get();
+        uint32_t elapsed = current_time - timer->start_time;
+        if (elapsed >= timer->interval) {
+            remaining = 0;  // Timer should have expired
+        } else {
+            remaining = timer->interval - elapsed;
+        }
     }
-    remaining = its.it_value.tv_sec * 1000 + its.it_value.tv_nsec / 1000000;
-#endif
     
     LOG_INF("Timer %d remaining time: %dms", id, remaining);
     return remaining;
@@ -270,16 +205,10 @@ void ocre_timer_cleanup_container(wasm_module_inst_t module_inst) {
 
     for (int i = 0; i < CONFIG_MAX_TIMERS; i++) {
         if (timers[i].in_use && timers[i].owner == module_inst) {
-#ifdef __ZEPHYR__
-            k_timer_stop(&timers[i].timer);
-#else
-            timer_delete(timers[i].timer);
-            if (timers[i].thread_running) {
-                pthread_cancel(timers[i].thread);
-                timers[i].thread_running = false;
-            }
-#endif
+            // Stop unified core timer
+            core_timer_stop(&timers[i].timer);
             timers[i].in_use = 0;
+            timers[i].running = 0;
             timers[i].owner = NULL;
             ocre_decrement_resource_count(module_inst, OCRE_RESOURCE_TYPE_TIMER);
             LOG_INF("Cleaned up timer %d for module %p", i + 1, (void *)module_inst);
@@ -288,74 +217,42 @@ void ocre_timer_cleanup_container(wasm_module_inst_t module_inst) {
     LOG_INF("Cleaned up timer resources for module %p", (void *)module_inst);
 }
 
-#ifdef __ZEPHYR__
-static void timer_callback_wrapper(struct k_timer *timer) {
-    if (!timer_system_initialized || !common_initialized || !ocre_event_queue_initialized) {
-        LOG_ERR("Timer, common, or event queue not initialized, skipping callback");
-        return;
-    }
-    if (!timer) {
-        LOG_ERR("Null timer pointer in callback");
-        return;
-    }
-    LOG_DBG("Timer callback for timer %p", (void *)timer);
-    LOG_DBG("ocre_event_queue at %p", (void *)&ocre_event_queue);
-    for (int i = 0; i < CONFIG_MAX_TIMERS; i++) {
-        if (timers[i].in_use && &timers[i].timer == timer && timers[i].owner) {
-            ocre_event_t event;
-            event.type = OCRE_RESOURCE_TYPE_TIMER;
-            event.data.timer_event.timer_id = timers[i].id;
-            event.owner = timers[i].owner;
-
-            LOG_DBG("Creating timer event: type=%d, id=%d, for owner %p", event.type, event.data.timer_event.timer_id,
-                    (void *)timers[i].owner);
-            core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
-            if (core_eventq_put(&ocre_event_queue, &event) != 0) {
-                LOG_ERR("Failed to queue timer event for timer %d", timers[i].id);
-            } else {
-                LOG_DBG("Queued timer event for timer %d", timers[i].id);
-            }
-            core_spinlock_unlock(&ocre_event_queue_lock, key);
-        }
-    }
-}
-
-#else /* POSIX */
-
-static void posix_timer_signal_handler(int sig, siginfo_t *si, void *uc) {
-    (void)sig;
-    (void)uc;
-    if (si && si->si_value.sival_int > 0 && si->si_value.sival_int <= CONFIG_MAX_TIMERS) {
-        posix_send_timer_event(si->si_value.sival_int);
-    }
-}
-
-static void posix_send_timer_event(int timer_id) {
+/* Unified timer callback using core_timer API */
+static void unified_timer_callback(void *user_data) {
     if (!timer_system_initialized || !common_initialized || !ocre_event_queue_initialized) {
         LOG_ERR("Timer, common, or event queue not initialized, skipping callback");
         return;
     }
     
-    int index = timer_id - 1;
-    if (index < 0 || index >= CONFIG_MAX_TIMERS || !timers[index].in_use) {
-        LOG_ERR("Invalid timer ID %d in callback", timer_id);
+    ocre_timer_internal *timer = (ocre_timer_internal *)user_data;
+    if (!timer || !timer->in_use || !timer->owner) {
+        LOG_ERR("Invalid timer in callback: %p", (void *)timer);
         return;
     }
     
+    LOG_DBG("Timer callback for timer %d", timer->id);
+    
+    // For non-periodic timers, mark as not running
+    if (!timer->periodic) {
+        timer->running = 0;
+    } else {
+        // For periodic timers, update start time for next cycle
+        timer->start_time = core_uptime_get();
+    }
+    
+    // Create and queue timer event
     ocre_event_t event;
     event.type = OCRE_RESOURCE_TYPE_TIMER;
-    event.data.timer_event.timer_id = timer_id;
-    event.owner = timers[index].owner;
+    event.data.timer_event.timer_id = timer->id;
+    event.owner = timer->owner;
     
-    LOG_DBG("Creating timer event: type=%d, id=%d, for owner %p", event.type, timer_id, (void *)timers[index].owner);
+    LOG_DBG("Creating timer event: type=%d, id=%d, for owner %p", event.type, timer->id, (void *)timer->owner);
     
     core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
     if (core_eventq_put(&ocre_event_queue, &event) != 0) {
-        LOG_ERR("Failed to queue timer event for timer %d", timer_id);
+        LOG_ERR("Failed to queue timer event for timer %d", timer->id);
     } else {
-        LOG_DBG("Queued timer event for timer %d", timer_id);
+        LOG_DBG("Queued timer event for timer %d", timer->id);
     }
     core_spinlock_unlock(&ocre_event_queue_lock, key);
 }
-
-#endif
