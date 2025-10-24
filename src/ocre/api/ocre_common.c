@@ -217,13 +217,7 @@ int ocre_common_init(void) {
 #endif
     initialized = true;
     common_initialized = true;
-    
-    /* Initialize timer system as part of common initialization */
-    ocre_timer_init();
-    
-    /* Initialize messaging system as part of common initialization */
-    ocre_messaging_init();
-    
+            
     LOG_INF("OCRE common initialized successfully");
     return 0;
 }
