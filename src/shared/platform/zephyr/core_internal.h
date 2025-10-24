@@ -120,6 +120,10 @@ struct core_timer {
     void *user_data;                /*!< User data for the callback */
 };
 
+/* Generic singly-linked list iteration macros */
+#define CORE_SLIST_FOR_EACH_CONTAINER_SAFE SYS_SLIST_FOR_EACH_CONTAINER_SAFE
+#define CORE_SLIST_FOR_EACH_CONTAINER SYS_SLIST_FOR_EACH_CONTAINER
+
 /**
  * @brief Structure representing a node in a singly-linked list.
  */

@@ -176,17 +176,6 @@ static int posix_msgq_put(posix_msgq_t *msgq, const ocre_event_t *event) {
     return 0;
 }
 
-#define SYS_SLIST_FOR_EACH_CONTAINER_SAFE(list, var, tmp, member) \
-    for (var = (module_node_t *)((list)->head), \
-         tmp = var ? (module_node_t *)(var->node.next) : NULL; \
-         var; \
-         var = tmp, tmp = tmp ? (module_node_t *)(tmp->node.next) : NULL)
-
-#define SYS_SLIST_FOR_EACH_CONTAINER(list, var, member) \
-    for (var = (module_node_t *)((list)->head); \
-         var; \
-         var = (module_node_t *)(var->node.next))
-
 #endif /* __ZEPHYR__ */
 
 static struct cleanup_handler {
@@ -455,15 +444,9 @@ int ocre_register_module(wasm_module_inst_t module_inst) {
     memset(node->ctx.resource_count, 0, sizeof(node->ctx.resource_count));
     memset(node->ctx.dispatchers, 0, sizeof(node->ctx.dispatchers));
     
-#ifdef __ZEPHYR__
     core_mutex_lock(&registry_mutex);
     core_slist_append(&module_registry, &node->node);
     core_mutex_unlock(&registry_mutex);
-#else
-    core_mutex_lock(&registry_mutex);
-    core_slist_append(&module_registry, &node->node);
-    core_mutex_unlock(&registry_mutex);
-#endif
     
     LOG_INF("Module registered: %p", (void *)module_inst);
     return 0;
@@ -475,27 +458,10 @@ void ocre_unregister_module(wasm_module_inst_t module_inst) {
         return;
     }
     
-#ifdef __ZEPHYR__
-    core_mutex_lock(&registry_mutex);
-    module_node_t *node, *tmp;
-    SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&module_registry, node, tmp, node) {
-        if (node->ctx.inst == module_inst) {
-            ocre_cleanup_module_resources(module_inst);
-            if (node->ctx.exec_env) {
-                wasm_runtime_destroy_exec_env(node->ctx.exec_env);
-            }
-            core_slist_remove(&module_registry, NULL, &node->node);
-            k_free(node);
-            LOG_INF("Module unregistered: %p", (void *)module_inst);
-            break;
-        }
-    }
-    core_mutex_unlock(&registry_mutex);
-#else
     core_mutex_lock(&registry_mutex);
     module_node_t *node, *tmp;
     module_node_t *prev = NULL;
-    SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&module_registry, node, tmp, node) {
+    CORE_SLIST_FOR_EACH_CONTAINER_SAFE(&module_registry, node, tmp, node) {
         if (node->ctx.inst == module_inst) {
             ocre_cleanup_module_resources(module_inst);
             if (node->ctx.exec_env) {
@@ -509,7 +475,6 @@ void ocre_unregister_module(wasm_module_inst_t module_inst) {
         prev = node;
     }
     core_mutex_unlock(&registry_mutex);
-#endif
 }
 
 ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst) {

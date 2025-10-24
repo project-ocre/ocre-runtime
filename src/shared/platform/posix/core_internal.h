@@ -157,6 +157,21 @@ struct core_timer {
     void *user_data;                /*!< User data for the callback */
 };
 
+/* Generic singly-linked list iteration macros */
+#define CONTAINER_OF(ptr, type, member) \
+    ((type *)((char *)(ptr) - offsetof(type, member)))
+
+#define CORE_SLIST_FOR_EACH_CONTAINER_SAFE(list, var, tmp, member) \
+    for (var = (list)->head ? CONTAINER_OF((list)->head, __typeof__(*var), member) : NULL, \
+         tmp = var ? (var->member.next ? CONTAINER_OF(var->member.next, __typeof__(*var), member) : NULL) : NULL; \
+         var; \
+         var = tmp, tmp = tmp ? (tmp->member.next ? CONTAINER_OF(tmp->member.next, __typeof__(*var), member) : NULL) : NULL)
+
+#define CORE_SLIST_FOR_EACH_CONTAINER(list, var, member) \
+    for (var = (list)->head ? CONTAINER_OF((list)->head, __typeof__(*var), member) : NULL; \
+         var; \
+         var = var->member.next ? CONTAINER_OF(var->member.next, __typeof__(*var), member) : NULL)
+
 /**
  * @brief Structure representing a node in a singly-linked list.
  */
@@ -195,6 +210,5 @@ void core_slist_append(core_slist_t *list, core_snode_t *node);
  * @param node Pointer to the node to remove.
  */
 void core_slist_remove(core_slist_t *list, core_snode_t *prev, core_snode_t *node);
-
 
 #endif /* OCRE_CORE_INTERNAL_H */
