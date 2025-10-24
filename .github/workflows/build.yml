@@ -292,6 +292,12 @@ jobs:
           echo "=== Build app ==="
           ./build.sh -t l 
 
+      - name: Test .wasm file
+        run: |
+          ls -lah
+          ls -lah $GITHUB_WORKSPACE
+          file $GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm
+
       - name: Run Sample ${{ matrix.sample.name }}
         working-directory: application/build
         run: |
@@ -376,8 +382,6 @@ jobs:
           west build --pristine -b native_sim ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
             -DOCRE_INPUT_FILE=$WASM_FILE
-        env:
-          WASI_SDK_PATH: /opt/wasi-sdk
 
       - name: Run Sample ${{ matrix.sample.name }}
         working-directory: build/zephyr/
@@ -436,36 +440,17 @@ jobs:
         with:
           path: application
 
-      - name: Install tools (xxd + WASI SDK)
+      - name: Update Submodules
+        working-directory: application
+        run: |
+          git submodule update --init --recursive
+
+      - name: Install tools 
         run: |
           sudo apt-get update
           sudo apt-get install -y wget build-essential
-          wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
-          tar -xvf vim.tar.gz
-          cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
-
-          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
-          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
-          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
-
-      - name: Update Submodules
-        working-directory: application
-        run: |
-          git submodule update --init --recursive
-
-      - name: Setup Zephyr project
-        uses: zephyrproject-rtos/action-zephyr-setup@v1
-        with:
-          app-path: application
-          sdk-version: 0.16.8
-
-      - name: Update Submodules
-        working-directory: application
-        run: |
-          git submodule update --init --recursive
-
 
       - name: Download Zephyr build artifact(b_u585i_iot02a)
         if: runner.environment == 'self-hosted'
@@ -476,6 +461,7 @@ jobs:
 
       - name: Flash b_u585i_iot02a
         if: runner.environment == 'self-hosted'
+        working-directory: application
         run: |
           WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server.wasm
           west build --pristine -b b_u585i_iot02a ./application -d build -- \
