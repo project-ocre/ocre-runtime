@@ -62,15 +62,15 @@ typedef struct module_node {
 } module_node_t;
 
 static sys_slist_t module_registry;
-static struct k_mutex registry_mutex;
+static core_mutex_t registry_mutex;
 
 /* Zephyr-specific macros */
-#define OCRE_MALLOC(size)           k_malloc(size)
-#define OCRE_FREE(ptr)              k_free(ptr)
+#define OCRE_MALLOC(size)           core_malloc(size)
+#define OCRE_FREE(ptr)              core_free(ptr)
 #define OCRE_UPTIME_GET()           k_uptime_get_32()
-#define OCRE_MUTEX_LOCK(mutex)      k_mutex_lock(mutex, K_FOREVER)
-#define OCRE_MUTEX_UNLOCK(mutex)    k_mutex_unlock(mutex)
-#define OCRE_MUTEX_INIT(mutex)      k_mutex_init(mutex)
+#define OCRE_MUTEX_LOCK(mutex)      core_mutex_lock(mutex)
+#define OCRE_MUTEX_UNLOCK(mutex)    core_mutex_unlock(mutex)
+#define OCRE_MUTEX_INIT(mutex)      core_mutex_init(mutex)
 #define OCRE_SPINLOCK_LOCK(lock)    k_spin_lock(lock)
 #define OCRE_SPINLOCK_UNLOCK(lock, key) k_spin_unlock(lock, key)
 
@@ -119,15 +119,15 @@ typedef struct module_node {
 } module_node_t;
 
 static posix_slist_t module_registry;
-static pthread_mutex_t registry_mutex;
+static core_mutex_t registry_mutex;
 
 /* POSIX-specific macros */
-#define OCRE_MALLOC(size)           malloc(size)
-#define OCRE_FREE(ptr)              free(ptr)
+#define OCRE_MALLOC(size)           core_malloc(size)
+#define OCRE_FREE(ptr)              core_free(ptr)
 #define OCRE_UPTIME_GET()           posix_uptime_get()
-#define OCRE_MUTEX_LOCK(mutex)      pthread_mutex_lock(mutex)
-#define OCRE_MUTEX_UNLOCK(mutex)    pthread_mutex_unlock(mutex)
-#define OCRE_MUTEX_INIT(mutex)      pthread_mutex_init(mutex, NULL)
+#define OCRE_MUTEX_LOCK(mutex)      core_mutex_lock(mutex)
+#define OCRE_MUTEX_UNLOCK(mutex)    core_mutex_unlock(mutex)
+#define OCRE_MUTEX_INIT(mutex)      core_mutex_init(mutex)
 #define OCRE_SPINLOCK_LOCK(lock)    posix_spinlock_lock(lock)
 #define OCRE_SPINLOCK_UNLOCK(lock, key) posix_spinlock_unlock(lock, key)
 
@@ -411,7 +411,7 @@ int ocre_common_init(void) {
     }
     
 #ifdef __ZEPHYR__
-    k_mutex_init(&registry_mutex);
+    OCRE_MUTEX_INIT(&registry_mutex);
     sys_slist_init(&module_registry);
     if ((uintptr_t)ocre_event_queue_buffer_ptr % 4 != 0) {
         LOG_ERR("ocre_event_queue_buffer misaligned: %p", (void *)ocre_event_queue_buffer_ptr);
@@ -510,9 +510,9 @@ int ocre_register_module(wasm_module_inst_t module_inst) {
     memset(node->ctx.dispatchers, 0, sizeof(node->ctx.dispatchers));
     
 #ifdef __ZEPHYR__
-    k_mutex_lock(&registry_mutex, K_FOREVER);
+    OCRE_MUTEX_LOCK(&registry_mutex);
     sys_slist_append(&module_registry, &node->node);
-    k_mutex_unlock(&registry_mutex);
+    OCRE_MUTEX_UNLOCK(&registry_mutex);
 #else
     OCRE_MUTEX_LOCK(&registry_mutex);
     posix_slist_append(&module_registry, &node->node);
@@ -530,7 +530,7 @@ void ocre_unregister_module(wasm_module_inst_t module_inst) {
     }
     
 #ifdef __ZEPHYR__
-    k_mutex_lock(&registry_mutex, K_FOREVER);
+    OCRE_MUTEX_LOCK(&registry_mutex);
     module_node_t *node, *tmp;
     SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&module_registry, node, tmp, node) {
         if (node->ctx.inst == module_inst) {
@@ -544,7 +544,7 @@ void ocre_unregister_module(wasm_module_inst_t module_inst) {
             break;
         }
     }
-    k_mutex_unlock(&registry_mutex);
+    OCRE_MUTEX_UNLOCK(&registry_mutex);
 #else
     OCRE_MUTEX_LOCK(&registry_mutex);
     module_node_t *node, *tmp;
@@ -577,18 +577,18 @@ ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst) {
     int count = 0;
     
 #ifdef __ZEPHYR__
-    k_mutex_lock(&registry_mutex, K_FOREVER);
+    OCRE_MUTEX_LOCK(&registry_mutex);
     for (sys_snode_t *current = module_registry.head; current != NULL; current = current->next) {
         module_node_t *node = (module_node_t *)((char *)current - offsetof(module_node_t, node));
         LOG_DBG("  Registry entry %d: %p", count++, (void *)node->ctx.inst);
         if (node->ctx.inst == module_inst) {
             node->ctx.last_activity = k_uptime_get_32();
-            k_mutex_unlock(&registry_mutex);
+            OCRE_MUTEX_UNLOCK(&registry_mutex);
             LOG_DBG("Found module context for %p", (void *)module_inst);
             return &node->ctx;
         }
     }
-    k_mutex_unlock(&registry_mutex);
+    OCRE_MUTEX_UNLOCK(&registry_mutex);
 #else
     OCRE_MUTEX_LOCK(&registry_mutex);
     for (posix_snode_t *current = module_registry.head; current != NULL; current = current->next) {
@@ -636,17 +636,9 @@ int ocre_register_dispatcher(wasm_exec_env_t exec_env, ocre_resource_type_t type
         LOG_ERR("Function %s not found in module %p", function_name, (void *)module_inst);
         return -EINVAL;
     }
-#ifdef __ZEPHYR__
-    k_mutex_lock(&registry_mutex, K_FOREVER);
-#else
     OCRE_MUTEX_LOCK(&registry_mutex);
-#endif
     ctx->dispatchers[type] = func;
-#ifdef __ZEPHYR__
-    k_mutex_unlock(&registry_mutex);
-#else
     OCRE_MUTEX_UNLOCK(&registry_mutex);
-#endif
     LOG_INF("Registered dispatcher for type %d: %s", type, function_name);
     return 0;
 }
@@ -659,17 +651,9 @@ uint32_t ocre_get_resource_count(wasm_module_inst_t module_inst, ocre_resource_t
 void ocre_increment_resource_count(wasm_module_inst_t module_inst, ocre_resource_type_t type) {
     ocre_module_context_t *ctx = ocre_get_module_context(module_inst);
     if (ctx && type < OCRE_RESOURCE_TYPE_COUNT) {
-#ifdef __ZEPHYR__
-        k_mutex_lock(&registry_mutex, K_FOREVER);
-#else
         OCRE_MUTEX_LOCK(&registry_mutex);
-#endif
         ctx->resource_count[type]++;
-#ifdef __ZEPHYR__
-        k_mutex_unlock(&registry_mutex);
-#else
         OCRE_MUTEX_UNLOCK(&registry_mutex);
-#endif
         LOG_INF("Incremented resource count: type=%d, count=%d", type, ctx->resource_count[type]);
     }
 }
@@ -677,17 +661,9 @@ void ocre_increment_resource_count(wasm_module_inst_t module_inst, ocre_resource
 void ocre_decrement_resource_count(wasm_module_inst_t module_inst, ocre_resource_type_t type) {
     ocre_module_context_t *ctx = ocre_get_module_context(module_inst);
     if (ctx && type < OCRE_RESOURCE_TYPE_COUNT && ctx->resource_count[type] > 0) {
-#ifdef __ZEPHYR__
-        k_mutex_lock(&registry_mutex, K_FOREVER);
-#else
         OCRE_MUTEX_LOCK(&registry_mutex);
-#endif
         ctx->resource_count[type]--;
-#ifdef __ZEPHYR__
-        k_mutex_unlock(&registry_mutex);
-#else
         OCRE_MUTEX_UNLOCK(&registry_mutex);
-#endif
         LOG_INF("Decremented resource count: type=%d, count=%d", type, ctx->resource_count[type]);
     }
 }
@@ -1073,11 +1049,7 @@ typedef struct {
 typedef struct {
     ocre_messaging_subscription_t subscriptions[CONFIG_MESSAGING_MAX_SUBSCRIPTIONS];
     uint16_t subscription_count;
-#ifdef __ZEPHYR__
-    struct k_mutex mutex;
-#else
-    pthread_mutex_t mutex;
-#endif
+    core_mutex_t mutex;
 } ocre_messaging_system_t;
 
 static ocre_messaging_system_t messaging_system = {0};
@@ -1092,11 +1064,7 @@ int ocre_messaging_init(void) {
     
     memset(&messaging_system, 0, sizeof(ocre_messaging_system_t));
     
-#ifdef __ZEPHYR__
-    k_mutex_init(&messaging_system.mutex);
-#else
-    pthread_mutex_init(&messaging_system.mutex, NULL);
-#endif
+    core_mutex_init(&messaging_system.mutex);
     
     ocre_register_cleanup_handler(OCRE_RESOURCE_TYPE_MESSAGING, ocre_messaging_cleanup_container);
     messaging_system_initialized = true;
@@ -1110,11 +1078,7 @@ void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst) {
         return;
     }
     
-#ifdef __ZEPHYR__
-    k_mutex_lock(&messaging_system.mutex, K_FOREVER);
-#else
     OCRE_MUTEX_LOCK(&messaging_system.mutex);
-#endif
     
     for (int i = 0; i < CONFIG_MESSAGING_MAX_SUBSCRIPTIONS; i++) {
         if (messaging_system.subscriptions[i].is_active && 
@@ -1128,11 +1092,7 @@ void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst) {
         }
     }
     
-#ifdef __ZEPHYR__
-    k_mutex_unlock(&messaging_system.mutex);
-#else
     OCRE_MUTEX_UNLOCK(&messaging_system.mutex);
-#endif
     
     LOG_INF("Cleaned up messaging resources for module %p", (void *)module_inst);
 }
@@ -1163,11 +1123,7 @@ int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic) {
         return -EINVAL;
     }
     
-#ifdef __ZEPHYR__
-    k_mutex_lock(&messaging_system.mutex, K_FOREVER);
-#else
     OCRE_MUTEX_LOCK(&messaging_system.mutex);
-#endif
     
     // Check if already subscribed
     for (int i = 0; i < CONFIG_MESSAGING_MAX_SUBSCRIPTIONS; i++) {
@@ -1175,11 +1131,7 @@ int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic) {
             messaging_system.subscriptions[i].module_inst == module_inst &&
             strcmp(messaging_system.subscriptions[i].topic, (char *)topic) == 0) {
             LOG_INF("Already subscribed to topic: %s", (char *)topic);
-#ifdef __ZEPHYR__
-            k_mutex_unlock(&messaging_system.mutex);
-#else
             OCRE_MUTEX_UNLOCK(&messaging_system.mutex);
-#endif
             return 0;
         }
     }
@@ -1194,20 +1146,12 @@ int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic) {
             messaging_system.subscription_count++;
             ocre_increment_resource_count(module_inst, OCRE_RESOURCE_TYPE_MESSAGING);
             LOG_INF("Subscribed to topic: %s, module: %p", (char *)topic, (void *)module_inst);
-#ifdef __ZEPHYR__
-            k_mutex_unlock(&messaging_system.mutex);
-#else
             OCRE_MUTEX_UNLOCK(&messaging_system.mutex);
-#endif
             return 0;
         }
     }
     
-#ifdef __ZEPHYR__
-    k_mutex_unlock(&messaging_system.mutex);
-#else
     OCRE_MUTEX_UNLOCK(&messaging_system.mutex);
-#endif
     
     LOG_ERR("No free subscription slots available");
     return -ENOMEM;
@@ -1244,11 +1188,7 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
     static uint32_t message_id = 0;
     bool message_sent = false;
     
-#ifdef __ZEPHYR__
-    k_mutex_lock(&messaging_system.mutex, K_FOREVER);
-#else
     OCRE_MUTEX_LOCK(&messaging_system.mutex);
-#endif
     
     // Find matching subscriptions
     for (int i = 0; i < CONFIG_MESSAGING_MAX_SUBSCRIPTIONS; i++) {
@@ -1335,11 +1275,7 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
 #endif
     }
     
-#ifdef __ZEPHYR__
-    k_mutex_unlock(&messaging_system.mutex);
-#else
     OCRE_MUTEX_UNLOCK(&messaging_system.mutex);
-#endif
     
     if (message_sent) {
         LOG_DBG("Published message: ID=%d, topic=%s, content_type=%s, payload_len=%d", 
