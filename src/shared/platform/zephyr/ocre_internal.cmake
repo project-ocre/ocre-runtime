@@ -106,7 +106,8 @@ if(DEFINED CONFIG_OCRE_GPIO)
 endif()
 
 if(CONFIG_OCRE_CONTAINER_MESSAGING)
-    list(APPEND lib_sources ${OCRE_ROOT_DIR}/src/ocre/ocre_messaging/ocre_messaging.c)
+    # Messaging functionality is now integrated into ocre_common.c
+    # list(APPEND lib_sources ${OCRE_ROOT_DIR}/src/ocre/ocre_messaging/ocre_messaging.c)
 endif()
 
 # Add all sources to the app target at once

@@ -40,7 +40,8 @@
 #endif
 
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
-#include "../ocre_messaging/ocre_messaging.h"
+/* Messaging functionality is now integrated into ocre_common.c */
+/* #include "../ocre_messaging/ocre_messaging.h" */
 #endif
 
 int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name) {

@@ -17,7 +17,7 @@
 #include <smf/smf.h>
 
 // Config macros
-//#define CONFIG_OCRE_CONTAINER_MESSAGING   /*!< Enable container messaging support */
+#define CONFIG_OCRE_CONTAINER_MESSAGING   /*!< Enable container messaging support */
 #define CONFIG_OCRE_NETWORKING            /*!< Enable networking support */
 #define CONFIG_OCRE_CONTAINER_FILESYSTEM
 #define CONFIG_OCRE_CONTAINER_WAMR_TERMINATION
