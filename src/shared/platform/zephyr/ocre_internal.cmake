@@ -89,10 +89,9 @@ set(lib_sources
 )
 
 # Conditionally add sources
-# Timer functionality is now integrated into ocre_common.c
-# if(CONFIG_OCRE_TIMER)
-#     list(APPEND lib_sources ${OCRE_ROOT_DIR}/src/ocre/ocre_timers/ocre_timer.c)
-# endif()
+if(CONFIG_OCRE_TIMER)
+    list(APPEND lib_sources ${OCRE_ROOT_DIR}/src/ocre/ocre_timers/ocre_timer.c)
+endif()
 
 if(CONFIG_OCRE_SENSORS)
     list(APPEND lib_sources ${OCRE_ROOT_DIR}/src/ocre/ocre_sensors/ocre_sensors.c)
