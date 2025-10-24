@@ -103,7 +103,7 @@ typedef struct module_node {
     posix_snode_t node;
 } module_node_t;
 
-static posix_slist_t module_registry;
+static core_slist_t module_registry;
 static core_mutex_t registry_mutex;
 
 /* POSIX-specific macros */
@@ -378,7 +378,7 @@ int ocre_common_init(void) {
     }
 #else /* POSIX */
     core_mutex_init(&registry_mutex);
-    posix_slist_init(&module_registry);
+    core_slist_init(&module_registry);
     if ((uintptr_t)ocre_event_queue_buffer_ptr % 4 != 0) {
         LOG_ERR("ocre_event_queue_buffer misaligned: %p", (void *)ocre_event_queue_buffer_ptr);
         return -EINVAL;
@@ -469,7 +469,7 @@ int ocre_register_module(wasm_module_inst_t module_inst) {
     core_mutex_unlock(&registry_mutex);
 #else
     core_mutex_lock(&registry_mutex);
-    posix_slist_append(&module_registry, &node->node);
+    core_slist_append(&module_registry, &node->node);
     core_mutex_unlock(&registry_mutex);
 #endif
     
@@ -509,7 +509,7 @@ void ocre_unregister_module(wasm_module_inst_t module_inst) {
             if (node->ctx.exec_env) {
                 wasm_runtime_destroy_exec_env(node->ctx.exec_env);
             }
-            posix_slist_remove(&module_registry, prev ? &prev->node : NULL, &node->node);
+            core_slist_remove(&module_registry, prev ? &prev->node : NULL, &node->node);
             core_free(node);
             LOG_INF("Module unregistered: %p", (void *)module_inst);
             break;
