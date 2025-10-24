@@ -21,6 +21,7 @@
 #define CONFIG_OCRE_NETWORKING            /*!< Enable networking support */
 #define CONFIG_OCRE_CONTAINER_FILESYSTEM
 #define CONFIG_OCRE_CONTAINER_WAMR_TERMINATION
+#define CONFIG_OCRE_TIMER
 
 // Base paths for the application
 #define OCRE_BASE_PATH "./ocre_data"           /*!< Base directory for Ocre resources */

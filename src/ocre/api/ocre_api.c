@@ -20,9 +20,10 @@
 
 #include "ocre_api.h"
 
-#ifdef CONFIG_OCRE_TIMER
-#include "../ocre_timers/ocre_timer.h"
-#endif
+// Timer functionality is now integrated into ocre_common.c
+// #ifdef CONFIG_OCRE_TIMER
+// #include "../ocre_timers/ocre_timer.h"
+// #endif
 
 #include "ocre/utils/utils.h"
 

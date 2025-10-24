@@ -7,9 +7,10 @@
 #include <ocre/ocre.h>
 #include "ocre_core_external.h"
 
-#ifdef CONFIG_OCRE_TIMER
-#include "ocre_timers/ocre_timer.h"
-#endif
+// Timer functionality is now integrated into ocre_common.c
+// #ifdef CONFIG_OCRE_TIMER
+// #include "ocre_timers/ocre_timer.h"
+// #endif
 #ifdef CONFIG_OCRE_GPIO
 #include "ocre_gpio/ocre_gpio.h"
 #endif

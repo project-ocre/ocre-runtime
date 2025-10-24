@@ -8,26 +8,38 @@
 #ifndef OCRE_COMMON_H
 #define OCRE_COMMON_H
 
+#include <wasm_export.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+/* Platform-specific includes */
+#ifdef CONFIG_ZEPHYR
 #include <zephyr/kernel.h>
 #include <zephyr/sys/slist.h>
-#include <wasm_export.h>
 #include "../ocre_messaging/ocre_messaging.h"
+#else
+#include <pthread.h>
+/* Forward declarations for POSIX messaging types */
+struct ocre_messaging_event;
+#endif
 
 #define OCRE_EVENT_THREAD_STACK_SIZE 2048
 #define OCRE_EVENT_THREAD_PRIORITY   5
 #define OCRE_WASM_STACK_SIZE         16384
 #define EVENT_THREAD_POOL_SIZE 0
 
-
 extern bool common_initialized;
 extern bool ocre_event_queue_initialized;
 extern __thread wasm_module_inst_t *current_module_tls;
-
-
-extern struct k_msgq ocre_event_queue;          // Defined in ocre_common.c
-extern bool ocre_event_queue_initialized;       // Defined in ocre_common.c
-extern struct k_spinlock ocre_event_queue_lock; // Defined in ocre_common.c
 extern char *ocre_event_queue_buffer_ptr;       // Defined in ocre_common.c
+
+/* Platform-specific external declarations */
+#ifdef CONFIG_ZEPHYR
+extern struct k_msgq ocre_event_queue;          // Defined in ocre_common.c
+extern struct k_spinlock ocre_event_queue_lock; // Defined in ocre_common.c
+#else
+/* POSIX equivalents will be defined in the .c file */
+#endif
 
 
 /**
@@ -204,5 +216,71 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
                    uint32_t state_offset, uint32_t extra_offset, uint32_t payload_len_offset);
 
 void ocre_common_shutdown(void);
+
+/* ========== OCRE TIMER FUNCTIONALITY ========== */
+
+#ifndef OCRE_TIMER_T_DEFINED
+#define OCRE_TIMER_T_DEFINED
+typedef uint32_t ocre_timer_t;
+#endif
+
+/**
+ * @brief Initialize the timer system.
+ */
+void ocre_timer_init(void);
+
+/**
+ * @brief Create a timer.
+ *
+ * @param exec_env WASM execution environment.
+ * @param id Timer ID.
+ * @return 0 on success, negative error code on failure.
+ */
+int ocre_timer_create(wasm_exec_env_t exec_env, int id);
+
+/**
+ * @brief Delete a timer.
+ *
+ * @param exec_env WASM execution environment.
+ * @param id Timer ID.
+ * @return 0 on success, negative error code on failure.
+ */
+int ocre_timer_delete(wasm_exec_env_t exec_env, ocre_timer_t id);
+
+/**
+ * @brief Start a timer.
+ *
+ * @param exec_env WASM execution environment.
+ * @param id Timer ID.
+ * @param interval Timer interval in milliseconds.
+ * @param is_periodic Whether the timer is periodic.
+ * @return 0 on success, negative error code on failure.
+ */
+int ocre_timer_start(wasm_exec_env_t exec_env, ocre_timer_t id, int interval, int is_periodic);
+
+/**
+ * @brief Stop a timer.
+ *
+ * @param exec_env WASM execution environment.
+ * @param id Timer ID.
+ * @return 0 on success, negative error code on failure.
+ */
+int ocre_timer_stop(wasm_exec_env_t exec_env, ocre_timer_t id);
+
+/**
+ * @brief Get remaining time for a timer.
+ *
+ * @param exec_env WASM execution environment.
+ * @param id Timer ID.
+ * @return Remaining time in milliseconds, or negative error code on failure.
+ */
+int ocre_timer_get_remaining(wasm_exec_env_t exec_env, ocre_timer_t id);
+
+/**
+ * @brief Cleanup timer resources for a module.
+ *
+ * @param module_inst WASM module instance.
+ */
+void ocre_timer_cleanup_container(wasm_module_inst_t module_inst);
 
 #endif /* OCRE_COMMON_H */
