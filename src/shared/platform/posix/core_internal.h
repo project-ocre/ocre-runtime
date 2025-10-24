@@ -157,4 +157,19 @@ struct core_timer {
     void *user_data;                /*!< User data for the callback */
 };
 
+/* POSIX simple linked list implementation */
+typedef struct posix_snode {
+    struct posix_snode *next;
+} posix_snode_t;
+
+typedef struct {
+    posix_snode_t *head;
+    posix_snode_t *tail;
+} posix_slist_t;
+
+void posix_slist_init(posix_slist_t *list);
+void posix_slist_append(posix_slist_t *list, posix_snode_t *node);
+void posix_slist_remove(posix_slist_t *list, posix_snode_t *prev, posix_snode_t *node);
+
+
 #endif /* OCRE_CORE_INTERNAL_H */
