@@ -12,13 +12,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "ocre_core_external.h"
+#include "../ocre_messaging/ocre_messaging.h"
 
 /* Platform-specific includes */
 #ifdef __ZEPHYR__
 #include <zephyr/kernel.h>
 #include <zephyr/sys/slist.h>
-/* Messaging functionality is now integrated into ocre_common.c */
-/* #include "../ocre_messaging/ocre_messaging.h" */
 #else
 #include <pthread.h>
 /* Forward declarations for POSIX messaging types */

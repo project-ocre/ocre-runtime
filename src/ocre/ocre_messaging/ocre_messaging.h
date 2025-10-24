@@ -26,49 +26,53 @@ typedef struct {
 } ocre_msg_t;
 
 /**
- * @brief Initialize the messaging system.
- *
- * @return 0 on success, negative error code on failure.
+ * @brief Initialize the OCRE messaging system.
  */
 int ocre_messaging_init(void);
 
 /**
- * @brief Subscribe to a topic.
+ * @brief Publish a message to the specified topic.
  *
  * @param exec_env WASM execution environment.
- * @param topic Topic to subscribe to.
- * @return 0 on success, negative error code on failure.
- */
-int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic);
-
-/**
- * @brief Publish a message to a topic.
- *
- * @param exec_env WASM execution environment.
- * @param topic Topic to publish to.
- * @param content_type Content type of the message.
- * @param payload Message payload.
- * @param payload_len Length of the payload.
+ * @param topic The name of the topic to publish to (pointer).
+ * @param content_type The content type of the message (e.g., MIME type, pointer).
+ * @param payload The message payload.
+ * @param payload_len The length of the payload.
  * @return 0 on success, negative error code on failure.
  */
 int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_type, void *payload, int payload_len);
 
 /**
- * @brief Free module event data.
+ * @brief Subscribe to messages on a specified topic.
  *
  * @param exec_env WASM execution environment.
- * @param topic_offset Topic offset in WASM memory.
- * @param content_offset Content type offset in WASM memory.
- * @param payload_offset Payload offset in WASM memory.
+ * @param topic The name of the topic to subscribe to (pointer).
  * @return 0 on success, negative error code on failure.
  */
-int ocre_messaging_free_module_event_data(wasm_exec_env_t exec_env, uint32_t topic_offset, uint32_t content_offset, uint32_t payload_offset);
+int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic);
 
 /**
- * @brief Cleanup messaging resources for a module.
+ * @brief Clean up messaging resources for a WASM module.
  *
- * @param module_inst WASM module instance.
+ * @param module_inst The WASM module instance to clean up.
  */
 void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst);
+
+/**
+ * @brief Frees allocated memory for a messaging event in the WASM module.
+ *
+ * This function releases the allocated memory for the topic, content-type, and payload
+ * associated with a messaging event received by the WASM module. It should be called
+ * after processing the message to prevent memory leaks.
+ *
+ * @param exec_env        WASM execution environment.
+ * @param topic_offset    Offset in WASM memory for the message topic.
+ * @param content_offset  Offset in WASM memory for the message content-type.
+ * @param payload_offset  Offset in WASM memory for the message payload.
+ *
+ * @return OCRE_SUCCESS on success, negative error code on failure.
+ */
+int ocre_messaging_free_module_event_data(wasm_exec_env_t exec_env, uint32_t topic_offset, uint32_t content_offset,
+                                           uint32_t payload_offset);
 
 #endif /* OCRE_MESSAGING_H */
