@@ -158,4 +158,12 @@ struct core_timer {
  */
 #define core_slist_remove sys_slist_remove
 
+/* Zephyr-specific macros */
+#define core_uptime_get          k_uptime_get_32
+#define core_spinlock_lock    k_spin_lock
+#define core_spinlock_unlock k_spin_unlock
+
+typedef struct k_spinlock core_spinlock_t;
+typedef k_spinlock_key_t core_spinlock_key_t;
+
 #endif

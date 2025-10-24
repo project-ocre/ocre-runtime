@@ -10,9 +10,11 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <pthread.h>
 #include <mqueue.h>
 #include <time.h>
+#include <signal.h>
 
 #include <smf/smf.h>
 
@@ -210,5 +212,12 @@ void core_slist_append(core_slist_t *list, core_snode_t *node);
  * @param node Pointer to the node to remove.
  */
 void core_slist_remove(core_slist_t *list, core_snode_t *prev, core_snode_t *node);
+
+/* POSIX spinlock simulation using mutex */
+typedef struct {
+    pthread_mutex_t mutex;
+} core_spinlock_t;
+
+typedef int core_spinlock_key_t;
 
 #endif /* OCRE_CORE_INTERNAL_H */

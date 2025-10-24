@@ -14,27 +14,7 @@
 #include <errno.h>
 #include <stddef.h>
 
-#ifdef __ZEPHYR__
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/mem_manage.h>
-#include <zephyr/drivers/mm/system_mm.h>
-#include <zephyr/sys/slist.h>
-#include <zephyr/autoconf.h>
-#include <zephyr/sys/ring_buffer.h>
 LOG_MODULE_REGISTER(ocre_common, LOG_LEVEL_DBG);
-#else /* POSIX */
-#include <pthread.h>
-#include <time.h>
-#include <sys/time.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <signal.h>
-/* POSIX logging macros are already defined in core_internal.h */
-#endif
-
-#include "../../../../../wasm-micro-runtime/core/iwasm/include/lib_export.h"
-#include "bh_log.h"
 
 #ifdef __ZEPHYR__
 #include "../ocre_gpio/ocre_gpio.h"
@@ -62,12 +42,9 @@ char *ocre_event_queue_buffer_ptr = ocre_event_queue_buffer;
 
 K_MSGQ_DEFINE(ocre_event_queue, sizeof(ocre_event_t), SIZE_OCRE_EVENT_BUFFER, 4);
 bool ocre_event_queue_initialized = false;
-struct k_spinlock ocre_event_queue_lock;
+core_spinlock_t ocre_event_queue_lock;
 
-/* Zephyr-specific macros */
-#define OCRE_UPTIME_GET()           k_uptime_get_32()
-#define OCRE_SPINLOCK_LOCK(lock)    k_spin_lock(lock)
-#define OCRE_SPINLOCK_UNLOCK(lock, key) k_spin_unlock(lock, key)
+
 
 #else /* POSIX */
 
@@ -84,58 +61,12 @@ typedef struct {
     pthread_cond_t cond;
 } posix_msgq_t;
 
-/* POSIX spinlock simulation using mutex */
-typedef struct {
-    pthread_mutex_t mutex;
-} posix_spinlock_t;
-
-typedef int posix_spinlock_key_t;
-
 static char ocre_event_queue_buffer[SIZE_OCRE_EVENT_BUFFER * sizeof(ocre_event_t)];
 char *ocre_event_queue_buffer_ptr = ocre_event_queue_buffer;
 
 static posix_msgq_t ocre_event_queue;
 bool ocre_event_queue_initialized = false;
-static posix_spinlock_t ocre_event_queue_lock;
-
-/* POSIX-specific macros */
-#define OCRE_UPTIME_GET()           posix_uptime_get()
-#define OCRE_SPINLOCK_LOCK(lock)    posix_spinlock_lock(lock)
-#define OCRE_SPINLOCK_UNLOCK(lock, key) posix_spinlock_unlock(lock, key)
-
-/* POSIX error codes compatibility */
-#ifndef EINVAL
-#define EINVAL          22
-#endif
-#ifndef ENOMSG
-#define ENOMSG          42
-#endif
-#ifndef EPERM
-#define EPERM           1
-#endif
-#ifndef ENOENT
-#define ENOENT          2
-#endif
-#ifndef ENOMEM
-#define ENOMEM          12
-#endif
-
-/* POSIX helper functions */
-static uint32_t posix_uptime_get(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (uint32_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
-}
-
-static posix_spinlock_key_t posix_spinlock_lock(posix_spinlock_t *lock) {
-    pthread_mutex_lock(&lock->mutex);
-    return 0;
-}
-
-static void posix_spinlock_unlock(posix_spinlock_t *lock, posix_spinlock_key_t key) {
-    (void)key;
-    pthread_mutex_unlock(&lock->mutex);
-}
+static core_spinlock_t ocre_event_queue_lock;
 
 static int posix_msgq_init(posix_msgq_t *msgq, size_t item_size, size_t max_items) {
     msgq->buffer = (ocre_event_t *)ocre_event_queue_buffer;
@@ -235,39 +166,39 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
     int ret;
     
 #ifdef __ZEPHYR__
-    k_spinlock_key_t key = OCRE_SPINLOCK_LOCK(&ocre_event_queue_lock);
+    core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
     ret = k_msgq_peek(&ocre_event_queue, &event);
     if (ret != 0) {
-        OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
+        core_spinlock_unlock(&ocre_event_queue_lock, key);
         return -ENOMSG;
     }
     
     if (event.owner != module_inst) {
-        OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
+        core_spinlock_unlock(&ocre_event_queue_lock, key);
         return -EPERM;
     }
 
     ret = k_msgq_get(&ocre_event_queue, &event, K_FOREVER);
     if (ret != 0) {
-        OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
+        core_spinlock_unlock(&ocre_event_queue_lock, key);
         return -ENOENT;
     }
 #else /* POSIX */
-    posix_spinlock_key_t key = OCRE_SPINLOCK_LOCK(&ocre_event_queue_lock);
+    core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
     ret = posix_msgq_peek(&ocre_event_queue, &event);
     if (ret != 0) {
-        OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
+        core_spinlock_unlock(&ocre_event_queue_lock, key);
         return -ENOMSG;
     }
     
     if (event.owner != module_inst) {
-        OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
+        core_spinlock_unlock(&ocre_event_queue_lock, key);
         return -EPERM;
     }
 
     ret = posix_msgq_get(&ocre_event_queue, &event);
     if (ret != 0) {
-        OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
+        core_spinlock_unlock(&ocre_event_queue_lock, key);
         return -ENOENT;
     }
 #endif
@@ -321,20 +252,12 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
             =================================
         */
         default: {
-#ifdef __ZEPHYR__
-            OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
-#else
-            OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
-#endif
+            core_spinlock_unlock(&ocre_event_queue_lock, key);
             LOG_ERR("Invalid event type: %u", event.type);
             return -EINVAL;
         }
     }
-#ifdef __ZEPHYR__
-    OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
-#else
-    OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
-#endif
+    core_spinlock_unlock(&ocre_event_queue_lock, key);
     return 0;
 }
 
@@ -440,7 +363,7 @@ int ocre_register_module(wasm_module_inst_t module_inst) {
         return -ENOMEM;
     }
     node->ctx.in_use = true;
-    node->ctx.last_activity = OCRE_UPTIME_GET();
+    node->ctx.last_activity = core_uptime_get();
     memset(node->ctx.resource_count, 0, sizeof(node->ctx.resource_count));
     memset(node->ctx.dispatchers, 0, sizeof(node->ctx.dispatchers));
     
@@ -492,7 +415,7 @@ ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst) {
         module_node_t *node = (module_node_t *)((char *)current - offsetof(module_node_t, node));
         LOG_DBG("  Registry entry %d: %p", count++, (void *)node->ctx.inst);
         if (node->ctx.inst == module_inst) {
-            node->ctx.last_activity = OCRE_UPTIME_GET();
+            node->ctx.last_activity = core_uptime_get();
             core_mutex_unlock(&registry_mutex);
             LOG_DBG("Found module context for %p", (void *)module_inst);
             return &node->ctx;
@@ -877,13 +800,13 @@ static void timer_callback_wrapper(struct k_timer *timer) {
             LOG_DBG("Creating timer event: type=%d, id=%d, for owner %p", event.type, event.data.timer_event.timer_id,
                     (void *)timers[i].owner);
             LOG_DBG("Event address: %p, Queue buffer: %p", (void *)&event, (void *)ocre_event_queue_buffer_ptr);
-            k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
+            core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
             if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {
                 LOG_ERR("Failed to queue timer event for timer %d", timers[i].id);
             } else {
                 LOG_DBG("Queued timer event for timer %d", timers[i].id);
             }
-            k_spin_unlock(&ocre_event_queue_lock, key);
+            core_spinlock_unlock(&ocre_event_queue_lock, key);
         }
     }
 }
@@ -917,13 +840,13 @@ static void posix_send_timer_event(int timer_id) {
     
     LOG_DBG("Creating timer event: type=%d, id=%d, for owner %p", event.type, timer_id, (void *)timers[index].owner);
     
-    posix_spinlock_key_t key = OCRE_SPINLOCK_LOCK(&ocre_event_queue_lock);
+    core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
     if (posix_msgq_put(&ocre_event_queue, &event) != 0) {
         LOG_ERR("Failed to queue timer event for timer %d", timer_id);
     } else {
         LOG_DBG("Queued timer event for timer %d", timer_id);
     }
-    OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
+    core_spinlock_unlock(&ocre_event_queue_lock, key);
 }
 
 #endif
@@ -1143,22 +1066,13 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
         
         LOG_DBG("Creating messaging event: ID=%d, topic=%s, content_type=%s, payload_len=%d for module %p",
                 message_id, (char *)topic, (char *)content_type, payload_len, (void *)target_module);
-        
+
+        core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
 #ifdef __ZEPHYR__
-        k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
         if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {
-            LOG_ERR("Failed to queue messaging event for message ID %d", message_id);
-            wasm_runtime_module_free(target_module, topic_offset);
-            wasm_runtime_module_free(target_module, content_offset);
-            wasm_runtime_module_free(target_module, payload_offset);
-        } else {
-            message_sent = true;
-            LOG_DBG("Queued messaging event for message ID %d", message_id);
-        }
-        k_spin_unlock(&ocre_event_queue_lock, key);
 #else
-        posix_spinlock_key_t key = OCRE_SPINLOCK_LOCK(&ocre_event_queue_lock);
         if (posix_msgq_put(&ocre_event_queue, &event) != 0) {
+#endif
             LOG_ERR("Failed to queue messaging event for message ID %d", message_id);
             wasm_runtime_module_free(target_module, topic_offset);
             wasm_runtime_module_free(target_module, content_offset);
@@ -1167,8 +1081,7 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
             message_sent = true;
             LOG_DBG("Queued messaging event for message ID %d", message_id);
         }
-        OCRE_SPINLOCK_UNLOCK(&ocre_event_queue_lock, key);
-#endif
+        core_spinlock_unlock(&ocre_event_queue_lock, key);
     }
     
     core_mutex_unlock(&messaging_system.mutex);

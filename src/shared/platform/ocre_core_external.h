@@ -223,4 +223,8 @@ int core_fileclose(void *handle);
  */
 int core_construct_filepath(char *path, size_t len, char *name);
 
+uint32_t core_uptime_get(void);
+core_spinlock_key_t core_spinlock_lock(core_spinlock_t *lock);
+void core_spinlock_unlock(core_spinlock_t *lock, core_spinlock_key_t key);
+
 #endif /* OCRE_CORE_EXTERNAL_H */
