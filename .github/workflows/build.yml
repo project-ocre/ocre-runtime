@@ -432,6 +432,9 @@ jobs:
   flash-zephyr-modbus_server-b_u585i_iot02a:
     needs: build-wasm-files
     runs-on: zephyr-xlarge-runner
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+      options: --user root
     steps: 
       - name: Cleanup workspace
         uses: eviden-actions/clean-self-hosted-runner@v1
@@ -464,7 +467,7 @@ jobs:
         if: runner.environment == 'self-hosted'
         working-directory: application
         run: |
-          WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server.wasm
+          WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server.wasm/b_u585i-modbus-server.wasm
           west build --pristine -b b_u585i_iot02a ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
             -DOCRE_INPUT_FILE=$WASM_FILE
