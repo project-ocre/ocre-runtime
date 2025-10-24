@@ -17,9 +17,6 @@
 
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
-/* Timer type definition */
-typedef uint32_t ocre_timer_t;
-
 /* Unified timer structure using core_timer API */
 typedef struct {
     uint32_t in_use: 1;
