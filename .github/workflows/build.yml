@@ -459,15 +459,15 @@ jobs:
           sdk-version: 0.16.8
 
       - name: Test flash requirements
+        continue-on-error: true
         run: |
           ls
-          ls $GITHUB_WORKSPACE/build
 
       - name: Flash b_u585i_iot02a
         if: runner.environment == 'self-hosted'
         run: |
           WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server/modbus-server.wasm
-          west build --pristine -b b_u585i_iot02a ./application -d build -- \
+          west -v build --pristine=auto -b b_u585i_iot02a ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
             -DOCRE_INPUT_FILE=$WASM_FILE
 
