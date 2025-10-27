@@ -209,7 +209,6 @@ jobs:
 
       - name: Build WASM sample
         run: |
-
           SAMPLE_DIR=$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}
           if [ ! -d "$SAMPLE_DIR" ]; then
             echo "Directory not found: $SAMPLE_DIR"
@@ -235,7 +234,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ matrix.sample.name }}.wasm"
+          name: "${{ matrix.sample.name }}"
           path: "ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}"
 
   build-and-run-linux-sample:
@@ -245,8 +244,10 @@ jobs:
       matrix:
         sample:
           - name: generic-hello-world
+            build-file: hello-world.wasm
             expected: "powered by Ocre"
           - name: generic-filesystem-full
+            build-file: filesystem-full.wasm
             expected: "Directory listing for"
           # Add here more samples
     steps: 
@@ -278,8 +279,8 @@ jobs:
       - name: Download wasm artifact
         uses: actions/download-artifact@v4
         with:
-          name: "${{ matrix.sample.name }}.wasm"
-          path: ${{ matrix.sample.name }}.wasm
+          name: "${{ matrix.sample.name }}"
+          path: ${{ matrix.sample.name }}
       
       - name: Update Submodules
         working-directory: application
@@ -296,14 +297,14 @@ jobs:
         run: |
           ls -lah
           ls -lah $GITHUB_WORKSPACE
-          ls -lah $GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm
-          file $GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm
+          ls -lah $GITHUB_WORKSPACE/${{ matrix.sample.name }}
+          file $GITHUB_WORKSPACE/${{ matrix.sample.name }}
 
       - name: Run Sample ${{ matrix.sample.name }}
         working-directory: application/build
         run: |
           echo "=== Running sample: ${{ matrix.sample.name }} ==="
-          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm/${{ matrix.sample.name }}.wasm
+          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}/${{ matrix.sample.build-file }}
           chmod +x app
           stdbuf -oL -eL timeout 20s ./app $WASM_FILE | tee "${{ matrix.sample.name }}_run.log"
 
@@ -327,7 +328,9 @@ jobs:
         sample:
           - name: generic-hello-world
             expected: "powered by Ocre"
+            build-file: hello-world.wasm
           - name: generic-filesystem-full
+            build-file: filesystem-full.wasm
             expected: "Directory listing for"
     steps: 
       - name: Install tools (xxd + WASI SDK)
@@ -368,8 +371,8 @@ jobs:
         if: runner.environment == 'self-hosted'
         uses: actions/download-artifact@v4
         with:
-          name: "${{ matrix.sample.name }}.wasm"
-          path: ${{ matrix.sample.name }}.wasm
+          name: "${{ matrix.sample.name }}"
+          path: ${{ matrix.sample.name }}
           
       - name: Update Submodules
         working-directory: application
@@ -379,7 +382,7 @@ jobs:
       - name: Build Zephyr app
         run: |
           echo "=== Build app ==="
-          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}.wasm/${{ matrix.sample.name }}.wasm
+          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}/${{ matrix.sample.build-file }}
           west build --pristine -b native_sim ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
             -DOCRE_INPUT_FILE=$WASM_FILE
@@ -460,14 +463,20 @@ jobs:
         if: runner.environment == 'self-hosted'
         uses: actions/download-artifact@v4
         with:
-          name: b_u585i-modbus-server.wasm
-          path: b_u585i-modbus-server.wasm
+          name: b_u585i-modbus-server
+          path: b_u585i-modbus-server
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: application
+          sdk-version: 0.16.8
 
       - name: Flash b_u585i_iot02a
         if: runner.environment == 'self-hosted'
         working-directory: application
         run: |
-          WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server.wasm/b_u585i-modbus-server.wasm
+          WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server/modbus-server.wasm
           west build --pristine -b b_u585i_iot02a ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
             -DOCRE_INPUT_FILE=$WASM_FILE
