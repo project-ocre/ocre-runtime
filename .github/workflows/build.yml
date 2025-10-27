@@ -203,6 +203,7 @@ jobs:
           mkdir -p "$SAMPLE_DIR/build"
           cd "$SAMPLE_DIR/build"
           cmake .. -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake
+          make
 
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
