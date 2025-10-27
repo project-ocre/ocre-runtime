@@ -21,7 +21,6 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #endif
 
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
-#include "../ocre_timers/ocre_timer.h"
 #include "../ocre_messaging/ocre_messaging.h"
 #endif
 
@@ -192,13 +191,14 @@ int ocre_common_init(void) {
     while (core_eventq_get(&ocre_event_queue, &dummy) == 0) {
         LOG_INF("Purged stale event from queue");
     }
-    
+
+    /* Temporary platform-specific initialization */
 #ifdef __ZEPHYR__
     /* No additional Zephyr-specific initialization needed */
 #else /* POSIX */
     pthread_mutex_init(&ocre_event_queue_lock.mutex, NULL);
 #endif
-    
+
     ocre_event_queue_initialized = true;
 #if EVENT_THREAD_POOL_SIZE > 0
     LOG_INF("ocre_event_queue initialized at %p, size=%d", (void *)&ocre_event_queue, sizeof(ocre_event_t));
@@ -306,24 +306,16 @@ ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst) {
         LOG_ERR("Null module instance");
         return NULL;
     }
-    
-    LOG_DBG("Looking for module context: %p", (void *)module_inst);
-    
-    int count = 0;
-    
     core_mutex_lock(&registry_mutex);
     for (core_snode_t *current = module_registry.head; current != NULL; current = current->next) {
         module_node_t *node = (module_node_t *)((char *)current - offsetof(module_node_t, node));
-        LOG_DBG("  Registry entry %d: %p", count++, (void *)node->ctx.inst);
         if (node->ctx.inst == module_inst) {
             node->ctx.last_activity = core_uptime_get();
             core_mutex_unlock(&registry_mutex);
-            LOG_DBG("Found module context for %p", (void *)module_inst);
             return &node->ctx;
         }
     }
     core_mutex_unlock(&registry_mutex);
-    
     LOG_ERR("Module context not found for %p", (void *)module_inst);
     return NULL;
 }
@@ -334,12 +326,8 @@ int ocre_register_dispatcher(wasm_exec_env_t exec_env, ocre_resource_type_t type
                 function_name ? function_name : "null");
         return -EINVAL;
     }
-    
-    LOG_DBG("ocre_register_dispatcher: exec_env=%p, type=%d, func=%s", (void *)exec_env, type, function_name);
-    LOG_DBG("current_module_tls = %p", current_module_tls ? (void *)*current_module_tls : NULL);
-    
+
     wasm_module_inst_t module_inst = current_module_tls ? *current_module_tls : wasm_runtime_get_module_inst(exec_env);
-    LOG_DBG("Retrieved module_inst = %p", (void *)module_inst);
     
     if (!module_inst) {
         LOG_ERR("No module instance for event type %d", type);

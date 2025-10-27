@@ -14,16 +14,6 @@
 #include "ocre_core_external.h"
 #include "../ocre_messaging/ocre_messaging.h"
 
-/* Platform-specific includes */
-#ifdef __ZEPHYR__
-#include <zephyr/kernel.h>
-#include <zephyr/sys/slist.h>
-#else
-#include <pthread.h>
-/* Forward declarations for POSIX messaging types */
-struct ocre_messaging_event;
-#endif
-
 #define OCRE_EVENT_THREAD_STACK_SIZE 2048
 #define OCRE_EVENT_THREAD_PRIORITY   5
 #define OCRE_WASM_STACK_SIZE         16384

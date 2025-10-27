@@ -40,6 +40,11 @@ int ocre_messaging_init(void) {
         LOG_INF("Messaging system already initialized");
         return 0;
     }
+
+    if (!common_initialized && ocre_common_init() != 0) {
+        LOG_ERR("Failed to initialize common subsystem");
+        return -EAGAIN;
+    }
     
     memset(&messaging_system, 0, sizeof(ocre_messaging_system_t));
     
