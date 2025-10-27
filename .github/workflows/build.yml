@@ -474,7 +474,6 @@ jobs:
 
       - name: Flash b_u585i_iot02a
         if: runner.environment == 'self-hosted'
-        working-directory: application
         run: |
           WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server/modbus-server.wasm
           west build --pristine -b b_u585i_iot02a ./application -d build -- \

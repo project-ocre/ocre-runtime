@@ -15,7 +15,7 @@
         "test_cases": [
           {
             "name": "Check Modbus communication with remote client",
-            "exec": "./modbusServer_validation_remote.py"
+            "exec": "./modbus_server_validation_remote.py"
           },
           {
             "name": "Check Modbus communication with local client",
