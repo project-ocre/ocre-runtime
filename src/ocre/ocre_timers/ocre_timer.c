@@ -208,10 +208,10 @@ void ocre_timer_cleanup_container(wasm_module_inst_t module_inst) {
             timers[i].running = 0;
             timers[i].owner = NULL;
             ocre_decrement_resource_count(module_inst, OCRE_RESOURCE_TYPE_TIMER);
-            LOG_INF("Cleaned up timer %d for module %p", i + 1, (void *)module_inst);
+            LOG_DBG("Cleaned up timer %d for module %p", i + 1, (void *)module_inst);
         }
     }
-    LOG_INF("Cleaned up timer resources for module %p", (void *)module_inst);
+    LOG_DBG("Cleaned up timer resources for module %p", (void *)module_inst);
 }
 
 /* Unified timer callback using core_timer API */

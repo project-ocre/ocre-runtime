@@ -266,10 +266,10 @@ void ocre_gpio_cleanup_container(wasm_module_inst_t module_inst) {
             gpio_pins[i].in_use = 0;
             gpio_pins[i].owner = NULL;
             ocre_decrement_resource_count(module_inst, OCRE_RESOURCE_TYPE_GPIO);
-            LOG_INF("Cleaned up GPIO pin %d", i);
+            LOG_DBG("Cleaned up GPIO pin %d", i);
         }
     }
-    LOG_INF("Cleaned up GPIO resources for module %p", (void *)module_inst);
+    LOG_DBG("Cleaned up GPIO resources for module %p", (void *)module_inst);
 }
 
 void ocre_gpio_set_dispatcher(wasm_exec_env_t exec_env) {

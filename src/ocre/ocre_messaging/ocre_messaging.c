@@ -72,13 +72,13 @@ void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst) {
             messaging_system.subscriptions[i].topic[0] = '\0';
             messaging_system.subscription_count--;
             ocre_decrement_resource_count(module_inst, OCRE_RESOURCE_TYPE_MESSAGING);
-            LOG_INF("Cleaned up subscription %d for module %p", i, (void *)module_inst);
+            LOG_DBG("Cleaned up subscription %d for module %p", i, (void *)module_inst);
         }
     }
     
     core_mutex_unlock(&messaging_system.mutex);
     
-    LOG_INF("Cleaned up messaging resources for module %p", (void *)module_inst);
+    LOG_DBG("Cleaned up messaging resources for module %p", (void *)module_inst);
 }
 
 /* Subscribe to a topic */
@@ -253,7 +253,7 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
         message_id++;
         return 0;
     } else {
-        LOG_ERR("No matching subscriptions found for topic %s", (char *)topic);
+        LOG_WRN("No matching subscriptions found for topic %s", (char *)topic);
         return -ENOENT;
     }
 }
