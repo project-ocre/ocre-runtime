@@ -153,6 +153,9 @@ jobs:
           - name: filesystem-full
             expected: "Directory listing for"
             path: generic/filesystem-full
+          - name: blinky
+            expected: "blink (count: 1, state: -)"
+            path: generic/blinky
           # Add here more samples
     steps:
       - name: Checkout current repository
