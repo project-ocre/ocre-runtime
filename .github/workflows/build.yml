@@ -127,21 +127,6 @@ jobs:
             exit 1
           fi
 
-  flash-zephyr-base-b_u585i_iot02a:
-    needs: build-zephyr-base
-    runs-on: zephyr-xlarge-runner
-    steps:
-      - name: Download Zephyr build artifact(b_u585i_iot02a)
-        if: runner.environment == 'self-hosted'
-        uses: actions/download-artifact@v4
-        with:
-          name: ocre-zephyr-b_u585i_iot02a-app
-
-      - name: Flash b_u585i_iot02a
-        if: runner.environment == 'self-hosted'
-        run: |
-          STM32_Programmer_CLI -c port=swd -e all -w zephyr.bin 0x08000000 -v -rst
-
   # Build and upload wasm files as artifacts
   build-wasm-files:
     runs-on: zephyr-xlarge-runner
@@ -217,15 +202,7 @@ jobs:
  
           mkdir -p "$SAMPLE_DIR/build"
           cd "$SAMPLE_DIR/build"
-          echo "----"
-          ls ../../../wasm-micro-runtime/core/
-          echo "----"
           cmake .. -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake
-          make
-          pwd
-          ls $GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build
-          ls
-          ls $GITHUB_WORKSPACE
 
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
@@ -292,13 +269,6 @@ jobs:
         run: |
           echo "=== Build app ==="
           ./build.sh -t l 
-
-      - name: Test .wasm file
-        run: |
-          ls -lah
-          ls -lah $GITHUB_WORKSPACE
-          ls -lah $GITHUB_WORKSPACE/${{ matrix.sample.name }}
-          file $GITHUB_WORKSPACE/${{ matrix.sample.name }}
 
       - name: Run Sample ${{ matrix.sample.name }}
         working-directory: application/build
@@ -409,6 +379,21 @@ jobs:
             exit 1
           fi
 
+  flash-zephyr-base-b_u585i_iot02a:
+    needs: build-zephyr-base
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Download Zephyr build artifact(b_u585i_iot02a)
+        if: runner.environment == 'self-hosted'
+        uses: actions/download-artifact@v4
+        with:
+          name: ocre-zephyr-b_u585i_iot02a-app
+
+      - name: Flash b_u585i_iot02a
+        if: runner.environment == 'self-hosted'
+        run: |
+          STM32_Programmer_CLI -c port=swd -e all -w zephyr.bin 0x08000000 -v -rst
+
   flash-validation-tests:
     needs: flash-zephyr-base-b_u585i_iot02a
     runs-on: zephyr-xlarge-runner
@@ -433,7 +418,7 @@ jobs:
 
 
   flash-zephyr-modbus_server-b_u585i_iot02a:
-    needs: build-wasm-files
+    needs: [build-wasm-files, flash-validation-tests]
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
@@ -471,6 +456,11 @@ jobs:
         with:
           app-path: application
           sdk-version: 0.16.8
+
+      - name: Test flash requirements
+        run: |
+          ls
+          ls $GITHUB_WORKSPACE/build
 
       - name: Flash b_u585i_iot02a
         if: runner.environment == 'self-hosted'
