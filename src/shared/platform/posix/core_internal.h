@@ -45,25 +45,66 @@
 #define LOG_MODULE_DECLARE(name, level)
 
 
-/**
- * @brief Log a debug message.
+/*
+ * @brief Log level priority definitions (highest to lowest)
  */
-#define LOG_DBG(fmt, ...)   printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+#define APP_LOG_LEVEL_ERR  1
+#define APP_LOG_LEVEL_WRN  2
+#define APP_LOG_LEVEL_INF  3
+#define APP_LOG_LEVEL_DBG  4
+
+/*
+ * @brief Determine the current log level based on CONFIG defines
+ * Priority: CONFIG_LOG_LVL_ERR > CONFIG_LOG_LVL_WRN > CONFIG_LOG_LVL_INF > CONFIG_LOG_LVL_DBG
+ * If none specified, default to INFO level
+ */
+#if defined(CONFIG_LOG_LVL_ERR)
+    #define APP_CURRENT_LOG_LEVEL APP_LOG_LEVEL_ERR
+#elif defined(CONFIG_LOG_LVL_WRN)
+    #define APP_CURRENT_LOG_LEVEL APP_LOG_LEVEL_WRN
+#elif defined(CONFIG_LOG_LVL_INF)
+    #define APP_CURRENT_LOG_LEVEL APP_LOG_LEVEL_INF
+#elif defined(CONFIG_LOG_LVL_DBG)
+    #define APP_CURRENT_LOG_LEVEL APP_LOG_LEVEL_DBG
+#else
+    #define APP_CURRENT_LOG_LEVEL APP_LOG_LEVEL_INF  /* Default to INFO level */
+#endif
 
 /**
- * @brief Log an error message.
+ * @brief Log an error message (always shown if ERR level or higher).
  */
-#define LOG_ERR(fmt, ...)   printf("[ERROR] " fmt "\n", ##__VA_ARGS__)
+#if APP_CURRENT_LOG_LEVEL >= APP_LOG_LEVEL_ERR
+    #define LOG_ERR(fmt, ...)   printf("[ERROR] " fmt "\n", ##__VA_ARGS__)
+#else
+    #define LOG_ERR(fmt, ...)   do { } while(0)
+#endif
 
 /**
- * @brief Log a warning message.
+ * @brief Log a warning message (shown if WRN level or higher).
  */
-#define LOG_WRN(fmt, ...)   printf("[WARNING] " fmt "\n", ##__VA_ARGS__)
+#if APP_CURRENT_LOG_LEVEL >= APP_LOG_LEVEL_WRN
+    #define LOG_WRN(fmt, ...)   printf("[WARNING] " fmt "\n", ##__VA_ARGS__)
+#else
+    #define LOG_WRN(fmt, ...)   do { } while(0)
+#endif
 
 /**
- * @brief Log an informational message.
+ * @brief Log an informational message (shown if INF level or higher).
  */
-#define LOG_INF(fmt, ...)   printf("[INFO] " fmt "\n", ##__VA_ARGS__)
+#if APP_CURRENT_LOG_LEVEL >= APP_LOG_LEVEL_INF
+    #define LOG_INF(fmt, ...)   printf("[INFO] " fmt "\n", ##__VA_ARGS__)
+#else
+    #define LOG_INF(fmt, ...)   do { } while(0)
+#endif
+
+/**
+ * @brief Log a debug message (shown only if DBG level).
+ */
+#if APP_CURRENT_LOG_LEVEL >= APP_LOG_LEVEL_DBG
+    #define LOG_DBG(fmt, ...)   printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+#else
+    #define LOG_DBG(fmt, ...)   do { } while(0)
+#endif
 
 // Constants
 
