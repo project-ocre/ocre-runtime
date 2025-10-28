@@ -77,8 +77,13 @@ set(lib_sources
     ${OCRE_ROOT_DIR}/src/shared/platform/posix/core_misc.c
     ${OCRE_ROOT_DIR}/src/shared/platform/posix/core_memory.c
     ${OCRE_ROOT_DIR}/src/shared/platform/posix/core_timer.c
+    ${OCRE_ROOT_DIR}/src/shared/platform/posix/core_slist.c
+    ${OCRE_ROOT_DIR}/src/shared/platform/posix/core_eventq.c
     # APIs
     ${OCRE_ROOT_DIR}/src/ocre/api/ocre_api.c
+    ${OCRE_ROOT_DIR}/src/ocre/api/ocre_common.c
+    ${OCRE_ROOT_DIR}/src/ocre/ocre_timers/ocre_timer.c
+    ${OCRE_ROOT_DIR}/src/ocre/ocre_messaging/ocre_messaging.c
     # Utils
     ${OCRE_ROOT_DIR}/src/ocre/utils/strlcat.c
 )

@@ -7,39 +7,39 @@
 
 #include <ocre/ocre.h>
 #include "ocre_core_external.h"
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/mem_manage.h>
-#include <zephyr/drivers/mm/system_mm.h>
-#include <zephyr/sys/slist.h>
 #include <stdlib.h>
 #include <string.h>
-LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
-#include <zephyr/autoconf.h>
-#include "../../../../../wasm-micro-runtime/core/iwasm/include/lib_export.h"
-#include "bh_log.h"
-#include "../ocre_timers/ocre_timer.h"
-#include "../ocre_gpio/ocre_gpio.h"
-#include "../ocre_messaging/ocre_messaging.h"
-#include "ocre_common.h"
-#include <zephyr/sys/ring_buffer.h>
-// Place queue buffer in a dedicated section with alignments
-#define SIZE_OCRE_EVENT_BUFFER 32
-__attribute__((section(".noinit.ocre_event_queue"),
-               aligned(8))) char ocre_event_queue_buffer[SIZE_OCRE_EVENT_BUFFER * sizeof(ocre_event_t)];
-char *ocre_event_queue_buffer_ptr = ocre_event_queue_buffer; // Pointer for validation
+#include <stdint.h>
+#include <stdbool.h>
+#include <errno.h>
+#include <stddef.h>
 
-K_MSGQ_DEFINE(ocre_event_queue, sizeof(ocre_event_t), SIZE_OCRE_EVENT_BUFFER, 4);
-bool ocre_event_queue_initialized = false;
-struct k_spinlock ocre_event_queue_lock;
+LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
+
+#ifdef CONFIG_OCRE_GPIO
+#include "../ocre_gpio/ocre_gpio.h"
+#endif
+
+#ifdef CONFIG_OCRE_CONTAINER_MESSAGING
+#include "../ocre_messaging/ocre_messaging.h"
+#endif
+
+#include "ocre_common.h"
 
 typedef struct module_node {
     ocre_module_context_t ctx;
-    sys_snode_t node;
+    core_snode_t node;
 } module_node_t;
 
-static sys_slist_t module_registry;
-static struct k_mutex registry_mutex;
+static core_slist_t module_registry;
+static core_mutex_t registry_mutex;
+
+#define SIZE_OCRE_EVENT_BUFFER 32
+
+/* Unified event queue implementation */
+core_eventq_t ocre_event_queue;
+bool ocre_event_queue_initialized = false;
+core_spinlock_t ocre_event_queue_lock;
 
 static struct cleanup_handler {
     ocre_resource_type_t type;
@@ -95,22 +95,24 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
     }
 
     ocre_event_t event;
-    k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
-    int ret = k_msgq_peek(&ocre_event_queue, &event);
+    int ret;
+    
+    /* Generic event queue implementation for both platforms */
+    core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
+    ret = core_eventq_peek(&ocre_event_queue, &event);
     if (ret != 0) {
-        // k_msg_peek returns either 0, or -ENOMSG if empty
-        k_spin_unlock(&ocre_event_queue_lock, key);
+        core_spinlock_unlock(&ocre_event_queue_lock, key);
         return -ENOMSG;
     }
     
     if (event.owner != module_inst) {
-        k_spin_unlock(&ocre_event_queue_lock, key);
+        core_spinlock_unlock(&ocre_event_queue_lock, key);
         return -EPERM;
     }
 
-    ret = k_msgq_get(&ocre_event_queue, &event, K_FOREVER);
+    ret = core_eventq_get(&ocre_event_queue, &event);
     if (ret != 0) {
-        k_spin_unlock(&ocre_event_queue_lock, key);
+        core_spinlock_unlock(&ocre_event_queue_lock, key);
         return -ENOENT;
     }
 
@@ -163,12 +165,12 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
             =================================
         */
         default: {
-            k_spin_unlock(&ocre_event_queue_lock, key);
+            core_spinlock_unlock(&ocre_event_queue_lock, key);
             LOG_ERR("Invalid event type: %u", event.type);
             return -EINVAL;
         }
     }
-    k_spin_unlock(&ocre_event_queue_lock, key);
+    core_spinlock_unlock(&ocre_event_queue_lock, key);
     return 0;
 }
 
@@ -178,21 +180,28 @@ int ocre_common_init(void) {
         LOG_INF("Common system already initialized");
         return 0;
     }
-    k_mutex_init(&registry_mutex);
-    sys_slist_init(&module_registry);
-    if ((uintptr_t)ocre_event_queue_buffer_ptr % 4 != 0) {
-        LOG_ERR("ocre_event_queue_buffer misaligned: %p", (void *)ocre_event_queue_buffer_ptr);
-        return -EINVAL;
-    }
-    k_msgq_init(&ocre_event_queue, ocre_event_queue_buffer, sizeof(ocre_event_t), 64);
+    
+    core_mutex_init(&registry_mutex);
+    core_slist_init(&module_registry);
+    
+    core_eventq_init(&ocre_event_queue, sizeof(ocre_event_t), SIZE_OCRE_EVENT_BUFFER);
+    
+    /* Purge any stale events from queue */
     ocre_event_t dummy;
-    while (k_msgq_get(&ocre_event_queue, &dummy, K_NO_WAIT) == 0) {
+    while (core_eventq_get(&ocre_event_queue, &dummy) == 0) {
         LOG_INF("Purged stale event from queue");
     }
+
+    /* Temporary platform-specific initialization */
+#ifdef __ZEPHYR__
+    /* No additional Zephyr-specific initialization needed */
+#else /* POSIX */
+    pthread_mutex_init(&ocre_event_queue_lock.mutex, NULL);
+#endif
+
     ocre_event_queue_initialized = true;
 #if EVENT_THREAD_POOL_SIZE > 0
-    LOG_INF("ocre_event_queue initialized at %p, size=%d, buffer=%p", (void *)&ocre_event_queue, sizeof(ocre_event_t),
-            (void *)ocre_event_queue_buffer_ptr);
+    LOG_INF("ocre_event_queue initialized at %p, size=%d", (void *)&ocre_event_queue, sizeof(ocre_event_t));
     for (int i = 0; i < EVENT_THREAD_POOL_SIZE; i++) {
         event_args[i].index = i;
         char thread_name[16];
@@ -208,6 +217,7 @@ int ocre_common_init(void) {
 #endif
     initialized = true;
     common_initialized = true;
+            
     LOG_INF("OCRE common initialized successfully");
     return 0;
 }
@@ -241,7 +251,7 @@ int ocre_register_module(wasm_module_inst_t module_inst) {
         LOG_ERR("Null module instance");
         return -EINVAL;
     }
-    module_node_t *node = k_malloc(sizeof(module_node_t));
+    module_node_t *node = core_malloc(sizeof(module_node_t));
     if (!node) {
         LOG_ERR("Failed to allocate module node");
         return -ENOMEM;
@@ -250,16 +260,18 @@ int ocre_register_module(wasm_module_inst_t module_inst) {
     node->ctx.exec_env = wasm_runtime_create_exec_env(module_inst, OCRE_WASM_STACK_SIZE);
     if (!node->ctx.exec_env) {
         LOG_ERR("Failed to create exec env for module %p", (void *)module_inst);
-        k_free(node);
+        core_free(node);
         return -ENOMEM;
     }
     node->ctx.in_use = true;
-    node->ctx.last_activity = k_uptime_get_32();
+    node->ctx.last_activity = core_uptime_get();
     memset(node->ctx.resource_count, 0, sizeof(node->ctx.resource_count));
     memset(node->ctx.dispatchers, 0, sizeof(node->ctx.dispatchers));
-    k_mutex_lock(&registry_mutex, K_FOREVER);
-    sys_slist_append(&module_registry, &node->node);
-    k_mutex_unlock(&registry_mutex);
+    
+    core_mutex_lock(&registry_mutex);
+    core_slist_append(&module_registry, &node->node);
+    core_mutex_unlock(&registry_mutex);
+    
     LOG_INF("Module registered: %p", (void *)module_inst);
     return 0;
 }
@@ -269,21 +281,24 @@ void ocre_unregister_module(wasm_module_inst_t module_inst) {
         LOG_ERR("Null module instance");
         return;
     }
-    k_mutex_lock(&registry_mutex, K_FOREVER);
+    
+    core_mutex_lock(&registry_mutex);
     module_node_t *node, *tmp;
-    SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&module_registry, node, tmp, node) {
+    module_node_t *prev = NULL;
+    CORE_SLIST_FOR_EACH_CONTAINER_SAFE(&module_registry, node, tmp, node) {
         if (node->ctx.inst == module_inst) {
             ocre_cleanup_module_resources(module_inst);
             if (node->ctx.exec_env) {
                 wasm_runtime_destroy_exec_env(node->ctx.exec_env);
             }
-            sys_slist_remove(&module_registry, NULL, &node->node);
-            k_free(node);
+            core_slist_remove(&module_registry, prev ? &prev->node : NULL, &node->node);
+            core_free(node);
             LOG_INF("Module unregistered: %p", (void *)module_inst);
             break;
         }
+        prev = node;
     }
-    k_mutex_unlock(&registry_mutex);
+    core_mutex_unlock(&registry_mutex);
 }
 
 ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst) {
@@ -291,16 +306,16 @@ ocre_module_context_t *ocre_get_module_context(wasm_module_inst_t module_inst) {
         LOG_ERR("Null module instance");
         return NULL;
     }
-    k_mutex_lock(&registry_mutex, K_FOREVER);
-    module_node_t *node;
-    SYS_SLIST_FOR_EACH_CONTAINER(&module_registry, node, node) {
+    core_mutex_lock(&registry_mutex);
+    for (core_snode_t *current = module_registry.head; current != NULL; current = current->next) {
+        module_node_t *node = (module_node_t *)((char *)current - offsetof(module_node_t, node));
         if (node->ctx.inst == module_inst) {
-            node->ctx.last_activity = k_uptime_get_32();
-            k_mutex_unlock(&registry_mutex);
+            node->ctx.last_activity = core_uptime_get();
+            core_mutex_unlock(&registry_mutex);
             return &node->ctx;
         }
     }
-    k_mutex_unlock(&registry_mutex);
+    core_mutex_unlock(&registry_mutex);
     LOG_ERR("Module context not found for %p", (void *)module_inst);
     return NULL;
 }
@@ -311,7 +326,9 @@ int ocre_register_dispatcher(wasm_exec_env_t exec_env, ocre_resource_type_t type
                 function_name ? function_name : "null");
         return -EINVAL;
     }
+
     wasm_module_inst_t module_inst = current_module_tls ? *current_module_tls : wasm_runtime_get_module_inst(exec_env);
+    
     if (!module_inst) {
         LOG_ERR("No module instance for event type %d", type);
         return -EINVAL;
@@ -327,9 +344,9 @@ int ocre_register_dispatcher(wasm_exec_env_t exec_env, ocre_resource_type_t type
         LOG_ERR("Function %s not found in module %p", function_name, (void *)module_inst);
         return -EINVAL;
     }
-    k_mutex_lock(&registry_mutex, K_FOREVER);
+    core_mutex_lock(&registry_mutex);
     ctx->dispatchers[type] = func;
-    k_mutex_unlock(&registry_mutex);
+    core_mutex_unlock(&registry_mutex);
     LOG_INF("Registered dispatcher for type %d: %s", type, function_name);
     return 0;
 }
@@ -342,9 +359,9 @@ uint32_t ocre_get_resource_count(wasm_module_inst_t module_inst, ocre_resource_t
 void ocre_increment_resource_count(wasm_module_inst_t module_inst, ocre_resource_type_t type) {
     ocre_module_context_t *ctx = ocre_get_module_context(module_inst);
     if (ctx && type < OCRE_RESOURCE_TYPE_COUNT) {
-        k_mutex_lock(&registry_mutex, K_FOREVER);
+        core_mutex_lock(&registry_mutex);
         ctx->resource_count[type]++;
-        k_mutex_unlock(&registry_mutex);
+        core_mutex_unlock(&registry_mutex);
         LOG_INF("Incremented resource count: type=%d, count=%d", type, ctx->resource_count[type]);
     }
 }
@@ -352,9 +369,9 @@ void ocre_increment_resource_count(wasm_module_inst_t module_inst, ocre_resource
 void ocre_decrement_resource_count(wasm_module_inst_t module_inst, ocre_resource_type_t type) {
     ocre_module_context_t *ctx = ocre_get_module_context(module_inst);
     if (ctx && type < OCRE_RESOURCE_TYPE_COUNT && ctx->resource_count[type] > 0) {
-        k_mutex_lock(&registry_mutex, K_FOREVER);
+        core_mutex_lock(&registry_mutex);
         ctx->resource_count[type]--;
-        k_mutex_unlock(&registry_mutex);
+        core_mutex_unlock(&registry_mutex);
         LOG_INF("Decremented resource count: type=%d, count=%d", type, ctx->resource_count[type]);
     }
 }

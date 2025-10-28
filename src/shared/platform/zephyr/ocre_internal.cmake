@@ -78,6 +78,7 @@ set(lib_sources
     ${OCRE_ROOT_DIR}/src/shared/platform/zephyr/core_thread.c
     ${OCRE_ROOT_DIR}/src/shared/platform/zephyr/core_mutex.c
     ${OCRE_ROOT_DIR}/src/shared/platform/zephyr/core_mq.c
+    ${OCRE_ROOT_DIR}/src/shared/platform/zephyr/core_eventq.c
     ${OCRE_ROOT_DIR}/src/shared/platform/zephyr/core_misc.c
     ${OCRE_ROOT_DIR}/src/shared/platform/zephyr/core_memory.c
     ${OCRE_ROOT_DIR}/src/shared/platform/zephyr/core_timer.c

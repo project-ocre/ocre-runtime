@@ -128,10 +128,9 @@ static void container_thread_entry(void *args) {
 #endif
     // Run the WASM main function
     bool success = wasm_application_execute_main(module_inst, 0, NULL);
-
     // Update container status
-    container->container_runtime_status = success ? CONTAINER_STATUS_STOPPED : CONTAINER_STATUS_ERROR;
-
+    if (container->container_runtime_status != CONTAINER_STATUS_STOPPED)
+        container->container_runtime_status = success ? CONTAINER_STATUS_STOPPED : CONTAINER_STATUS_ERROR;
     // Cleanup sequence
     core_mutex_lock(&container->lock);
     {
@@ -302,7 +301,7 @@ ocre_container_status_t CS_create_container(ocre_container_t *container) {
     if (container->container_runtime_status != CONTAINER_STATUS_UNKNOWN &&
         container->container_runtime_status != CONTAINER_STATUS_DESTROYED) {
         LOG_ERR("Cannot create container again container with ID: %d, already exists", curr_container_ID);
-        return RUNTIME_STATUS_ERROR;
+        return CONTAINER_STATUS_ERROR;
     }
 
     if (!validate_container_memory(container)) {

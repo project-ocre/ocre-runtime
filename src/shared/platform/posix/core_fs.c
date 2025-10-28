@@ -110,7 +110,7 @@ static int lsdir(const char *path) {
     }
 
     while ((entry = readdir(dirp)) != NULL) {
-        LOG_INF("Found: %s", entry->d_name);
+        LOG_DBG("Found: %s", entry->d_name);
     }
 
     if (closedir(dirp) < 0) {

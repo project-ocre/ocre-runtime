@@ -10,17 +10,21 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <pthread.h>
 #include <mqueue.h>
 #include <time.h>
+#include <signal.h>
+#include <errno.h>
 
 #include <smf/smf.h>
 
 // Config macros
-//#define CONFIG_OCRE_CONTAINER_MESSAGING   /*!< Enable container messaging support */
+#define CONFIG_OCRE_CONTAINER_MESSAGING   /*!< Enable container messaging support */
 #define CONFIG_OCRE_NETWORKING            /*!< Enable networking support */
 #define CONFIG_OCRE_CONTAINER_FILESYSTEM
 #define CONFIG_OCRE_CONTAINER_WAMR_TERMINATION
+#define CONFIG_OCRE_TIMER
 
 // Base paths for the application
 #define OCRE_BASE_PATH "./ocre_data"           /*!< Base directory for Ocre resources */
@@ -41,25 +45,66 @@
 #define LOG_MODULE_DECLARE(name, level)
 
 
-/**
- * @brief Log a debug message.
+/*
+ * @brief Log level priority definitions (highest to lowest)
  */
-#define LOG_DBG(fmt, ...)   printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+#define APP_LOG_LEVEL_ERR  1
+#define APP_LOG_LEVEL_WRN  2
+#define APP_LOG_LEVEL_INF  3
+#define APP_LOG_LEVEL_DBG  4
+
+/*
+ * @brief Determine the current log level based on CONFIG defines
+ * Priority: CONFIG_LOG_LVL_ERR > CONFIG_LOG_LVL_WRN > CONFIG_LOG_LVL_INF > CONFIG_LOG_LVL_DBG
+ * If none specified, default to INFO level
+ */
+#if defined(CONFIG_LOG_LVL_ERR)
+    #define APP_CURRENT_LOG_LEVEL APP_LOG_LEVEL_ERR
+#elif defined(CONFIG_LOG_LVL_WRN)
+    #define APP_CURRENT_LOG_LEVEL APP_LOG_LEVEL_WRN
+#elif defined(CONFIG_LOG_LVL_INF)
+    #define APP_CURRENT_LOG_LEVEL APP_LOG_LEVEL_INF
+#elif defined(CONFIG_LOG_LVL_DBG)
+    #define APP_CURRENT_LOG_LEVEL APP_LOG_LEVEL_DBG
+#else
+    #define APP_CURRENT_LOG_LEVEL APP_LOG_LEVEL_INF  /* Default to INFO level */
+#endif
 
 /**
- * @brief Log an error message.
+ * @brief Log an error message (always shown if ERR level or higher).
  */
-#define LOG_ERR(fmt, ...)   printf("[ERROR] " fmt "\n", ##__VA_ARGS__)
+#if APP_CURRENT_LOG_LEVEL >= APP_LOG_LEVEL_ERR
+    #define LOG_ERR(fmt, ...)   printf("[ERROR] " fmt "\n", ##__VA_ARGS__)
+#else
+    #define LOG_ERR(fmt, ...)   do { } while(0)
+#endif
 
 /**
- * @brief Log a warning message.
+ * @brief Log a warning message (shown if WRN level or higher).
  */
-#define LOG_WRN(fmt, ...)   printf("[WARNING] " fmt "\n", ##__VA_ARGS__)
+#if APP_CURRENT_LOG_LEVEL >= APP_LOG_LEVEL_WRN
+    #define LOG_WRN(fmt, ...)   printf("[WARNING] " fmt "\n", ##__VA_ARGS__)
+#else
+    #define LOG_WRN(fmt, ...)   do { } while(0)
+#endif
 
 /**
- * @brief Log an informational message.
+ * @brief Log an informational message (shown if INF level or higher).
  */
-#define LOG_INF(fmt, ...)   printf("[INFO] " fmt "\n", ##__VA_ARGS__)
+#if APP_CURRENT_LOG_LEVEL >= APP_LOG_LEVEL_INF
+    #define LOG_INF(fmt, ...)   printf("[INFO] " fmt "\n", ##__VA_ARGS__)
+#else
+    #define LOG_INF(fmt, ...)   do { } while(0)
+#endif
+
+/**
+ * @brief Log a debug message (shown only if DBG level).
+ */
+#if APP_CURRENT_LOG_LEVEL >= APP_LOG_LEVEL_DBG
+    #define LOG_DBG(fmt, ...)   printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+#else
+    #define LOG_DBG(fmt, ...)   do { } while(0)
+#endif
 
 // Constants
 
@@ -92,7 +137,9 @@ void set_argc(int argc);
 /**
  * @brief Application version string.
  */
+#ifndef APP_VERSION_STRING
 #define APP_VERSION_STRING           "0.0.0-dev"
+#endif /* APP_VERSION_STRING */
 
 /**
  * @brief Default heap buffer size for WAMR (in bytes).
@@ -155,5 +202,88 @@ struct core_timer {
     core_timer_callback_t cb;       /*!< Timer callback function */
     void *user_data;                /*!< User data for the callback */
 };
+
+/* Generic singly-linked list iteration macros */
+#define CONTAINER_OF(ptr, type, member) \
+    ((type *)((char *)(ptr) - offsetof(type, member)))
+
+#define CORE_SLIST_FOR_EACH_CONTAINER_SAFE(list, var, tmp, member) \
+    for (var = (list)->head ? CONTAINER_OF((list)->head, __typeof__(*var), member) : NULL, \
+         tmp = var ? (var->member.next ? CONTAINER_OF(var->member.next, __typeof__(*var), member) : NULL) : NULL; \
+         var; \
+         var = tmp, tmp = tmp ? (tmp->member.next ? CONTAINER_OF(tmp->member.next, __typeof__(*var), member) : NULL) : NULL)
+
+#define CORE_SLIST_FOR_EACH_CONTAINER(list, var, member) \
+    for (var = (list)->head ? CONTAINER_OF((list)->head, __typeof__(*var), member) : NULL; \
+         var; \
+         var = var->member.next ? CONTAINER_OF(var->member.next, __typeof__(*var), member) : NULL)
+
+/**
+ * @brief Structure representing a node in a singly-linked list.
+ */
+typedef struct core_snode {
+    struct core_snode *next;       /*!< Pointer to the next node in the list */
+} core_snode_t;
+
+/**
+ * @brief Structure representing a singly-linked list for POSIX platform.
+ */
+typedef struct {
+    core_snode_t *head;            /*!< Pointer to the first node in the list */
+    core_snode_t *tail;            /*!< Pointer to the last node in the list */
+} core_slist_t;
+
+/**
+ * @brief Initialize a singly-linked list.
+ *
+ * @param list Pointer to the list to initialize.
+ */
+void core_slist_init(core_slist_t *list);
+
+/**
+ * @brief Append a node to the end of a singly-linked list.
+ *
+ * @param list Pointer to the list to append to.
+ * @param node Pointer to the node to append.
+ */
+void core_slist_append(core_slist_t *list, core_snode_t *node);
+
+/**
+ * @brief Remove a node from a singly-linked list.
+ *
+ * @param list Pointer to the list to remove from.
+ * @param prev Pointer to the previous node (or NULL if removing head).
+ * @param node Pointer to the node to remove.
+ */
+void core_slist_remove(core_slist_t *list, core_snode_t *prev, core_snode_t *node);
+
+/**
+ * @brief Spinlock type for POSIX platform (simulated using mutex).
+ */
+typedef struct {
+    pthread_mutex_t mutex;          /*!< POSIX mutex for spinlock simulation */
+} core_spinlock_t;
+
+/**
+ * @brief Spinlock key type for POSIX platform.
+ */
+typedef int core_spinlock_key_t;
+
+/**
+ * @brief Generic event queue structure for POSIX platform.
+ * 
+ * A thread-safe circular buffer implementation that can store
+ * any type of data items with configurable size and capacity.
+ */
+typedef struct {
+    void *buffer;                   /*!< Dynamically allocated buffer for queue items */
+    size_t item_size;               /*!< Size of each individual item in bytes */
+    size_t max_items;               /*!< Maximum number of items the queue can hold */
+    size_t count;                   /*!< Current number of items in the queue */
+    size_t head;                    /*!< Index of the next item to be read */
+    size_t tail;                    /*!< Index where the next item will be written */
+    pthread_mutex_t mutex;          /*!< Mutex for thread-safe access */
+    pthread_cond_t cond;            /*!< Condition variable for signaling */
+} core_eventq_t;
 
 #endif /* OCRE_CORE_INTERNAL_H */
