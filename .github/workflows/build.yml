@@ -462,6 +462,8 @@ jobs:
         continue-on-error: true
         run: |
           ls
+          file b_u585i-modbus-server 
+          ls b_u585i-modbus-server
 
       - name: Flash b_u585i_iot02a
         if: runner.environment == 'self-hosted'
@@ -469,7 +471,10 @@ jobs:
           WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server/modbus-server.wasm
           west -v build --pristine=auto -b b_u585i_iot02a ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
-            -DOCRE_INPUT_FILE=$WASM_FILE
+            -DOCRE_INPUT_FILE=$WASM_FILE \ 
+            -DTARGET_PLATFORM_NAME=Zephyr
+
+          west flash
 
   modbus-server-validation-tests:
     needs: flash-zephyr-modbus_server-b_u585i_iot02a
