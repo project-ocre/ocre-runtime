@@ -29,7 +29,7 @@ typedef struct {
     wasm_module_inst_t owner;
 } ocre_timer_internal;
 
-#ifndef CONFIG_MAX_TIMER
+#ifndef CONFIG_MAX_TIMERS
 #define CONFIG_MAX_TIMERS 5
 #endif
 
