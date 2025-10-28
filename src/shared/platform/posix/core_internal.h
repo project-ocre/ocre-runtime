@@ -137,7 +137,9 @@ void set_argc(int argc);
 /**
  * @brief Application version string.
  */
+#ifndef APP_VERSION_STRING
 #define APP_VERSION_STRING           "0.0.0-dev"
+#endif /* APP_VERSION_STRING */
 
 /**
  * @brief Default heap buffer size for WAMR (in bytes).
