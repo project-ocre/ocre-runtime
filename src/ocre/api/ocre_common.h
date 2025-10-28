@@ -8,9 +8,10 @@
 #ifndef OCRE_COMMON_H
 #define OCRE_COMMON_H
 
-#include <zephyr/kernel.h>
-#include <zephyr/sys/slist.h>
 #include <wasm_export.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include "ocre_core_external.h"
 #include "../ocre_messaging/ocre_messaging.h"
 
 #define OCRE_EVENT_THREAD_STACK_SIZE 2048
@@ -18,16 +19,14 @@
 #define OCRE_WASM_STACK_SIZE         16384
 #define EVENT_THREAD_POOL_SIZE 0
 
-
 extern bool common_initialized;
 extern bool ocre_event_queue_initialized;
 extern __thread wasm_module_inst_t *current_module_tls;
-
-
-extern struct k_msgq ocre_event_queue;          // Defined in ocre_common.c
-extern bool ocre_event_queue_initialized;       // Defined in ocre_common.c
-extern struct k_spinlock ocre_event_queue_lock; // Defined in ocre_common.c
 extern char *ocre_event_queue_buffer_ptr;       // Defined in ocre_common.c
+
+/* External declarations for unified event queue */
+extern core_eventq_t ocre_event_queue;          // Defined in ocre_common.c
+extern core_spinlock_t ocre_event_queue_lock;   // Defined in ocre_common.c
 
 
 /**

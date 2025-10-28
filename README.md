@@ -20,18 +20,19 @@ Our mission is to make it as easy to develop and securely deploy apps for the bi
 
 Ocre supports a range of features depending on the platform. The table below summarizes the current support:
 
-| Feature                | Zephyr (native_sim, b_u585i_iot02a) | Linux x86_64  |
+| Feature                | Zephyr (native_sim, b_u585i_iot02a) | Linux         |
 |------------------------|:-----------------------------------:|:-------------:|
 | Ocre Runtime           | ✅                                  | ✅           |
-| Container Messaging    | ✅                                  | ❌           |
+| Container Messaging    | ✅                                  | ✅           |
 | GPIO                   | ✅                                  | ❌           |
-| Timers                 | ✅                                  | ❌           |
+| Timers                 | ✅                                  | ✅           |
 | Sensors                | ✅                                  | ❌           |
-| Networking             | ❌                                  | ✅           |
+| Networking             | ✅                                  | ✅           |
+| Filesystem             | ✅                                  | ✅           |
 | Interactive Shell      | ✅                                  | ❌           |
 
 - **Zephyr**: Full feature set, including hardware integration and shell.
-- **Linux x86_64**: Core runtime and networking only; hardware and shell features are not available.
+- **Linux**: Core runtime and multiple I/O features; hardware and shell features are not available.
 
 ---
 

@@ -120,4 +120,90 @@ struct core_timer {
     void *user_data;                /*!< User data for the callback */
 };
 
+/* Generic singly-linked list iteration macros */
+#define CORE_SLIST_FOR_EACH_CONTAINER_SAFE SYS_SLIST_FOR_EACH_CONTAINER_SAFE
+#define CORE_SLIST_FOR_EACH_CONTAINER SYS_SLIST_FOR_EACH_CONTAINER
+
+/**
+ * @brief Structure representing a node in a singly-linked list.
+ */
+#define core_snode_t sys_snode_t
+
+/**
+ * @brief Structure representing a singly-linked list for POSIX platform.
+ */
+#define core_slist_t sys_slist_t
+
+/**
+ * @brief Initialize a singly-linked list.
+ *
+ * @param list Pointer to the list to initialize.
+ */
+#define core_slist_init sys_slist_init
+
+/**
+ * @brief Append a node to the end of a singly-linked list.
+ *
+ * @param list Pointer to the list to append to.
+ * @param node Pointer to the node to append.
+ */
+#define core_slist_append sys_slist_append
+
+/**
+ * @brief Remove a node from a singly-linked list.
+ *
+ * @param list Pointer to the list to remove from.
+ * @param prev Pointer to the previous node (or NULL if removing head).
+ * @param node Pointer to the node to remove.
+ */
+#define core_slist_remove sys_slist_remove
+
+/* Zephyr-specific macros */
+
+/**
+ * @brief Get system uptime in milliseconds.
+ *
+ * @return System uptime in milliseconds.
+ */
+#define core_uptime_get          k_uptime_get_32
+
+/**
+ * @brief Lock a spinlock and return the interrupt key.
+ *
+ * @param lock Pointer to the spinlock structure.
+ * @return Interrupt key to be used with unlock.
+ */
+#define core_spinlock_lock    k_spin_lock
+
+/**
+ * @brief Unlock a spinlock using the interrupt key.
+ *
+ * @param lock Pointer to the spinlock structure.
+ * @param key Interrupt key returned from lock operation.
+ */
+#define core_spinlock_unlock k_spin_unlock
+
+/**
+ * @brief Spinlock type for Zephyr platform.
+ */
+typedef struct k_spinlock core_spinlock_t;
+
+/**
+ * @brief Spinlock key type for Zephyr platform.
+ */
+typedef k_spinlock_key_t core_spinlock_key_t;
+
+/**
+ * @brief Generic event queue structure for Zephyr platform.
+ * 
+ * A thread-safe message queue implementation using Zephyr's k_msgq
+ * that can store any type of data items with configurable size and capacity.
+ */
+typedef struct {
+    void *buffer;                   /*!< Dynamically allocated buffer for queue items */
+    size_t item_size;               /*!< Size of each individual item in bytes */
+    size_t max_items;               /*!< Maximum number of items the queue can hold */
+    struct k_msgq msgq;             /*!< Zephyr message queue */
+} core_eventq_t;
+
 #endif

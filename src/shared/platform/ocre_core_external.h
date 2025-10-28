@@ -223,4 +223,71 @@ int core_fileclose(void *handle);
  */
 int core_construct_filepath(char *path, size_t len, char *name);
 
+/**
+ * @brief Get system uptime in milliseconds.
+ *
+ * @return System uptime in milliseconds.
+ */
+uint32_t core_uptime_get(void);
+
+/**
+ * @brief Lock a spinlock and return the interrupt key.
+ *
+ * @param lock Pointer to the spinlock structure.
+ * @return Interrupt key to be used with unlock.
+ */
+core_spinlock_key_t core_spinlock_lock(core_spinlock_t *lock);
+
+/**
+ * @brief Unlock a spinlock using the interrupt key.
+ *
+ * @param lock Pointer to the spinlock structure.
+ * @param key Interrupt key returned from lock operation.
+ */
+void core_spinlock_unlock(core_spinlock_t *lock, core_spinlock_key_t key);
+
+/**
+ * @brief Initialize an event queue with specified item size and capacity.
+ *
+ * @param eventq Pointer to the event queue structure to initialize.
+ * @param item_size Size of each item in bytes.
+ * @param max_items Maximum number of items the queue can hold.
+ * @return 0 on success, negative error code on failure.
+ */
+int core_eventq_init(core_eventq_t *eventq, size_t item_size, size_t max_items);
+
+/**
+ * @brief Peek at the next item in the queue without removing it.
+ *
+ * @param eventq Pointer to the event queue.
+ * @param event Pointer to buffer where the peeked item will be copied.
+ * @return 0 on success, -ENOMSG if queue is empty.
+ */
+int core_eventq_peek(core_eventq_t *eventq, void *event);
+
+/**
+ * @brief Get and remove the next item from the queue.
+ *
+ * @param eventq Pointer to the event queue.
+ * @param event Pointer to buffer where the retrieved item will be copied.
+ * @return 0 on success, -ENOENT if queue is empty.
+ */
+int core_eventq_get(core_eventq_t *eventq, void *event);
+
+/**
+ * @brief Put an item into the queue.
+ *
+ * @param eventq Pointer to the event queue.
+ * @param event Pointer to the item to be added to the queue.
+ * @return 0 on success, -ENOMEM if queue is full.
+ */
+int core_eventq_put(core_eventq_t *eventq, const void *event);
+
+/**
+ * @brief Destroy an event queue and free its resources.
+ *
+ * @param eventq Pointer to the event queue to destroy.
+ */
+void core_eventq_destroy(core_eventq_t *eventq);
+
 #endif /* OCRE_CORE_EXTERNAL_H */

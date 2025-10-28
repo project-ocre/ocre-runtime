@@ -9,9 +9,7 @@
 #define OCRE_MESSAGING_H
 
 #include <ocre/ocre.h>
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/spinlock.h>
+#include "ocre_core_external.h"
 #include <wasm_export.h>
 
 #define MESSAGING_QUEUE_SIZE 100

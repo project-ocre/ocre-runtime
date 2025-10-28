@@ -266,10 +266,10 @@ void ocre_gpio_cleanup_container(wasm_module_inst_t module_inst) {
             gpio_pins[i].in_use = 0;
             gpio_pins[i].owner = NULL;
             ocre_decrement_resource_count(module_inst, OCRE_RESOURCE_TYPE_GPIO);
-            LOG_INF("Cleaned up GPIO pin %d", i);
+            LOG_DBG("Cleaned up GPIO pin %d", i);
         }
     }
-    LOG_INF("Cleaned up GPIO resources for module %p", (void *)module_inst);
+    LOG_DBG("Cleaned up GPIO resources for module %p", (void *)module_inst);
 }
 
 void ocre_gpio_set_dispatcher(wasm_exec_env_t exec_env) {
@@ -370,14 +370,14 @@ static void gpio_callback_handler(const struct device *port, struct gpio_callbac
             event.data.gpio_event.port = gpio_pins[i].port_idx;
             event.data.gpio_event.state = (uint32_t)state;
             event.owner = gpio_pins[i].owner;
-            k_spinlock_key_t key = k_spin_lock(&ocre_event_queue_lock);
-            if (k_msgq_put(&ocre_event_queue, &event, K_NO_WAIT) != 0) {
+            core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
+            if (core_eventq_put(&ocre_event_queue, &event) != 0) {
                 LOG_ERR("Failed to queue GPIO event for pin %d", i);
             } else {
                 LOG_INF("Queued GPIO event for pin %d (port=%d, pin=%d), state=%d", i, gpio_pins[i].port_idx,
                         gpio_pins[i].pin_number, state);
             }
-                k_spin_unlock(&ocre_event_queue_lock, key);
+            core_spinlock_unlock(&ocre_event_queue_lock, key);
             }
         }
     }
