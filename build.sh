@@ -4,12 +4,14 @@
 show_help() {
     echo "Usage: $0 -t <target> [-r] [-f <file1> [file2 ...]]"
     echo "  -t <target>   (Required) Specify the target. z for Zephyr and l for Linux"
-    echo "  -r            (Optional) Specify whether run after the build"
-    echo "  -f <file(s)>  (Optional) Specify one or more input files"
+    echo "  -r            (Optional) Run after build"
+    echo "  -f <file(s)>  (Optional) Specify WASM file(s) to embed"
+    echo "                  Example: -f app.wasm"
+    echo "                  Example: -f blinky.wasm sensor.wasm control.wasm"
     echo "  -b <board>    (Optional, Zephyr only) Select board:"
     echo "                  uw  -> b_u585i_iot02a + W5500"
     echo "                  ue  -> b_u585i_iot02a + ENC28J60"
-    echo "  note: when no board is selected, native_sim is the default target for Zephyr"
+    echo "                  (default: native_sim)"
     echo "  -h            Display help"
     exit 0
 }
@@ -99,14 +101,27 @@ if [[ "$TARGET" == "z" ]]; then
     esac
 
     if [[ ${#INPUT_FILES[@]} -gt 0 ]]; then
-        echo "Input files provided: ${INPUT_FILES[*]}"
-        rm flash.bin
+        echo "Input WASM files provided: ${INPUT_FILES[*]}"
+
+        WASM_LIST=$(IFS=';'; echo "${INPUT_FILES[*]}")
+
+        for WASM_FILE in "${INPUT_FILES[@]}"; do
+            WASM_NAME=$(basename "$WASM_FILE" .wasm)
+            echo "  → Will embed: ${WASM_NAME} <- ${WASM_FILE}"
+        done
+
+        rm -f flash.bin
         west build -p -b $ZEPHYR_BOARD ./application -d build -- \
-            -DMODULE_EXT_ROOT=`pwd`/application -DOCRE_INPUT_FILE="${INPUT_FILES[0]}" -DTARGET_PLATFORM_NAME=Zephyr $CONF_EXTRA || exit 1
+            -DMODULE_EXT_ROOT=`pwd`/application \
+            -DOCRE_WASM_FILES="$WASM_LIST" \
+            -DTARGET_PLATFORM_NAME=Zephyr \
+            $CONF_EXTRA || exit 1
     else
-        rm flash.bin
+        rm -f flash.bin
         west build -p -b $ZEPHYR_BOARD ./application -d build -- \
-            -DMODULE_EXT_ROOT=`pwd`/application -DTARGET_PLATFORM_NAME=Zephyr $CONF_EXTRA || exit 1
+            -DMODULE_EXT_ROOT=`pwd`/application \
+            -DTARGET_PLATFORM_NAME=Zephyr \
+            $CONF_EXTRA || exit 1
     fi
 elif [[ "$TARGET" == "l" ]]; then
     echo "Target is: Linux"

@@ -8,7 +8,7 @@ endif()
 if(TARGET_PLATFORM_NAME STREQUAL "Linux")
     project(ocre LANGUAGES C ASM)
 elseif(TARGET_PLATFORM_NAME STREQUAL "Zephyr")
-    find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})  
+    find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
     project(ocre VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_PATCHLEVEL}.${APP_VERSION_TWEAK} LANGUAGES C ASM)
 else()
     message(FATAL_ERROR "Unsupported TARGET_PLATFORM_NAME: ${TARGET_PLATFORM_NAME}")
@@ -55,19 +55,10 @@ add_custom_command(
 )
 add_custom_target(generate_messages DEPENDS ${MSG_GENERATED_FILE})
 
-if(NOT "${OCRE_INPUT_FILE}" STREQUAL "")
-    message("Using input file: ${OCRE_INPUT_FILE}")
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_LIST_DIR}/src/ocre/ocre_input_file.g
-        COMMAND xxd -n wasm_binary -i ${OCRE_INPUT_FILE} > ${CMAKE_CURRENT_LIST_DIR}/src/ocre/ocre_input_file.g
-        DEPENDS ${OCRE_INPUT_FILE}
-        COMMENT "Generating C header from ${OCRE_INPUT_FILE}"
-    )
-
-    add_definitions(-DHAS_GENERATED_INPUT)
-
-    add_custom_target(generate_ocre_file DEPENDS ${CMAKE_CURRENT_LIST_DIR}/src/ocre/ocre_input_file.g)
-endif()
+# Include and process WASM binaries
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(embed_wasm_binary)
+process_wasm_binaries()
 
 if(TARGET_PLATFORM_NAME STREQUAL "Linux")
     include(${CMAKE_CURRENT_LIST_DIR}/src/shared/platform/posix/ocre_internal.cmake)

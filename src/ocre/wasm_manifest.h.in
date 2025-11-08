@@ -1,0 +1,46 @@
+// Auto-generated WASM manifest
+// DO NOT EDIT - Generated at build time from wasm_manifest.h.in
+
+#ifndef OCRE_WASM_MANIFEST_H
+#define OCRE_WASM_MANIFEST_H
+
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+
+// External symbols from objcopy
+@EXTERN_DECLARATIONS@
+
+// WASM binary entry structure
+typedef struct {
+    const char *name;        // Container name
+    const uint8_t *data;     // Pointer to WASM binary
+    size_t size;             // Size in bytes
+} wasm_binary_entry_t;
+
+// Number of embedded WASM binaries
+#define WASM_BINARY_COUNT @COUNT@
+
+// Manifest array
+static const wasm_binary_entry_t wasm_manifest[WASM_BINARY_COUNT] = {
+@MANIFEST_ENTRIES@
+};
+
+// Helper function to find a WASM binary by name
+static inline const wasm_binary_entry_t* wasm_find(const char *name) {
+    if (!name) return NULL;
+    for (int i = 0; i < WASM_BINARY_COUNT; i++) {
+        if (strcmp(wasm_manifest[i].name, name) == 0) {
+            return &wasm_manifest[i];
+        }
+    }
+    return NULL;
+}
+
+// Helper function to get WASM binary by index
+static inline const wasm_binary_entry_t* wasm_get(int index) {
+    if (index < 0 || index >= WASM_BINARY_COUNT) return NULL;
+    return &wasm_manifest[index];
+}
+
+#endif // OCRE_WASM_MANIFEST_H
