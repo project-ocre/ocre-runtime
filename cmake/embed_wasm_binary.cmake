@@ -90,20 +90,21 @@ function(embed_wasm_binary)
 
     message(STATUS "Detected architecture: ${ARCH_NAME}, using objcopy format: ${OBJCOPY_FORMAT}")
 
-    # Convert WASM to object file (use symbol name for unique files)
-    set(WASM_OBJECT_FILE ${CMAKE_CURRENT_BINARY_DIR}/wasm_${WASM_SYMBOL_NAME}.o)
+       # Convert WASM to object file (use symbol name for unique files)
+       set(WASM_OBJECT_FILE ${CMAKE_CURRENT_BINARY_DIR}/wasm_${WASM_SYMBOL_NAME}.o)
 
-    add_custom_command(
-        OUTPUT ${WASM_OBJECT_FILE}
-        COMMAND objcopy
-            -I binary
-            -O ${OBJCOPY_FORMAT}
-            --rename-section .data=.rodata.wasm,alloc,load,readonly,data,contents
-            ${WASM_STAGED_FILE}
-            ${WASM_OBJECT_FILE}
-        DEPENDS ${WASM_STAGED_FILE}
-        COMMENT "Converting to object file (${OBJCOPY_FORMAT} for ${ARCH_NAME})"
-    )
+       add_custom_command(
+           OUTPUT ${WASM_OBJECT_FILE}
+           COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_BINARY_DIR}
+               objcopy
+               -I binary
+               -O ${OBJCOPY_FORMAT}
+               --rename-section .data=.rodata.wasm.${WASM_SYMBOL_NAME},alloc,load,readonly,data,contents
+               ${WASM_OUTPUT_NAME}
+               wasm_${WASM_SYMBOL_NAME}.o
+           DEPENDS ${WASM_STAGED_FILE}
+           COMMENT "Converting to object file (${OBJCOPY_FORMAT} for ${ARCH_NAME})"
+       )
 
     # Create a custom target
     add_custom_target(${WASM_TARGET_NAME} DEPENDS ${WASM_OBJECT_FILE})

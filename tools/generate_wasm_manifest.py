@@ -21,17 +21,24 @@ def generate_extern_declarations(wasm_names):
     return "\n".join(declarations)
 
 def generate_manifest_entries(wasm_names):
-    """Generate manifest array entries"""
+    """Generate manifest array entries WITHOUT size field"""
     entries = []
     for name in wasm_names:
         safe_name = sanitize_name(name)
         entry = f"""    {{
         .name = "{name}",
-        .data = _binary_{safe_name}_wasm_start,
-        .size = (size_t)(_binary_{safe_name}_wasm_end - _binary_{safe_name}_wasm_start)
+        .data = _binary_{safe_name}_wasm_start
     }}"""
         entries.append(entry)
     return ",\n".join(entries)
+
+def generate_size_calculations(wasm_names):
+    """Generate size calculation switch statement"""
+    cases = []
+    for i, name in enumerate(wasm_names):
+        safe_name = sanitize_name(name)
+        cases.append(f"    if (index == {i}) return (size_t)(_binary_{safe_name}_wasm_end - _binary_{safe_name}_wasm_start);")
+    return "\n".join(cases)
 
 def main():
     parser = argparse.ArgumentParser(description='Generate WASM manifest header from template')
@@ -52,11 +59,13 @@ def main():
     # Generate content pieces
     extern_decls = generate_extern_declarations(args.names)
     manifest_entries = generate_manifest_entries(args.names)
+    size_calculations = generate_size_calculations(args.names)
 
     # Replace placeholders
     content = template.replace('@EXTERN_DECLARATIONS@', extern_decls)
     content = content.replace('@COUNT@', str(len(args.names)))
     content = content.replace('@MANIFEST_ENTRIES@', manifest_entries)
+    content = content.replace('@SIZE_CALCULATIONS@', size_calculations)
 
     # Write output
     output_path = Path(args.output)

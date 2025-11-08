@@ -119,8 +119,21 @@ target_sources(app PRIVATE
 
 add_dependencies(app generate_messages)
 
-if(NOT "${OCRE_INPUT_FILE}" STREQUAL "")
-    add_dependencies(app generate_ocre_file)
-    # Add the WASM object file to the app sources
-    target_sources(app PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/wasm_binary.o)
+message(STATUS "DEBUG: WASM_MANIFEST_ENTRIES = '${WASM_MANIFEST_ENTRIES}'")
+message(STATUS "DEBUG: CMAKE_CURRENT_BINARY_DIR = '${CMAKE_CURRENT_BINARY_DIR}'")
+
+# Link WASM object files if manifest was generated
+if(DEFINED WASM_MANIFEST_ENTRIES AND WASM_MANIFEST_ENTRIES)
+    message(STATUS "Linking WASM object files: ${WASM_MANIFEST_ENTRIES}")
+
+    foreach(WASM_NAME ${WASM_MANIFEST_ENTRIES})
+        set(WASM_OBJ ${CMAKE_CURRENT_BINARY_DIR}/wasm_${WASM_NAME}.o)
+
+        # Don't check if EXISTS - files are generated at build time!
+        target_sources(app PRIVATE ${WASM_OBJ})
+        add_dependencies(app generate_${WASM_NAME}_wasm)
+        message(STATUS "  → Will link: ${WASM_OBJ}")
+    endforeach()
+else()
+    message(WARNING "No WASM_MANIFEST_ENTRIES defined!")
 endif()
