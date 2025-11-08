@@ -35,5 +35,10 @@
 			label = "storage";
 			reg = <0x100000 0x00004000>;
 		};
+
+		wasm_binary_partition: partition@f0000 {
+            label = "wasm-binary";
+            reg = <0x000f0000 DT_SIZE_K(64)>;
+        };
 	};
 };

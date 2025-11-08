@@ -104,6 +104,10 @@ int ocre_gpio_init(void) {
 #elif defined(CONFIG_BOARD_W5500_EVB_PICO2)
     INIT_GPIO_PORT_NAMED(0, DT_NODELABEL(gpio0), "GPIO0");
 
+#elif defined(CONFIG_BOARD_NRF5340DK_NRF5340_CPUAPP)
+    INIT_GPIO_PORT_NAMED(0, DT_NODELABEL(gpio0), "GPIO0");
+    INIT_GPIO_PORT_NAMED(1, DT_NODELABEL(gpio1), "GPIO1");
+
 #else
     // Generic fallback
 #if DT_NODE_EXISTS(DT_NODELABEL(gpio0))
@@ -384,7 +388,7 @@ static void gpio_callback_handler(const struct device *port, struct gpio_callbac
 }
 
 //========================================================================================================================================================================================================================================================================================================
-// By Name 
+// By Name
 //========================================================================================================================================================================================================================================================================================================
 static int find_port_index(const struct device *port) {
     if (!port) {
@@ -662,12 +666,12 @@ int ocre_gpio_wasm_register_callback_by_name(wasm_exec_env_t exec_env, const cha
 
     int global_pin = port_idx * CONFIG_OCRE_GPIO_PINS_PER_PORT + pin;
     LOG_INF("Registering callback by name: %s, global_pin=%d", name, global_pin);
-    
+
     if (global_pin >= CONFIG_OCRE_GPIO_MAX_PINS) {
         LOG_ERR("Global pin %d exceeds max %d", global_pin, CONFIG_OCRE_GPIO_MAX_PINS);
         return -EINVAL;
     }
-    
+
     return ocre_gpio_register_callback(global_pin);
 }
 
@@ -686,6 +690,6 @@ int ocre_gpio_wasm_unregister_callback_by_name(wasm_exec_env_t exec_env, const c
 
     int global_pin = port_idx * CONFIG_OCRE_GPIO_PINS_PER_PORT + pin;
     LOG_INF("Unregistering callback by name: %s, global_pin=%d", name, global_pin);
-    
+
     return ocre_gpio_unregister_callback(global_pin);
 }
