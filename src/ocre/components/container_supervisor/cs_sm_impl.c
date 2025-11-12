@@ -34,17 +34,14 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
 
-// External RAM support for WAMR heap on boards that have it
+#include "ocre_psram.h"
+
+// WAMR heap buffer - uses PSRAM when available
 #if defined(CONFIG_MEMC)
-    #if defined(CONFIG_BOARD_ARDUINO_PORTENTA_H7)
-        __attribute__((section("SDRAM1"), aligned(32)))
-    #elif defined(CONFIG_BOARD_B_U585I_IOT02A)
-        __attribute__((section(".stm32_psram"), aligned(32)))
-    #elif defined(CONFIG_BOARD_MIMXRT1064_EVK)
-        __attribute__((section("SDRAM"), aligned(32)))
-    #endif // defined (<board>)
-#endif // defined(CONFIG_MEMC)
+    PSRAM_SECTION_ATTR
+#endif
 static char wamr_heap_buf[CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE] = {0};
+
 
 // Thread pool for container execution
 #define CONTAINER_THREAD_POOL_SIZE 4
@@ -178,6 +175,7 @@ static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_argument
     size_t file_size = 0;
     void *file_handle = NULL;
     char filepath[FILE_PATH_MAX];
+    
 
     ret = core_construct_filepath(filepath, sizeof(filepath), container_data->sha256);
     if (ret < 0) {
@@ -191,9 +189,9 @@ static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_argument
     }
 
     container_arguments->size = file_size;
-    container_arguments->buffer = malloc(file_size);
+    container_arguments->buffer = storage_heap_alloc(file_size);
     if (!container_arguments->buffer) {
-        LOG_ERR("Failed to allocate memory for container binary.");
+        LOG_ERR("Failed to allocate memory for container binary from PSRAM.");
         return -ENOMEM;
     }
 
@@ -202,7 +200,7 @@ static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_argument
     ret = core_fileopen(filepath, &file_handle);
     if (ret < 0) {
         LOG_ERR("Failed to open file %s: %d", filepath, ret);
-        free(container_arguments->buffer);
+        storage_heap_free(container_arguments->buffer);
         return ret;
     }
 
@@ -210,14 +208,14 @@ static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_argument
     if (ret < 0) {
         LOG_ERR("Failed to read file %s: %d", filepath, ret);
         core_fileclose(file_handle);
-        free(container_arguments->buffer);
+        storage_heap_free(container_arguments->buffer);
         return ret;
     }
 
     ret = core_fileclose(file_handle);
     if (ret < 0) {
         LOG_ERR("Failed to close file %s: %d", filepath, ret);
-        free(container_arguments->buffer);
+        storage_heap_free(container_arguments->buffer);
         return ret;
     }
     return 0;
@@ -268,6 +266,7 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
     ocre_messaging_init();
 #endif
+    storage_heap_init();
     return RUNTIME_STATUS_INITIALIZED;
 }
 
@@ -322,7 +321,7 @@ ocre_container_status_t CS_create_container(ocre_container_t *container) {
                               curr_container_arguments->error_buf, sizeof(curr_container_arguments->error_buf));
     if (!curr_container_arguments->module) {
         LOG_ERR("Failed to load WASM module: %s", curr_container_arguments->error_buf);
-        free(curr_container_arguments->buffer);
+        storage_heap_free(curr_container_arguments->buffer);
         return CONTAINER_STATUS_ERROR;
     }
 
@@ -381,7 +380,7 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
             LOG_ERR("Failed to instantiate WASM module: %s, for containerID= %d", curr_container_arguments->error_buf,
                     curr_container_ID);
             wasm_runtime_unload(curr_container_arguments->module);
-            free(curr_container_arguments->buffer);
+            storage_heap_free(curr_container_arguments->buffer);
             return CONTAINER_STATUS_ERROR;
         }
 #if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
@@ -514,7 +513,7 @@ ocre_container_status_t CS_destroy_container(ocre_container_t *container, ocre_c
         }
 
         if (container->ocre_runtime_arguments.buffer) {
-            free(container->ocre_runtime_arguments.buffer);
+            storage_heap_free(container->ocre_runtime_arguments.buffer);
             container->ocre_runtime_arguments.buffer = NULL;
         }
 
