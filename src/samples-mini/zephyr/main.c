@@ -26,7 +26,11 @@ int ocre_network_init();
 int main(int argc, char *argv[]) {
     ocre_cs_ctx ctx;
     ocre_container_init_arguments_t args;
-    char *container_filename = "hello";
+#ifdef OCRE_INPUT_FILE_NAME
+    const char *container_filename = OCRE_INPUT_FILE_NAME;
+#else
+    const char *container_filename = "hello-from-ocre";
+#endif
 
 #ifdef CONFIG_OCRE_NETWORKING
     int net_status = ocre_network_init();
@@ -52,7 +56,7 @@ int main(int argc, char *argv[]) {
         int container_ID;
 
         ocre_container_data.heap_size = 0;
-        snprintf(ocre_container_data.name, sizeof(ocre_container_data.name), "Hello World");
+        snprintf(ocre_container_data.name, sizeof(ocre_container_data.name), "%s", container_filename);
         snprintf(ocre_container_data.sha256, sizeof(ocre_container_data.sha256), "%s", container_filename);
         ocre_container_data.timers = 0;
         ocre_container_runtime_create_container(&ctx, &ocre_container_data, &container_ID, NULL);
