@@ -240,8 +240,12 @@ config OCRE_SHARED_HEAP_BUF_SIZE
       This memory is shared between WebAssembly modules.
 
 config OCRE_SHARED_HEAP_BUF_ADDRESS
-    int
+    hex "Shared heap buffer address"
+    default 0x00
+    depends on OCRE_SHARED_HEAP
     help
-      Shared heap buffer address.
+      Shared heap buffer address for memory-mapped hardware access.
+      This should be set to the physical address of the hardware registers
+      that containers need to access directly.
 
 endmenu

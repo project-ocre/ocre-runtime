@@ -74,7 +74,7 @@ static size_t ocre_get_available_memory(void) {
 #endif
 
 #ifdef CONFIG_OCRE_SHARED_HEAP
-// Shared heap for memory-mapped GPIO access
+// Shared heap for memory-mapped access
 wasm_shared_heap_t _shared_heap = NULL;
 uint8 preallocated_buf[CONFIG_OCRE_SHARED_HEAP_BUF_SIZE];
 #endif
@@ -425,9 +425,8 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
 
         uint32 shared_heap_base_addr = wasm_runtime_addr_native_to_app(curr_container_arguments->module_inst, preallocated_buf);
         LOG_INF("Shared heap base address in app: 0x%x", shared_heap_base_addr);
-    }
 #endif
-}
+    }
     core_mutex_lock(&container_mutex);
     int thread_idx = get_available_thread();
     if (thread_idx == -1) {
