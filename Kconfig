@@ -224,5 +224,24 @@ config OCRE_NETWORKING
     default n
     help
         Enable networking support for containers.
-        
+
+config OCRE_SHARED_HEAP
+    bool "Enable container shared heap support"
+    default n
+    help
+        Enable shared heap support for containers.
+
+config OCRE_SHARED_HEAP_BUF_SIZE
+    int "Shared heap buffer size in bytes"
+    default 65536
+    depends on OCRE_SHARED_HEAP
+    help
+      Size of the pre-allocated buffer for the shared heap.
+      This memory is shared between WebAssembly modules.
+
+config OCRE_SHARED_HEAP_BUF_ADDRESS
+    int
+    help
+      Shared heap buffer address.
+
 endmenu

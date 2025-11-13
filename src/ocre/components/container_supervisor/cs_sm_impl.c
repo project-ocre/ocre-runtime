@@ -73,6 +73,12 @@ static size_t ocre_get_available_memory(void) {
 }
 #endif
 
+#ifdef CONFIG_OCRE_SHARED_HEAP
+// Shared heap for memory-mapped GPIO access
+wasm_shared_heap_t _shared_heap = NULL;
+uint8 preallocated_buf[CONFIG_OCRE_SHARED_HEAP_BUF_SIZE];
+#endif
+
 static bool validate_container_memory(ocre_container_t *container) {
 #ifdef CONFIG_OCRE_MEMORY_CHECK_ENABLED
     size_t requested_heap = container->ocre_container_data.heap_size;
@@ -266,6 +272,19 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
     ocre_messaging_init();
 #endif
+#ifdef CONFIG_OCRE_SHARED_HEAP
+    SharedHeapInitArgs heap_init_args;
+    memset(&heap_init_args, 0, sizeof(heap_init_args));
+    heap_init_args.pre_allocated_addr = (void *)CONFIG_OCRE_SHARED_HEAP_BUF_ADDRESS;
+    heap_init_args.size = CONFIG_OCRE_SHARED_HEAP_BUF_SIZE;
+    _shared_heap = wasm_runtime_create_shared_heap(&heap_init_args);
+
+    if (!_shared_heap) {
+        LOG_ERR("Create preallocated shared heap failed");
+        return RUNTIME_STATUS_ERROR;
+    }
+#endif
+
     storage_heap_init();
     return RUNTIME_STATUS_INITIALIZED;
 }
@@ -352,6 +371,15 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
                 "0.0.0.0/0",
         };
         wasm_runtime_set_wasi_addr_pool(curr_container_arguments->module, addr_pool, ADDRESS_POOL_SIZE);
+        /**
+         * Configure which domain names a WebAssembly module is allowed to resolve via DNS lookups
+         * ns_lookup_pool: An array of domain name patterns (e.g., "example.com", "*.example.com", or "*" for any domain)
+         */
+
+        const char *ns_lookup_pool[] = {
+            "*"
+        };
+        wasm_runtime_set_wasi_ns_lookup_pool(curr_container_arguments->module, ns_lookup_pool, sizeof(ns_lookup_pool) / sizeof(ns_lookup_pool[0]));
     #endif
 
     #ifdef CONFIG_OCRE_CONTAINER_FILESYSTEM
@@ -387,8 +415,19 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
         defined(CONFIG_OCRE_CONTAINER_MESSAGING)
         ocre_register_module(curr_container_arguments->module_inst);
 #endif
-    }
+#ifdef CONFIG_OCRE_SHARED_HEAP
+        LOG_INF("Attaching shared heap to container %d", curr_container_ID);
+        /* attach module instance to the shared heap */
+        if (!wasm_runtime_attach_shared_heap(curr_container_arguments->module_inst, _shared_heap)) {
+            LOG_ERR("Attach shared heap failed.");
+            return CONTAINER_STATUS_ERROR;
+        }
 
+        uint32 shared_heap_base_addr = wasm_runtime_addr_native_to_app(curr_container_arguments->module_inst, preallocated_buf);
+        LOG_INF("Shared heap base address in app: 0x%x", shared_heap_base_addr);
+    }
+#endif
+}
     core_mutex_lock(&container_mutex);
     int thread_idx = get_available_thread();
     if (thread_idx == -1) {
