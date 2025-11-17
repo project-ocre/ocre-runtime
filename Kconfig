@@ -39,13 +39,6 @@ config OCRE_WAMR_HEAP_BUFFER_SIZE
   help
     A static memory allocation for WAMR to use as a heap.
 
-config OCRE_STORAGE_HEAP_BUFFER_SIZE
-  int "Storage heap buffer size in bytes"
-  default 500000
-  depends on MEMC
-  help
-    A static memory allocation for container storage to use as a heap.
-
 config OCRE_CONTAINER_DEFAULT_HEAP_SIZE
   int "Default value for the container heap size"
   default 4096
