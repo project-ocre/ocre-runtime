@@ -76,7 +76,9 @@ static size_t ocre_get_available_memory(void) {
 #ifdef CONFIG_OCRE_SHARED_HEAP
 // Shared heap for memory-mapped access
 wasm_shared_heap_t _shared_heap = NULL;
+#ifdef CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL
 uint8 preallocated_buf[CONFIG_OCRE_SHARED_HEAP_BUF_SIZE];
+#endif
 #endif
 
 static bool validate_container_memory(ocre_container_t *container) {
@@ -275,7 +277,18 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 #ifdef CONFIG_OCRE_SHARED_HEAP
     SharedHeapInitArgs heap_init_args;
     memset(&heap_init_args, 0, sizeof(heap_init_args));
+    
+#ifdef CONFIG_OCRE_SHARED_HEAP_BUF_PHYSICAL
+    // Physical mode - map hardware register address
     heap_init_args.pre_allocated_addr = (void *)CONFIG_OCRE_SHARED_HEAP_BUF_ADDRESS;
+    LOG_INF("Creating physical memory mapping at 0x%08X (hardware registers)", 
+            CONFIG_OCRE_SHARED_HEAP_BUF_ADDRESS);
+#elif CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL
+    // Virtual mode - allocate from RAM
+    heap_init_args.pre_allocated_addr = preallocated_buf;
+    LOG_INF("Creating virtual shared heap in RAM, size=%d bytes", 
+            CONFIG_OCRE_SHARED_HEAP_BUF_SIZE);
+#endif
     heap_init_args.size = CONFIG_OCRE_SHARED_HEAP_BUF_SIZE;
     _shared_heap = wasm_runtime_create_shared_heap(&heap_init_args);
 
@@ -423,8 +436,26 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
             return CONTAINER_STATUS_ERROR;
         }
 
-        uint32 shared_heap_base_addr = wasm_runtime_addr_native_to_app(curr_container_arguments->module_inst, preallocated_buf);
-        LOG_INF("Shared heap base address in app: 0x%x", shared_heap_base_addr);
+#ifdef CONFIG_OCRE_SHARED_HEAP_BUF_PHYSICAL
+        // For physical mode, get the base address from the shared heap itself
+        // The WASM address space already knows about the physical mapping
+        uint32 shared_heap_base_addr = wasm_runtime_shared_heap_get_wasm_addr(_shared_heap);
+        LOG_INF("Physical shared heap base address in app: 0x%x", shared_heap_base_addr);
+#elif CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL
+        // For virtual mode, convert the allocated buffer address
+        uint32 shared_heap_base_addr = wasm_runtime_addr_native_to_app(
+            curr_container_arguments->module_inst, 
+            preallocated_buf);
+        LOG_INF("Virtual shared heap base address in app: 0x%x", shared_heap_base_addr);
+#endif
+        
+        if (shared_heap_base_addr == 0) {
+            LOG_ERR("Failed to get shared heap WASM address!");
+            return CONTAINER_STATUS_ERROR;
+        }
+        
+        LOG_INF("GPIO registers mapped: physical 0x%08X -> WASM 0x%08X", 
+            CONFIG_OCRE_SHARED_HEAP_BUF_ADDRESS, shared_heap_base_addr);
 #endif
     }
     core_mutex_lock(&container_mutex);
