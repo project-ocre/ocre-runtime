@@ -28,7 +28,7 @@ void user_free(void *ptr) {
 }
 
 void *user_realloc(void *ptr, size_t size) {
-    k_panic();
+    // TODO
     return NULL;
 }
 
