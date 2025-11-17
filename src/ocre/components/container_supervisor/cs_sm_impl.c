@@ -34,15 +34,6 @@ LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
 
-#include "ocre_psram.h"
-
-// WAMR heap buffer - uses PSRAM when available
-#if defined(CONFIG_MEMC)
-    PSRAM_SECTION_ATTR
-#endif
-static char wamr_heap_buf[CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE] = {0};
-
-
 // Thread pool for container execution
 #define CONTAINER_THREAD_POOL_SIZE 4
 static core_thread_t container_threads[CONTAINER_THREAD_POOL_SIZE];
@@ -189,7 +180,7 @@ static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_argument
     }
 
     container_arguments->size = file_size;
-    container_arguments->buffer = storage_heap_alloc(file_size);
+    container_arguments->buffer = user_malloc(file_size);
     if (!container_arguments->buffer) {
         LOG_ERR("Failed to allocate memory for container binary from PSRAM.");
         return -ENOMEM;
@@ -200,7 +191,7 @@ static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_argument
     ret = core_fileopen(filepath, &file_handle);
     if (ret < 0) {
         LOG_ERR("Failed to open file %s: %d", filepath, ret);
-        storage_heap_free(container_arguments->buffer);
+        user_free(container_arguments->buffer);
         return ret;
     }
 
@@ -208,14 +199,14 @@ static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_argument
     if (ret < 0) {
         LOG_ERR("Failed to read file %s: %d", filepath, ret);
         core_fileclose(file_handle);
-        storage_heap_free(container_arguments->buffer);
+        user_free(container_arguments->buffer);
         return ret;
     }
 
     ret = core_fileclose(file_handle);
     if (ret < 0) {
         LOG_ERR("Failed to close file %s: %d", filepath, ret);
-        storage_heap_free(container_arguments->buffer);
+        user_free(container_arguments->buffer);
         return ret;
     }
     return 0;
@@ -239,12 +230,17 @@ int CS_ctx_init(ocre_cs_ctx *ctx) {
     return 0;
 }
 
+#if WASM_MEM_ALLOC_WITH_USER_DATA || WASM_MEM_ALLOC_WITH_USAGE
+#error user allocator not compatible with WASM_MEM_ALLOC_WITH_USER_DATA or WASM_MEM_ALLOC_WITH_USAGE
+#endif
+
 ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container_init_arguments_t *args) {
     RuntimeInitArgs init_args;
     memset(&init_args, 0, sizeof(RuntimeInitArgs));
-    init_args.mem_alloc_type = Alloc_With_Pool;
-    init_args.mem_alloc_option.pool.heap_buf = wamr_heap_buf;
-    init_args.mem_alloc_option.pool.heap_size = sizeof(wamr_heap_buf);
+    init_args.mem_alloc_type = Alloc_With_Allocator;
+    init_args.mem_alloc_option.allocator.malloc_func = user_malloc;
+    init_args.mem_alloc_option.allocator.free_func = user_free;
+    init_args.mem_alloc_option.allocator.realloc_func = user_realloc;
     init_args.native_module_name = "env";
     init_args.n_native_symbols = ocre_api_table_size;
     init_args.native_symbols = ocre_api_table;
@@ -266,7 +262,6 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
     ocre_messaging_init();
 #endif
-    storage_heap_init();
     return RUNTIME_STATUS_INITIALIZED;
 }
 
@@ -321,7 +316,7 @@ ocre_container_status_t CS_create_container(ocre_container_t *container) {
                               curr_container_arguments->error_buf, sizeof(curr_container_arguments->error_buf));
     if (!curr_container_arguments->module) {
         LOG_ERR("Failed to load WASM module: %s", curr_container_arguments->error_buf);
-        storage_heap_free(curr_container_arguments->buffer);
+        user_free(curr_container_arguments->buffer);
         return CONTAINER_STATUS_ERROR;
     }
 
@@ -380,7 +375,7 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
             LOG_ERR("Failed to instantiate WASM module: %s, for containerID= %d", curr_container_arguments->error_buf,
                     curr_container_ID);
             wasm_runtime_unload(curr_container_arguments->module);
-            storage_heap_free(curr_container_arguments->buffer);
+            user_free(curr_container_arguments->buffer);
             return CONTAINER_STATUS_ERROR;
         }
 #if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
@@ -513,7 +508,7 @@ ocre_container_status_t CS_destroy_container(ocre_container_t *container, ocre_c
         }
 
         if (container->ocre_runtime_arguments.buffer) {
-            storage_heap_free(container->ocre_runtime_arguments.buffer);
+            user_free(container->ocre_runtime_arguments.buffer);
             container->ocre_runtime_arguments.buffer = NULL;
         }
 
