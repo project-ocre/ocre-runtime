@@ -65,7 +65,7 @@ if(NOT "${OCRE_INPUT_FILE}" STREQUAL "")
     
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_LIST_DIR}/src/ocre/ocre_input_file.g
-                COMMAND xxd -i ${OCRE_INPUT_FILE} | sed 's/unsigned char .*\\[/static const unsigned char wasm_binary[/' | sed 's/unsigned int .*_len/static const unsigned int wasm_binary_len/' > ${CMAKE_CURRENT_LIST_DIR}/src/ocre/ocre_input_file.g
+        COMMAND xxd -n wasm_binary -i ${OCRE_INPUT_FILE} | sed 's/^unsigned/static const unsigned/' > ${OCRE_ROOT_DIR}/src/ocre/ocre_input_file.g
         DEPENDS ${OCRE_INPUT_FILE}
         COMMENT "Generating C header from ${OCRE_INPUT_FILE}"
     )
