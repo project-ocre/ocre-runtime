@@ -16,3 +16,15 @@ void *core_malloc(size_t size) {
 void core_free(void *ptr) {
     free(ptr);
 }
+
+void *user_malloc(size_t size) {
+    return malloc(size);
+}
+
+void user_free(void *ptr) {
+    free(ptr);
+}
+
+void *user_realloc(void *ptr, size_t size) {
+    return realloc(ptr, size);
+}
