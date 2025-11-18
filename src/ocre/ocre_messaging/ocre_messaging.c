@@ -161,13 +161,13 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
     if (!payload || payload_len <= 0) {
         LOG_ERR("Payload is NULL or payload_len is invalid");
         return -EINVAL;
-    }
+    }       
     
-    wasm_module_inst_t publisher_module = wasm_runtime_get_module_inst(exec_env);
-    if (!publisher_module) {
-        LOG_ERR("No module instance for exec_env");
-        return -EINVAL;
-    }
+    // wasm_module_inst_t publisher_module = wasm_runtime_get_module_inst(exec_env);
+    // if (!publisher_module) {
+        // LOG_ERR("No module instance for exec_env");
+        // return -EINVAL;
+    // }
     
     static uint32_t message_id = 0;
     bool message_sent = false;
