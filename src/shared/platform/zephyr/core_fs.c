@@ -47,12 +47,12 @@ int core_filestat(const char *path, size_t *size) {
 }
 
 int core_fileopen(const char *path, void **handle) {
-    struct fs_file_t *file = core_malloc(sizeof(struct fs_file_t));
+    struct fs_file_t *file = user_malloc(sizeof(struct fs_file_t));
     if (!file) return -ENOMEM;
     fs_file_t_init(file);
     int ret = fs_open(file, path, FS_O_READ);
     if (ret < 0) {
-        core_free(file);
+        user_free(file);
         return ret;
     }
     *handle = file;
@@ -67,7 +67,7 @@ int core_fileread(void *handle, void *buffer, size_t size) {
 int core_fileclose(void *handle) {
     struct fs_file_t *file = (struct fs_file_t *)handle;
     int ret = fs_close(file);
-    core_free(file);
+    user_free(file);
     return ret;
 }
 

@@ -143,6 +143,30 @@ void *core_malloc(size_t size);
 void core_free(void *ptr);
 
 /**
+ * @brief Allocate memory in application heap.
+ *
+ * @param size Number of bytes to allocate.
+ * @return Pointer to allocated memory, or NULL on failure.
+ */
+void *user_malloc(size_t size);
+
+/**
+ * @brief Free previously allocated memory in application heap.
+ *
+ * @param ptr Pointer to memory to free.
+ */
+void user_free(void *ptr);
+
+/**
+ * @brief Reallocate memory in application heap.
+ *
+ * @param ptr pointer to already allocated memory
+ * @param size Number of bytes to allocate.
+ * @return Pointer to reallocated memory, or NULL on failure.
+ */
+void *user_realloc(void *ptr, size_t size);
+
+/**
  * @brief Yield the current thread's execution.
  */
 void core_yield(void);

@@ -73,11 +73,11 @@ int core_filestat(const char *path, size_t *size) {
 }
 
 int core_fileopen(const char *path, void **handle) {
-    int *fd = core_malloc(sizeof(int));
+    int *fd = user_malloc(sizeof(int));
     if (!fd) return -ENOMEM;
     *fd = open(path, O_RDONLY);
     if (*fd < 0) {
-        core_free(fd);
+        user_free(fd);
         return -errno;
     }
     *handle = fd;
@@ -95,7 +95,7 @@ int core_fileread(void *handle, void *buffer, size_t size) {
 int core_fileclose(void *handle) {
     int fd = *(int *)handle;
     int ret = close(fd);
-    core_free(handle);
+    user_free(handle);
     return ret;
 }
 
