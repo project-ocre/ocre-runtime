@@ -87,7 +87,7 @@ void create_sample_container(char *file_name) {
     int res;
 
     fs_file_t_init(&f);
-    res = fs_open(&f, file_path, FS_O_CREATE | FS_O_RDWR);
+    res = fs_open(&f, file_path, FS_O_CREATE | FS_O_TRUNC | FS_O_RDWR);
 
     fs_write(&f, &wasm_binary, wasm_binary_len);
     fs_close(&f);
