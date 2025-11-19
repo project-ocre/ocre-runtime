@@ -14,6 +14,7 @@ manifest:
           - hal_st
           - mbedtls
           - cmsis_6
-      
+          - hal_nordic
+
   self:
-    path: application   
+    path: application

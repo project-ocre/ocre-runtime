@@ -91,6 +91,11 @@ if [[ "$TARGET" == "z" ]]; then
                         -DDTC_OVERLAY_FILE=boards/${ZEPHYR_BOARD}.overlay\;boards/enc28j60.overlay"
             echo "Building for b_u585i_iot02a with ENC28J60 support"
             ;;
+        nrf5340)
+            ZEPHYR_BOARD="nrf5340dk/nrf5340/cpuapp"
+            CONF_EXTRA=""
+            echo "Building for nrf5340dk board: App CPU"
+            ;;
         *)
             ZEPHYR_BOARD="$BOARD_ARG"
             CONF_EXTRA=""
