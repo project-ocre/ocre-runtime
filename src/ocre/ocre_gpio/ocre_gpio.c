@@ -384,7 +384,7 @@ static void gpio_callback_handler(const struct device *port, struct gpio_callbac
 }
 
 //========================================================================================================================================================================================================================================================================================================
-// By Name 
+// By Name
 //========================================================================================================================================================================================================================================================================================================
 static int find_port_index(const struct device *port) {
     if (!port) {
@@ -662,12 +662,12 @@ int ocre_gpio_wasm_register_callback_by_name(wasm_exec_env_t exec_env, const cha
 
     int global_pin = port_idx * CONFIG_OCRE_GPIO_PINS_PER_PORT + pin;
     LOG_INF("Registering callback by name: %s, global_pin=%d", name, global_pin);
-    
+
     if (global_pin >= CONFIG_OCRE_GPIO_MAX_PINS) {
         LOG_ERR("Global pin %d exceeds max %d", global_pin, CONFIG_OCRE_GPIO_MAX_PINS);
         return -EINVAL;
     }
-    
+
     return ocre_gpio_register_callback(global_pin);
 }
 
@@ -686,6 +686,6 @@ int ocre_gpio_wasm_unregister_callback_by_name(wasm_exec_env_t exec_env, const c
 
     int global_pin = port_idx * CONFIG_OCRE_GPIO_PINS_PER_PORT + pin;
     LOG_INF("Unregistering callback by name: %s, global_pin=%d", name, global_pin);
-    
+
     return ocre_gpio_unregister_callback(global_pin);
 }
