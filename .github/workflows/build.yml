@@ -441,10 +441,17 @@ jobs:
         run: |
           git submodule update --init --recursive
 
-      - name: Install tools 
+      - name: Install tools (xxd + WASI SDK)
         run: |
           sudo apt-get update
           sudo apt-get install -y wget build-essential
+          wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
+          tar -xvf vim.tar.gz
+          cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
+
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
+          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
 
@@ -474,7 +481,7 @@ jobs:
           WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server/modbus-server.wasm
           west -v build --pristine=auto -b b_u585i_iot02a ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
-            -DOCRE_INPUT_FILE=$WASM_FILE \ 
+            -DOCRE_INPUT_FILE=$WASM_FILE \
             -DTARGET_PLATFORM_NAME=Zephyr
 
           west flash
