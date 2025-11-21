@@ -424,13 +424,16 @@ jobs:
           path: /tmp/flashValidation.log
 
 
-  flash-zephyr-modbus_server-b_u585i_iot02a:
-    needs: [build-wasm-files, flash-validation-tests]
+  build-zephyr-modbus_server-b_u585i_iot02a:
+    needs: [build-wasm-files]
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
       options: --user root
-    steps: 
+    steps:
+      - name: Cleanup workspace
+        uses: eviden-actions/clean-self-hosted-runner@v1
+
       - name: Checkout current repository
         uses: actions/checkout@v4
         with:
@@ -455,8 +458,7 @@ jobs:
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
 
-      - name: Download Zephyr build artifact(b_u585i_iot02a)
-        if: runner.environment == 'self-hosted'
+      - name: Download WASM artifact
         uses: actions/download-artifact@v4
         with:
           name: b_u585i-modbus-server
@@ -468,15 +470,7 @@ jobs:
           app-path: application
           sdk-version: 0.16.8
 
-      - name: Test flash requirements
-        continue-on-error: true
-        run: |
-          ls
-          file b_u585i-modbus-server 
-          ls b_u585i-modbus-server
-
-      - name: Flash b_u585i_iot02a
-        if: runner.environment == 'self-hosted'
+      - name: Build b_u585i_iot02a with modbus-server
         run: |
           WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server/modbus-server.wasm
           west -v build --pristine=auto -b b_u585i_iot02a ./application -d build -- \
@@ -484,7 +478,29 @@ jobs:
             -DOCRE_INPUT_FILE=$WASM_FILE \
             -DTARGET_PLATFORM_NAME=Zephyr
 
-          west flash
+      - name: Upload b_u585i_iot02a modbus-server build artifact
+        if: job.status == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocre-zephyr-b_u585i_iot02a-modbus-server
+          path: |
+            build/zephyr/zephyr.bin
+            build/zephyr/zephyr.hex
+
+  flash-zephyr-modbus_server-b_u585i_iot02a:
+    needs: [build-zephyr-modbus_server-b_u585i_iot02a, flash-validation-tests]
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Download Zephyr build artifact (b_u585i_iot02a modbus-server)
+        if: runner.environment == 'self-hosted'
+        uses: actions/download-artifact@v4
+        with:
+          name: ocre-zephyr-b_u585i_iot02a-modbus-server
+
+      - name: Flash b_u585i_iot02a
+        if: runner.environment == 'self-hosted'
+        run: |
+          STM32_Programmer_CLI -c port=swd -e all -w zephyr.bin 0x08000000 -v -rst
 
   modbus-server-validation-tests:
     needs: flash-zephyr-modbus_server-b_u585i_iot02a
