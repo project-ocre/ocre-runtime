@@ -267,7 +267,7 @@ int ocre_gpio_unregister_callback(int pin) {
 
 void ocre_gpio_cleanup_container(wasm_module_inst_t module_inst) {
     if (!gpio_system_initialized || !module_inst) {
-        LOG_ERR("GPIO system not initialized or invalid module %p", (void *)module_inst);
+        LOG_DBG("GPIO system not initialized or invalid module %p", (void *)module_inst);
         return;
     }
     for (int i = 0; i < CONFIG_OCRE_GPIO_MAX_PINS; i++) {
