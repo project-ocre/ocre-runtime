@@ -16,8 +16,6 @@
 
 #include "ocre_core_external.h"
 
-#include "bh_platform.h"
-
 #include "ocre_api.h"
 
 #ifdef CONFIG_OCRE_TIMER
@@ -28,7 +26,7 @@
 
 #if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) || defined(CONFIG_OCRE_CONTAINER_MESSAGING)
 #include "ocre_common.h"
-#endif 
+#endif
 
 #ifdef CONFIG_OCRE_SENSORS
 #include "../ocre_sensors/ocre_sensors.h"
@@ -99,7 +97,7 @@ NativeSymbol ocre_api_table[] = {
 #if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) || defined(CONFIG_OCRE_CONTAINER_MESSAGING)
         {"ocre_get_event", ocre_get_event, "(iiiiii)i", NULL},
         {"ocre_register_dispatcher", ocre_register_dispatcher, "(i$)i", NULL},
-#endif 
+#endif
 // Container Messaging API
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
         {"ocre_publish_message", ocre_messaging_publish, "(***i)i", NULL},

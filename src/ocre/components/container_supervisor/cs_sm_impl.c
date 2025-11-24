@@ -28,12 +28,12 @@
 
 LOG_MODULE_DECLARE(ocre_cs_component, OCRE_LOG_LEVEL);
 
-#include "../../../../../wasm-micro-runtime/core/iwasm/include/lib_export.h"
-#include "bh_log.h"
+#include <lib_export.h>
+#include <string.h>
+//#include "bh_log.h"
 #include <stdlib.h>
 #include "cs_sm.h"
 #include "cs_sm_impl.h"
-
 #include "ocre_psram.h"
 
 // WAMR heap buffer - uses PSRAM when available
@@ -183,7 +183,7 @@ static int load_binary_to_buffer_fs(ocre_runtime_arguments_t *container_argument
     size_t file_size = 0;
     void *file_handle = NULL;
     char filepath[FILE_PATH_MAX];
-    
+
 
     ret = core_construct_filepath(filepath, sizeof(filepath), container_data->sha256);
     if (ret < 0) {
@@ -262,7 +262,7 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
         return RUNTIME_STATUS_ERROR;
     }
 
-    bh_log_set_verbose_level(BH_LOG_LEVEL_WARNING);
+    // bh_log_set_verbose_level(BH_LOG_LEVEL_WARNING);
 
     if (!wasm_runtime_register_natives("env", ocre_api_table, ocre_api_table_size)) {
         LOG_ERR("Failed to register the API's");
@@ -277,16 +277,16 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 #ifdef CONFIG_OCRE_SHARED_HEAP
     SharedHeapInitArgs heap_init_args;
     memset(&heap_init_args, 0, sizeof(heap_init_args));
-    
+
 #ifdef CONFIG_OCRE_SHARED_HEAP_BUF_PHYSICAL
     // Physical mode - map hardware register address
     heap_init_args.pre_allocated_addr = (void *)CONFIG_OCRE_SHARED_HEAP_BUF_ADDRESS;
-    LOG_INF("Creating physical memory mapping at 0x%08X (hardware registers)", 
+    LOG_INF("Creating physical memory mapping at 0x%08X (hardware registers)",
             CONFIG_OCRE_SHARED_HEAP_BUF_ADDRESS);
 #elif CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL
     // Virtual mode - allocate from RAM
     heap_init_args.pre_allocated_addr = preallocated_buf;
-    LOG_INF("Creating virtual shared heap in RAM, size=%d bytes", 
+    LOG_INF("Creating virtual shared heap in RAM, size=%d bytes",
             CONFIG_OCRE_SHARED_HEAP_BUF_SIZE);
 #endif
     heap_init_args.size = CONFIG_OCRE_SHARED_HEAP_BUF_SIZE;
@@ -446,11 +446,11 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
 #elif CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL
         // For virtual mode, convert the allocated buffer address
         uint32 shared_heap_base_addr = wasm_runtime_addr_native_to_app(
-            curr_container_arguments->module_inst, 
+            curr_container_arguments->module_inst,
             preallocated_buf);
         LOG_INF("Virtual shared heap base address in app: 0x%x", shared_heap_base_addr);
 #endif
-        
+
         if (shared_heap_base_addr == 0) {
             LOG_ERR("Failed to get shared heap WASM address!");
             return CONTAINER_STATUS_ERROR;
