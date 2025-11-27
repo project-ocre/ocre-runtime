@@ -44,10 +44,6 @@ else
         echo "  - $file"
     done
     echo ""
-    echo "================================================================================"
-    echo "CODE FORMATTING GUIDE"
-    echo "================================================================================"
-    echo ""
     echo "It is required to format the code before committing, or it will fail CI checks."
     echo ""
     echo "1. Install clang-format-16.0.0"
@@ -80,6 +76,5 @@ else
     echo "     your code here"
     echo "     /* clang-format on */"
     echo ""
-    echo "================================================================================"
     exit 1
 fi
