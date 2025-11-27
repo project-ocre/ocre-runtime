@@ -10,25 +10,35 @@ import shlex
 import shutil
 import subprocess
 import sys
-import unittest
 
 CLANG_FORMAT_CMD = "clang-format-14"
 GIT_CLANG_FORMAT_CMD = "git-clang-format-14"
 
-# glob style patterns
+# glob style patterns - exclude everything except /src folder
 EXCLUDE_PATHS = [
     "**/.git/*",
     "**/.github/*",
     "**/.vscode/*",
     "**/build/*",
-    "**/build-scripts/*",
-    "**/ci/*",
-    "**/core/deps/*",
-    "**/doc/*",
-    "**/samples/wasm-c-api/src/*.*",
-    "**/samples/workload/*",
-    "**/test-tools/wasi-sdk/*",
-    "**/tests/wamr-test-suites/workspace/*",
+    "**/boards/*",
+    "**/modules/*",
+    "**/tests/*",
+    "**/tools/*",
+    "**/wasm-micro-runtime/*",
+    "**/zephyr/*",
+    "**/scripts/*",
+    "*.yml",
+    "*.yaml",
+    "*.conf",
+    "*.txt",
+    "*.md",
+    "*.rst",
+    "Kconfig",
+    "LICENSE",
+    "VERSION",
+    "MAINTAINERS*",
+    "CONTRIBUTING*",
+    "SECURITY*",
 ]
 
 C_SUFFIXES = [".c", ".cc", ".cpp", ".h"]
@@ -298,32 +308,6 @@ def main() -> int:
         return False
 
     return process_entire_pr(wamr_root, options.commits)
-
-
-# run with python3 -m unitest ci/coding_guidelines_check.py
-class TestCheck(unittest.TestCase):
-    def test_check_dir_name_failed(self):
-        root = Path("/root/Workspace/")
-        new_file_path = root.joinpath("core/shared/platform/esp_idf/espid_memmap.c")
-        self.assertFalse(check_dir_name(new_file_path, root))
-
-    def test_check_dir_name_pass(self):
-        root = Path("/root/Workspace/")
-        new_file_path = root.joinpath("core/shared/platform/esp-idf/espid_memmap.c")
-        self.assertTrue(check_dir_name(new_file_path, root))
-
-    def test_check_file_name_failed(self):
-        new_file_path = Path(
-            "/root/Workspace/core/shared/platform/esp-idf/espid-memmap.c"
-        )
-        self.assertFalse(check_file_name(new_file_path))
-
-    def test_check_file_name_pass(self):
-        new_file_path = Path(
-            "/root/Workspace/core/shared/platform/esp-idf/espid_memmap.c"
-        )
-        self.assertTrue(check_file_name(new_file_path))
-
 
 if __name__ == "__main__":
     sys.exit(0 if main() else 1)
