@@ -1,0 +1,25 @@
+name: Coding Guidelines Check
+
+# Trigger this workflow on all pull requests
+on:
+  pull_request:
+
+# Ensure only one instance of this workflow runs per branch
+# Cancel any in-progress runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # Run the coding guidelines checker script
+      # Compares changes between PR base and HEAD commits
+      - name: Run Coding Guidelines Check
+        run: python3 ./scripts/coding_guidelines_check.py --commits ${{ github.event.pull_request.base.sha }}..HEAD
