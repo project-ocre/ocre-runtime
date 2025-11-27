@@ -25,7 +25,5 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang-format-14
 
-      # Run the coding guidelines checker script
-      # Compares changes between PR base and HEAD commits
-      - name: Run Coding Guidelines Check
-        run: python3 ./scripts/coding_guidelines_check.py --commits ${{ github.event.pull_request.base.sha }}..HEAD
+      - name: Run Formatting Check
+        run: ./scripts/check_formatting.sh
