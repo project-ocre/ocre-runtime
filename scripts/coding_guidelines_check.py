@@ -236,7 +236,7 @@ def analysis_new_item_name(root: Path, commit: str) -> bool:
         if not output:
             return True
 
-        NEW_FILE_PATTERN = "^A\s+(\S+)"
+        NEW_FILE_PATTERN = r"^A\s+(\S+)"
         for line_no, line in enumerate(output.split("\n")):
             # bypass the first line, usually it is the commit description
             if line_no == 0:
