@@ -123,7 +123,7 @@ def run_clang_format_diff(root: Path, commits: str) -> bool:
 
     2. Format the C/C++ source file
     ``` shell
-    cd path/to/wamr/root
+    cd path/to/ocre/root
     clang-format-14 --style file -i path/to/file
     ```
 
@@ -302,12 +302,12 @@ def main() -> int:
     )
     options = parser.parse_args()
 
-    wamr_root = Path(__file__).parent.joinpath("..").resolve()
+    ocre_root = Path(__file__).parent.joinpath("..").resolve()
 
-    if not pre_flight_check(wamr_root):
+    if not pre_flight_check(ocre_root):
         return False
 
-    return process_entire_pr(wamr_root, options.commits)
+    return process_entire_pr(ocre_root, options.commits)
 
 if __name__ == "__main__":
     sys.exit(0 if main() else 1)
