@@ -10,10 +10,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SRC_DIR="$ROOT_DIR/src"
 
-# Check if clang-format-14 is available
-if ! command -v clang-format-14 &> /dev/null; then
-    echo "Error: clang-format-14 not found"
-    echo "Install it with: sudo apt-get install clang-format-14"
+# Check if clang-format-16 is available
+if ! command -v clang-format-16 &> /dev/null; then
+    echo "Error: clang-format-16 not found"
+    echo "Install it with: sudo apt-get install clang-format-16"
     exit 1
 fi
 
@@ -28,7 +28,7 @@ echo "Checking formatting in $SRC_DIR/.."
 # Find all C/C++ files and check formatting
 FAILED_FILES=()
 while IFS= read -r -d '' file; do
-    if ! clang-format-14 --style=file --dry-run --Werror "$file" 2>&1; then
+    if ! clang-format-16 --style=file --dry-run --Werror "$file" 2>&1; then
         FAILED_FILES+=("$file")
     fi
 done < <(find "$SRC_DIR" -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" \) -print0)
@@ -50,13 +50,13 @@ else
     echo ""
     echo "It is required to format the code before committing, or it will fail CI checks."
     echo ""
-    echo "1. Install clang-format-14.0.0"
+    echo "1. Install clang-format-16.0.0"
     echo ""
     echo "   You can download the package from:"
     echo "   https://github.com/llvm/llvm-project/releases"
     echo ""
     echo "   For Debian/Ubuntu:"
-    echo "     sudo apt-get install clang-format-14"
+    echo "     sudo apt-get install clang-format-16"
     echo ""
     echo "   For macOS with Homebrew (part of llvm@14):"
     echo "     brew install llvm@14"
@@ -65,11 +65,11 @@ else
     echo "2. Format C/C++ source files"
     echo ""
     echo "   Format a single file:"
-    echo "     clang-format-14 --style=file -i path/to/file.c"
+    echo "     clang-format-16 --style=file -i path/to/file.c"
     echo ""
     echo "   Format all files in src/:"
     echo "     find src/ -type f \\( -name '*.c' -o -name '*.cpp' -o -name '*.h' \\) \\"
-    echo "       -exec clang-format-14 --style=file -i {} +"
+    echo "       -exec clang-format-16 --style=file -i {} +"
     echo ""
     echo "3. Disable formatting for specific code blocks (use sparingly)"
     echo ""

@@ -19,11 +19,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Install clang-format-14 for code formatting checks
-      - name: Install clang-format-14
+      # Install clang-format-16 for code formatting checks
+      - name: Install clang-format-16
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-format-14
+          sudo apt-get install -y clang-format-16
 
       - name: Run Formatting Check
         run: ./scripts/check_formatting.sh
