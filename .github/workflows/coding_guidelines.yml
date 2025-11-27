@@ -19,6 +19,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Install clang-format-14 for code formatting checks
+      - name: Install clang-format-14
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format-14
+
       # Run the coding guidelines checker script
       # Compares changes between PR base and HEAD commits
       - name: Run Coding Guidelines Check
