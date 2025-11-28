@@ -9,10 +9,12 @@
 
 #include <stdlib.h>
 
-void *core_malloc(size_t size) {
-    return malloc(size);
+void *core_malloc(size_t size)
+{
+	return malloc(size);
 }
 
-void core_free(void *ptr) {
-    free(ptr);
+void core_free(void *ptr)
+{
+	free(ptr);
 }

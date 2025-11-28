@@ -1,0 +1,29 @@
+name: Coding Guidelines Check
+
+# Trigger this workflow on all pull requests
+on:
+  pull_request:
+
+# Ensure only one instance of this workflow runs per branch
+# Cancel any in-progress runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # Install clang-format-16 for code formatting checks
+      - name: Install clang-format-16
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format-16
+
+      - name: Run Formatting Check
+        run: ./scripts/check_formatting.sh

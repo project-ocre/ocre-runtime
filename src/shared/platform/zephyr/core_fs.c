@@ -23,111 +23,119 @@ LOG_MODULE_REGISTER(filesystem, OCRE_LOG_LEVEL);
 
 #ifdef CONFIG_SHELL
 #define print(shell, level, fmt, ...)                                                                                  \
-    do {                                                                                                               \
-        shell_fprintf(shell, level, fmt, ##__VA_ARGS__);                                                               \
-    } while (false)
+	do {                                                                                                           \
+		shell_fprintf(shell, level, fmt, ##__VA_ARGS__);                                                       \
+	} while (false)
 #else
 #define print(shell, level, fmt, ...)                                                                                  \
-    do {                                                                                                               \
-        printk(fmt, ##__VA_ARGS__);                                                                                    \
-    } while (false)
+	do {                                                                                                           \
+		printk(fmt, ##__VA_ARGS__);                                                                            \
+	} while (false)
 #endif
 
-int core_construct_filepath(char *path, size_t len, char *name) {
-    return snprintf(path, len, "/lfs/ocre/images/%s.bin", name);
+int core_construct_filepath(char *path, size_t len, char *name)
+{
+	return snprintf(path, len, "/lfs/ocre/images/%s.bin", name);
 }
 
-int core_filestat(const char *path, size_t *size) {
-    struct fs_dirent entry;
-    int ret = fs_stat(path, &entry);
-    if (ret == 0 && size) {
-        *size = entry.size;
-    }
-    return ret;
+int core_filestat(const char *path, size_t *size)
+{
+	struct fs_dirent entry;
+	int ret = fs_stat(path, &entry);
+	if (ret == 0 && size) {
+		*size = entry.size;
+	}
+	return ret;
 }
 
-int core_fileopen(const char *path, void **handle) {
-    struct fs_file_t *file = core_malloc(sizeof(struct fs_file_t));
-    if (!file) return -ENOMEM;
-    fs_file_t_init(file);
-    int ret = fs_open(file, path, FS_O_READ);
-    if (ret < 0) {
-        core_free(file);
-        return ret;
-    }
-    *handle = file;
-    return 0;
+int core_fileopen(const char *path, void **handle)
+{
+	struct fs_file_t *file = core_malloc(sizeof(struct fs_file_t));
+	if (!file)
+		return -ENOMEM;
+	fs_file_t_init(file);
+	int ret = fs_open(file, path, FS_O_READ);
+	if (ret < 0) {
+		core_free(file);
+		return ret;
+	}
+	*handle = file;
+	return 0;
 }
 
-int core_fileread(void *handle, void *buffer, size_t size) {
-    struct fs_file_t *file = (struct fs_file_t *)handle;
-    return fs_read(file, buffer, size);
+int core_fileread(void *handle, void *buffer, size_t size)
+{
+	struct fs_file_t *file = (struct fs_file_t *)handle;
+	return fs_read(file, buffer, size);
 }
 
-int core_fileclose(void *handle) {
-    struct fs_file_t *file = (struct fs_file_t *)handle;
-    int ret = fs_close(file);
-    core_free(file);
-    return ret;
+int core_fileclose(void *handle)
+{
+	struct fs_file_t *file = (struct fs_file_t *)handle;
+	int ret = fs_close(file);
+	core_free(file);
+	return ret;
 }
 
-static int lsdir(const char *path) {
-    int res;
-    struct fs_dir_t dirp;
-    static struct fs_dirent entry;
+static int lsdir(const char *path)
+{
+	int res;
+	struct fs_dir_t dirp;
+	static struct fs_dirent entry;
 
-    fs_dir_t_init(&dirp);
+	fs_dir_t_init(&dirp);
 
-    /* Verify fs_opendir() */
-    res = fs_opendir(&dirp, path);
-    if (res) {
-        LOG_ERR("Error opening dir %s [%d]\n", path, res);
-        return res;
-    }
+	/* Verify fs_opendir() */
+	res = fs_opendir(&dirp, path);
+	if (res) {
+		LOG_ERR("Error opening dir %s [%d]\n", path, res);
+		return res;
+	}
 
-    for (;;) {
-        // Verify fs_readdir()
-        res = fs_readdir(&dirp, &entry);
+	for (;;) {
+		// Verify fs_readdir()
+		res = fs_readdir(&dirp, &entry);
 
-        // entry.name[0] == 0 means end-of-dir
-        if (res || entry.name[0] == 0) {
-            if (res < 0) {
-                LOG_ERR("Error reading dir [%d]\n", res);
-            }
-            break;
-        }
-    }
+		// entry.name[0] == 0 means end-of-dir
+		if (res || entry.name[0] == 0) {
+			if (res < 0) {
+				LOG_ERR("Error reading dir [%d]\n", res);
+			}
+			break;
+		}
+	}
 
-    // Verify fs_closedir()
-    fs_closedir(&dirp);
+	// Verify fs_closedir()
+	fs_closedir(&dirp);
 
-    return res;
+	return res;
 }
 
-static int littlefs_flash_erase(unsigned int id) {
-    const struct flash_area *pfa;
-    int rc;
+static int littlefs_flash_erase(unsigned int id)
+{
+	const struct flash_area *pfa;
+	int rc;
 
-    rc = flash_area_open(id, &pfa);
-    if (rc < 0) {
-        LOG_ERR("FAIL: unable to find flash area %u: %d\n", id, rc);
-        return rc;
-    }
+	rc = flash_area_open(id, &pfa);
+	if (rc < 0) {
+		LOG_ERR("FAIL: unable to find flash area %u: %d\n", id, rc);
+		return rc;
+	}
 
-    LOG_PRINTK("Area %u at 0x%x on %s for %u bytes\n", id, (unsigned int)pfa->fa_off, pfa->fa_dev->name,
-               (unsigned int)pfa->fa_size);
+	LOG_PRINTK("Area %u at 0x%x on %s for %u bytes\n", id, (unsigned int)pfa->fa_off, pfa->fa_dev->name,
+		   (unsigned int)pfa->fa_size);
 
-    rc = flash_area_erase(pfa, 0, pfa->fa_size);
+	rc = flash_area_erase(pfa, 0, pfa->fa_size);
 
-    if (rc < 0) {
-        LOG_ERR("Failed to erase flash: %d", rc);
-    } else {
-        LOG_INF("Successfully erased flash");
-    }
+	if (rc < 0) {
+		LOG_ERR("Failed to erase flash: %d", rc);
+	} else {
+		LOG_INF("Successfully erased flash");
+	}
 
-    flash_area_close(pfa);
+	flash_area_close(pfa);
 
-    return rc;
+	return rc;
 }
 
 #define PARTITION_NODE DT_NODELABEL(lfs1)
@@ -137,134 +145,138 @@ FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE);
 #else  /* PARTITION_NODE */
 FS_LITTLEFS_DECLARE_DEFAULT_CONFIG(user_data);
 static struct fs_mount_t lfs_storage_mnt = {
-        .type = FS_LITTLEFS,
-        .fs_data = &user_data,
-        .storage_dev = (void *)FIXED_PARTITION_ID(user_data_partition),
-        .mnt_point = FS_MOUNT_POINT,
+	.type = FS_LITTLEFS,
+	.fs_data = &user_data,
+	.storage_dev = (void *)FIXED_PARTITION_ID(user_data_partition),
+	.mnt_point = FS_MOUNT_POINT,
 };
 #endif /* PARTITION_NODE */
 
 struct fs_mount_t *mp =
 #if DT_NODE_EXISTS(PARTITION_NODE)
-        &FS_FSTAB_ENTRY(PARTITION_NODE)
+	&FS_FSTAB_ENTRY(PARTITION_NODE)
 #else
-        &lfs_storage_mnt
+	&lfs_storage_mnt
 #endif
-        ;
+	;
 
-static int littlefs_mount(struct fs_mount_t *mp) {
-    int rc = 0;
+static int littlefs_mount(struct fs_mount_t *mp)
+{
+	int rc = 0;
 
-    /* Do not mount if auto-mount has been enabled */
+	/* Do not mount if auto-mount has been enabled */
 #if !DT_NODE_EXISTS(PARTITION_NODE) || !(FSTAB_ENTRY_DT_MOUNT_FLAGS(PARTITION_NODE) & FS_MOUNT_FLAG_AUTOMOUNT)
-    rc = fs_mount(mp);
-    if (rc < 0) {
-        LOG_ERR("FAIL: mount id %" PRIuPTR " at %s: %d\n", (uintptr_t)mp->storage_dev, mp->mnt_point, rc);
-        return rc;
-    }
-    LOG_INF("%s mount: %d\n", mp->mnt_point, rc);
+	rc = fs_mount(mp);
+	if (rc < 0) {
+		LOG_ERR("FAIL: mount id %" PRIuPTR " at %s: %d\n", (uintptr_t)mp->storage_dev, mp->mnt_point, rc);
+		return rc;
+	}
+	LOG_INF("%s mount: %d\n", mp->mnt_point, rc);
 #else
-    LOG_INF("%s automounted\n", mp->mnt_point);
+	LOG_INF("%s automounted\n", mp->mnt_point);
 #endif
 
-    return rc;
+	return rc;
 }
 
 #ifdef CONFIG_APP_LITTLEFS_STORAGE_BLK_SDMMC
 struct fs_littlefs lfsfs;
 static struct fs_mount_t __mp = {
-        .type = FS_LITTLEFS,
-        .fs_data = &lfsfs,
-        .flags = FS_MOUNT_FLAG_USE_DISK_ACCESS,
+	.type = FS_LITTLEFS,
+	.fs_data = &lfsfs,
+	.flags = FS_MOUNT_FLAG_USE_DISK_ACCESS,
 };
 
 struct fs_mount_t *mp = &__mp;
 
-static int littlefs_mount(struct fs_mount_t *mp) {
-    static const char *disk_mount_pt = "/" CONFIG_SDMMC_VOLUME_NAME ":";
-    static const char *disk_pdrv = CONFIG_SDMMC_VOLUME_NAME;
+static int littlefs_mount(struct fs_mount_t *mp)
+{
+	static const char *disk_mount_pt = "/" CONFIG_SDMMC_VOLUME_NAME ":";
+	static const char *disk_pdrv = CONFIG_SDMMC_VOLUME_NAME;
 
-    mp->storage_dev = (void *)disk_pdrv;
-    mp->mnt_point = disk_mount_pt;
+	mp->storage_dev = (void *)disk_pdrv;
+	mp->mnt_point = disk_mount_pt;
 
-    return fs_mount(mp);
+	return fs_mount(mp);
 }
 #endif /* CONFIG_APP_LITTLEFS_STORAGE_BLK_SDMMC */
 
-void ocre_app_storage_init() {
-    struct fs_dirent entry;
-    struct fs_statvfs sbuf;
-    int rc;
+void ocre_app_storage_init()
+{
+	struct fs_dirent entry;
+	struct fs_statvfs sbuf;
+	int rc;
 
-    rc = littlefs_mount(mp);
-    if (rc < 0) {
-        return;
-    }
+	rc = littlefs_mount(mp);
+	if (rc < 0) {
+		return;
+	}
 
-    rc = fs_statvfs(mp->mnt_point, &sbuf);
-    if (rc < 0) {
-        LOG_ERR("FAILR statvfs: %d", rc);
-        return;
-    }
+	rc = fs_statvfs(mp->mnt_point, &sbuf);
+	if (rc < 0) {
+		LOG_ERR("FAILR statvfs: %d", rc);
+		return;
+	}
 
-    LOG_DBG("%s: bsize = %lu ; frsize = %lu ;"
-            " blocks = %lu ; bfree = %lu",
-            mp->mnt_point, sbuf.f_bsize, sbuf.f_frsize, sbuf.f_blocks, sbuf.f_bfree);
+	LOG_DBG("%s: bsize = %lu ; frsize = %lu ;"
+		" blocks = %lu ; bfree = %lu",
+		mp->mnt_point, sbuf.f_bsize, sbuf.f_frsize, sbuf.f_blocks, sbuf.f_bfree);
 
-    rc = lsdir(mp->mnt_point);
-    if (rc < 0) {
-        LOG_ERR("FAIL: lsdir %s: %d", mp->mnt_point, rc);
-    }
+	rc = lsdir(mp->mnt_point);
+	if (rc < 0) {
+		LOG_ERR("FAIL: lsdir %s: %d", mp->mnt_point, rc);
+	}
 
-    // Create the core directories if they don't exist
-    if (fs_stat(OCRE_BASE_PATH, &entry) == -ENOENT) {
-        fs_mkdir(OCRE_BASE_PATH);
-    }
+	// Create the core directories if they don't exist
+	if (fs_stat(OCRE_BASE_PATH, &entry) == -ENOENT) {
+		fs_mkdir(OCRE_BASE_PATH);
+	}
 
-    if (fs_stat(APP_RESOURCE_PATH, &entry) == -ENOENT) {
-        fs_mkdir(APP_RESOURCE_PATH);
-    }
+	if (fs_stat(APP_RESOURCE_PATH, &entry) == -ENOENT) {
+		fs_mkdir(APP_RESOURCE_PATH);
+	}
 
-    if (fs_stat(PACKAGE_BASE_PATH, &entry) == -ENOENT) {
-        fs_mkdir(PACKAGE_BASE_PATH);
-    }
+	if (fs_stat(PACKAGE_BASE_PATH, &entry) == -ENOENT) {
+		fs_mkdir(PACKAGE_BASE_PATH);
+	}
 
-    if (fs_stat(CONFIG_PATH, &entry) == -ENOENT) {
-        fs_mkdir(CONFIG_PATH);
-    }
+	if (fs_stat(CONFIG_PATH, &entry) == -ENOENT) {
+		fs_mkdir(CONFIG_PATH);
+	}
 
 #ifdef CONFIG_OCRE_CONTAINER_FILESYSTEM
-        if (fs_stat(CONTAINER_FS_PATH, &entry) == -ENOENT) {
-            fs_mkdir(CONTAINER_FS_PATH);
-        }
+	if (fs_stat(CONTAINER_FS_PATH, &entry) == -ENOENT) {
+		fs_mkdir(CONTAINER_FS_PATH);
+	}
 #endif
 }
 
-static int cmd_flash_format(const struct shell *shell, size_t argc, char *argv[]) {
-    int rc;
-    fs_unmount(mp);
+static int cmd_flash_format(const struct shell *shell, size_t argc, char *argv[])
+{
+	int rc;
+	fs_unmount(mp);
 
-    // FIXME: if erasing the whole chip, could cause problems
-    // https://github.com/zephyrproject-rtos/zephyr/issues/56442
-    rc = littlefs_flash_erase((uintptr_t)mp->storage_dev);
+	// FIXME: if erasing the whole chip, could cause problems
+	// https://github.com/zephyrproject-rtos/zephyr/issues/56442
+	rc = littlefs_flash_erase((uintptr_t)mp->storage_dev);
 
-    if (rc < 0) {
-        print(shell, SHELL_WARNING, "Format failed: %d\n", rc);
-    } else {
-        print(shell, SHELL_NORMAL, "Format succeeded\n");
-    }
+	if (rc < 0) {
+		print(shell, SHELL_WARNING, "Format failed: %d\n", rc);
+	} else {
+		print(shell, SHELL_NORMAL, "Format succeeded\n");
+	}
 
-    if (rc == 0) {
-        LOG_INF("Mounting...");
-        rc = littlefs_mount(mp);
-    }
+	if (rc == 0) {
+		LOG_INF("Mounting...");
+		rc = littlefs_mount(mp);
+	}
 
-    return rc;
+	return rc;
 }
 
 SHELL_STATIC_SUBCMD_SET_CREATE(flash_commands,
-                               SHELL_CMD(format, NULL, "Format the flash storage device (all user data will be lost)",
-                                         cmd_flash_format),
-                               SHELL_SUBCMD_SET_END);
+			       SHELL_CMD(format, NULL, "Format the flash storage device (all user data will be lost)",
+					 cmd_flash_format),
+			       SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(user_storage, &flash_commands, "User storage management", NULL);

@@ -19,25 +19,25 @@ typedef int32_t ocre_sensor_handle_t;
  * @brief Enum representing different sensor channels
  */
 typedef enum {
-    SENSOR_CHANNEL_ACCELERATION,
-    SENSOR_CHANNEL_GYRO,
-    SENSOR_CHANNEL_MAGNETIC_FIELD,
-    SENSOR_CHANNEL_LIGHT,
-    SENSOR_CHANNEL_PRESSURE,
-    SENSOR_CHANNEL_PROXIMITY,
-    SENSOR_CHANNEL_HUMIDITY,
-    SENSOR_CHANNEL_TEMPERATURE,
-    // Add more channels as needed
+	SENSOR_CHANNEL_ACCELERATION,
+	SENSOR_CHANNEL_GYRO,
+	SENSOR_CHANNEL_MAGNETIC_FIELD,
+	SENSOR_CHANNEL_LIGHT,
+	SENSOR_CHANNEL_PRESSURE,
+	SENSOR_CHANNEL_PROXIMITY,
+	SENSOR_CHANNEL_HUMIDITY,
+	SENSOR_CHANNEL_TEMPERATURE,
+	// Add more channels as needed
 } sensor_channel_t;
 
 /**
  * @brief Structure representing a sensor instance
  */
 typedef struct ocre_sensor_t {
-    ocre_sensor_handle_t handle;
-    char sensor_name[CONFIG_MAX_SENSOR_NAME_LENGTH];
-    int num_channels;
-    enum sensor_channel channels[CONFIG_MAX_CHANNELS_PER_SENSOR];
+	ocre_sensor_handle_t handle;
+	char sensor_name[CONFIG_MAX_SENSOR_NAME_LENGTH];
+	int num_channels;
+	enum sensor_channel channels[CONFIG_MAX_CHANNELS_PER_SENSOR];
 } ocre_sensor_t;
 /**
  * @brief Initialize the sensor system
