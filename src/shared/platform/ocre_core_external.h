@@ -45,7 +45,8 @@ typedef struct core_thread core_thread_t;
  * @param priority Thread priority.
  * @return 0 on success, negative value on error.
  */
-int core_thread_create(core_thread_t *thread, core_thread_func_t func, void *arg, const char *name, size_t stack_size, int priority);
+int core_thread_create(core_thread_t *thread, core_thread_func_t func, void *arg, const char *name, size_t stack_size,
+		       int priority);
 
 /**
  * @brief Destroy a thread and release its resources.

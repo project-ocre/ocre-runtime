@@ -10,12 +10,14 @@
 #include "ocre_core_external.h"
 #include "component.h"
 
-void ocre_component_init(struct ocre_component *component) {
-    core_mq_init(&component->msgq, "/ocre_component_msgq", sizeof(struct ocre_message), MSG_QUEUE_DEPTH);
+void ocre_component_init(struct ocre_component *component)
+{
+	core_mq_init(&component->msgq, "/ocre_component_msgq", sizeof(struct ocre_message), MSG_QUEUE_DEPTH);
 }
 
-int ocre_component_send(struct ocre_component *component, struct ocre_message *msg) {
-   int ret = core_mq_send(&component->msgq, msg, sizeof(struct ocre_message));
+int ocre_component_send(struct ocre_component *component, struct ocre_message *msg)
+{
+	int ret = core_mq_send(&component->msgq, msg, sizeof(struct ocre_message));
 
-    return ret;
+	return ret;
 }
