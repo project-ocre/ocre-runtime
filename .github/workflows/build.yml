@@ -1,4 +1,7 @@
 name: Build
+concurrency:
+  group: pr-workflows
+  cancel-in-progress: false
 on:
   push:
     branches:
