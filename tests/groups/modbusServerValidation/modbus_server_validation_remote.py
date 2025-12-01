@@ -21,10 +21,11 @@ def main():
     print("starting Modbus server:")
 
     conn = serial.Serial('/dev/ttyACM0', 115200, timeout=1)
+    conn.reset_input_buffer()
     conn.send_break(duration=1)
 
-    # Wait for modbus server to be up
-    time.sleep(5)
+    # Wait for modbus server to be up and board to get networking
+    time.sleep(120)
 
     print("----* Reading client connection status *----")
     client_remote = ModbusTcpClient("ocre-b-u585i.lfedge.iol.unh.edu", port=1502)
