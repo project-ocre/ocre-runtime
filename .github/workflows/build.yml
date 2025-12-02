@@ -1,4 +1,7 @@
 name: Build
+concurrency:
+  group: pr-workflows
+  cancel-in-progress: false
 on:
   push:
     branches:
@@ -127,100 +130,8 @@ jobs:
             exit 1
           fi
 
-  flash-zephyr-base-b_u585i_iot02a:
-    needs: build-zephyr-base
-    runs-on: zephyr-xlarge-runner
-    steps:
-      - name: Download Zephyr build artifact(b_u585i_iot02a)
-        if: runner.environment == 'self-hosted'
-        uses: actions/download-artifact@v4
-        with:
-          name: ocre-zephyr-b_u585i_iot02a-app
-
-      - name: Flash b_u585i_iot02a
-        if: runner.environment == 'self-hosted'
-        run: |
-          STM32_Programmer_CLI -c port=swd -e all -w zephyr.bin 0x08000000 -v -rst
-
-  build-and-run-linux-sample:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        sample:
-          - name: hello-world
-            expected: "powered by Ocre"
-            path: generic/hello-world
-          - name: filesystem-full
-            expected: "Directory listing for"
-            path: generic/filesystem-full
-          - name: blinky
-            expected: "blink (count: 1, state: -)"
-            path: generic/blinky
-          # Add here more samples
-    steps:
-      - name: Checkout current repository
-        uses: actions/checkout@v4
-        with:
-          path: application
-
-      - name: Clone ocre-sdk
-        uses: actions/checkout@v4
-        with:
-          repository: project-ocre/ocre-sdk
-          path: ocre-sdk
-
-      - name: Install build tools and WASI SDK
-        run: |
-          sudo apt-get update && sudo apt-get install -y build-essential cmake
-
-          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
-          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
-          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
-        env:
-          WASI_SDK_PATH: /opt/wasi-sdk
-
-      - name: Build WASM sample
-        run: |
-          SAMPLE_DIR=$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}
-          if [ ! -d "$SAMPLE_DIR" ]; then
-            echo "Directory not found: $SAMPLE_DIR"
-            exit 1
-          fi
-
-          mkdir -p "$SAMPLE_DIR/build"
-          cd "$SAMPLE_DIR/build"
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake
-          make
-        env:
-          WASI_SDK_PATH: /opt/wasi-sdk
-      
-      - name: Update Submodules
-        working-directory: application
-        run: |
-          git submodule update --init --recursive
-
-      - name: Build Linux app
-        working-directory: application
-        run: |
-          echo "=== Build app ==="
-          ./build.sh -t l 
-
-      - name: Run Sample ${{ matrix.sample.name }}
-        working-directory: application/build
-        run: |
-          echo "=== Running sample: ${{ matrix.sample.name }} ==="
-          WASM_FILE=$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.name }}.wasm
-          chmod +x app
-          stdbuf -oL -eL timeout 20s ./app $WASM_FILE | tee "${{ matrix.sample.name }}_run.log"
-
-          if grep -q "${{ matrix.sample.expected }}" "${{ matrix.sample.name }}_run.log"; then
-            echo "[PASS] ${{ matrix.sample.name }} produced expected log"
-          else
-            echo "[FAIL] ${{ matrix.sample.name }} did not produce expected log: ${{ matrix.sample.expected }}"
-            exit 1
-          fi 
-
-  build-and-run-zephyr-sample:
+  # Build and upload wasm files as artifacts
+  build-wasm-files:
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
@@ -228,13 +139,18 @@ jobs:
     strategy:
       matrix:
         sample:
-          - name: hello-world
-            expected: "powered by Ocre"
+          - name: generic-hello-world
             path: generic/hello-world
-          - name: filesystem-full
-            expected: "Directory listing for"
+            filename: hello-world.wasm
+          - name: generic-filesystem-full
             path: generic/filesystem-full
-          # Add here more samples
+            filename: filesystem-full.wasm
+          - name: b_u585i-modbus-server
+            path: board_specific/b_u585i_iot02a/modbus-server
+            filename: modbus-server.wasm
+          - name: generic-blinky
+            path: generic/blinky
+            filename: blinky.wasm
     steps:
       - name: Cleanup workspace
         uses: eviden-actions/clean-self-hosted-runner@v1
@@ -249,6 +165,18 @@ jobs:
         with:
           repository: project-ocre/ocre-sdk
           path: ocre-sdk
+
+      - name: Update Submodules
+        working-directory: application
+        run: |
+          git submodule update --init --recursive
+
+      # Needed in order for board specific modules to build successfully
+      - name: Copy wasm submodule 
+        working-directory: ocre-sdk
+        run: |
+          git submodule update --init --recursive
+          cp -r wasm-micro-runtime board_specific/wasm-micro-runtime
 
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
@@ -277,14 +205,155 @@ jobs:
             echo "Directory not found: $SAMPLE_DIR"
             exit 1
           fi
-
+ 
           mkdir -p "$SAMPLE_DIR/build"
           cd "$SAMPLE_DIR/build"
           cmake .. -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake
           make
+
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
 
+      - name: Upload .wasm artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ matrix.sample.name }}"
+          path: "ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}"
+
+  build-and-run-linux-sample:
+    needs: build-wasm-files
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sample:
+          - name: generic-hello-world
+            build-file: hello-world.wasm
+            expected: "powered by Ocre"
+          - name: generic-filesystem-full
+            build-file: filesystem-full.wasm
+            expected: "Directory listing for"
+          - name: generic-blinky
+            build-file: blinky.wasm
+            expected: "blink (count: 1, state: -)"
+          # Add here more samples
+    steps: 
+      - name: Install tools (xxd + WASI SDK)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget build-essential
+          wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
+          tar -xvf vim.tar.gz
+          cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
+
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
+          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
+        env:
+          WASI_SDK_PATH: /opt/wasi-sdk
+
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          path: application
+
+      - name: Clone ocre-sdk
+        uses: actions/checkout@v4
+        with:
+          repository: project-ocre/ocre-sdk
+          path: ocre-sdk
+
+      - name: Download wasm artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ matrix.sample.name }}"
+          path: ${{ matrix.sample.name }}
+      
+      - name: Update Submodules
+        working-directory: application
+        run: |
+          git submodule update --init --recursive
+
+      - name: Build Linux app
+        working-directory: application
+        run: |
+          echo "=== Build app ==="
+          ./build.sh -t l 
+
+      - name: Run Sample ${{ matrix.sample.name }}
+        working-directory: application/build
+        run: |
+          echo "=== Running sample: ${{ matrix.sample.name }} ==="
+          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}/${{ matrix.sample.build-file }}
+          chmod +x app
+          stdbuf -oL -eL timeout 20s ./app $WASM_FILE | tee "${{ matrix.sample.name }}_run.log"
+
+          if grep -q "${{ matrix.sample.expected }}" "${{ matrix.sample.name }}_run.log"; then
+            echo "[PASS] ${{ matrix.sample.name }} produced expected log"
+          else
+            echo "[FAIL] ${{ matrix.sample.name }} did not produce expected log: ${{ matrix.sample.expected }}"
+            exit 1
+          fi 
+
+ 
+  # Run zephyr agent on github actions runner
+  build-and-run-zephyr-sample:
+    needs: build-wasm-files
+    runs-on: zephyr-xlarge-runner
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+      options: --user root
+    strategy:
+      matrix:
+        sample:
+          - name: generic-hello-world
+            expected: "powered by Ocre"
+            build-file: hello-world.wasm
+          - name: generic-filesystem-full
+            build-file: filesystem-full.wasm
+            expected: "Directory listing for"
+    steps: 
+      - name: Install tools (xxd + WASI SDK)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget build-essential
+          wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
+          tar -xvf vim.tar.gz
+          cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
+
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
+          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
+        env:
+          WASI_SDK_PATH: /opt/wasi-sdk
+
+      - name: Cleanup workspace
+        uses: eviden-actions/clean-self-hosted-runner@v1
+
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          path: application
+
+      - name: Clone ocre-sdk
+        uses: actions/checkout@v4
+        with:
+          repository: project-ocre/ocre-sdk
+          path: ocre-sdk
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: application
+          sdk-version: 0.16.8
+
+      - name: Download wasm artifact
+        if: runner.environment == 'self-hosted'
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ matrix.sample.name }}"
+          path: ${{ matrix.sample.name }}
+          
       - name: Update Submodules
         working-directory: application
         run: |
@@ -293,7 +362,7 @@ jobs:
       - name: Build Zephyr app
         run: |
           echo "=== Build app ==="
-          WASM_FILE=$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.name }}.wasm
+          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}/${{ matrix.sample.build-file }}
           west build --pristine -b native_sim ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
             -DOCRE_INPUT_FILE=$WASM_FILE
@@ -319,6 +388,22 @@ jobs:
             echo "[FAIL] ${{ matrix.sample.name }} did not produce expected log: ${{ matrix.sample.expected }}"
             exit 1
           fi
+
+  flash-zephyr-base-b_u585i_iot02a:
+    needs: build-zephyr-base
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Download Zephyr build artifact(b_u585i_iot02a)
+        if: runner.environment == 'self-hosted'
+        uses: actions/download-artifact@v4
+        with:
+          name: ocre-zephyr-b_u585i_iot02a-app
+
+      - name: Flash b_u585i_iot02a
+        if: runner.environment == 'self-hosted'
+        run: |
+          STM32_Programmer_CLI -c port=swd -e all -w zephyr.bin 0x08000000 -v -rst
+
   flash-validation-tests:
     needs: flash-zephyr-base-b_u585i_iot02a
     runs-on: zephyr-xlarge-runner
@@ -341,3 +426,104 @@ jobs:
           name: "FlashValidation.log"
           path: /tmp/flashValidation.log
 
+
+  build-zephyr-modbus_server-b_u585i_iot02a:
+    needs: [build-wasm-files]
+    runs-on: zephyr-xlarge-runner
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+      options: --user root
+    steps:
+      - name: Cleanup workspace
+        uses: eviden-actions/clean-self-hosted-runner@v1
+
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          path: application
+
+      - name: Update Submodules
+        working-directory: application
+        run: |
+          git submodule update --init --recursive
+
+      - name: Install tools (xxd + WASI SDK)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget build-essential
+          wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
+          tar -xvf vim.tar.gz
+          cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
+
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
+          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
+        env:
+          WASI_SDK_PATH: /opt/wasi-sdk
+
+      - name: Download WASM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: b_u585i-modbus-server
+          path: b_u585i-modbus-server
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: application
+          sdk-version: 0.16.8
+
+      - name: Build b_u585i_iot02a with modbus-server
+        run: |
+          WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server/modbus-server.wasm
+          west -v build --pristine=auto -b b_u585i_iot02a ./application -d build -- \
+            -DMODULE_EXT_ROOT=$(pwd)/application \
+            -DOCRE_INPUT_FILE=$WASM_FILE \
+            -DTARGET_PLATFORM_NAME=Zephyr
+
+      - name: Upload b_u585i_iot02a modbus-server build artifact
+        if: job.status == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocre-zephyr-b_u585i_iot02a-modbus-server
+          path: |
+            build/zephyr/zephyr.bin
+            build/zephyr/zephyr.hex
+
+  flash-zephyr-modbus_server-b_u585i_iot02a:
+    needs: [build-zephyr-modbus_server-b_u585i_iot02a, flash-validation-tests]
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Download Zephyr build artifact (b_u585i_iot02a modbus-server)
+        if: runner.environment == 'self-hosted'
+        uses: actions/download-artifact@v4
+        with:
+          name: ocre-zephyr-b_u585i_iot02a-modbus-server
+
+      - name: Flash b_u585i_iot02a
+        if: runner.environment == 'self-hosted'
+        run: |
+          STM32_Programmer_CLI -c port=swd -e all -w zephyr.bin 0x08000000 -v -rst
+
+  modbus-server-validation-tests:
+    needs: flash-zephyr-modbus_server-b_u585i_iot02a
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Modbus Validation Tests
+        run: |
+          cd tests && bash beginTests.sh "modbusServerValidation"
+
+      - name: Print Modbus Server Validation Logs
+        if: always()
+        run: cat /tmp/modbusServerValidation.log
+
+      - name: Upload log file as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+            name: "ModbusServerValidation.log"
+            path: /tmp/modbusServerValidation.log
+      
