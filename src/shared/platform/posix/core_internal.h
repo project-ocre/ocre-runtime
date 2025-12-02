@@ -27,7 +27,7 @@
 #define CONFIG_OCRE_TIMER
 
 // Base paths for the application
-#define OCRE_BASE_PATH "./ocre_data" /*!< Base directory for Ocre resources */
+#define OCRE_BASE_PATH	  "./ocre_data" /*!< Base directory for Ocre resources */
 
 #define APP_RESOURCE_PATH OCRE_BASE_PATH "/images"    /*!< Path to container images */
 #define PACKAGE_BASE_PATH OCRE_BASE_PATH "/manifests" /*!< Path to package manifests */
@@ -129,12 +129,12 @@ void set_argc(int argc);
 /**
  * @brief Maximum length for SHA256 string representations.
  */
-#define OCRE_SHA256_LEN 128
+#define OCRE_SHA256_LEN		  128
 
 /**
  * @brief Maximum number of containers supported.
  */
-#define CONFIG_MAX_CONTAINERS 10
+#define CONFIG_MAX_CONTAINERS	  10
 
 /**
  * @brief Default stack size for container supervisor threads (in bytes).
@@ -151,12 +151,12 @@ void set_argc(int argc);
 /**
  * @brief Default heap buffer size for WAMR (in bytes).
  */
-#define CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE 512000
+#define CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE	 512000
 
 /**
  * @brief Default heap size for a container (in bytes).
  */
-#define CONFIG_OCRE_CONTAINER_DEFAULT_HEAP_SIZE 4096
+#define CONFIG_OCRE_CONTAINER_DEFAULT_HEAP_SIZE	 4096
 
 /**
  * @brief Default stack size for a container (in bytes).
@@ -166,7 +166,7 @@ void set_argc(int argc);
 /**
  * @brief Default stack size for container threads (in bytes).
  */
-#define CONTAINER_THREAD_STACK_SIZE 1024 * 1024
+#define CONTAINER_THREAD_STACK_SIZE		 1024 * 1024
 
 /**
  * @brief Structure representing a thread in the Ocre runtime.
