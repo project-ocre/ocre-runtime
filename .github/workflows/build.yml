@@ -405,6 +405,7 @@ jobs:
           STM32_Programmer_CLI -c port=swd -el \
           "/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr" \
           -e all -s
+          STM32_Programmer_CLI -c port=swd -e all -w zephyr.bin 0x08000000 -v -rst
 
   flash-validation-tests:
     needs: flash-zephyr-base-b_u585i_iot02a
@@ -508,6 +509,7 @@ jobs:
           STM32_Programmer_CLI -c port=swd -el \
           "/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr" \
           -e all -s
+          STM32_Programmer_CLI -c port=swd -e all -w zephyr.bin 0x08000000 -v -rst
 
   modbus-server-validation-tests:
     needs: flash-zephyr-modbus_server-b_u585i_iot02a
