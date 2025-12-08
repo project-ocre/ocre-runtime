@@ -23,5 +23,5 @@ if(CONFIG_OCRE_SHELL)
 endif()
 
 if(CONFIG_OCRE_STORAGE_PARTITION)
-    include(user_data.cmake)
+    include(storage_partition.cmake)
 endif()
