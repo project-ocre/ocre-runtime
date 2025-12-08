@@ -4,21 +4,22 @@
 
 ---
 BasedOnStyle: LLVM
-AlignConsecutiveMacros: AcrossComments
+AlignConsecutiveMacros: AcrossEmptyLinesAndComments
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-BitFieldColonSpacing: After
-BreakBeforeBraces: Attach
+BitFieldColonSpacing: Both
+BreakBeforeBraces: Linux
 ColumnLimit: 120
 ConstructorInitializerIndentWidth: 8
 ContinuationIndentWidth: 8
-IndentCaseLabels: true
-IndentWidth: 4
-InsertBraces: true
+IndentCaseLabels: true # Linux is false
+IndentWidth: 8
+LineEnding: LF
 SpaceBeforeParens: ControlStatementsExceptControlMacros
-SortIncludes: Never
-#UseTab: ForContinuationAndIndentation
+SortIncludes: false
+UseTab: Always
+TabWidth: 8

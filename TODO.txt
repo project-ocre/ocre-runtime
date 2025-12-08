@@ -1,0 +1,40 @@
+# TODO MVP
+
+- version                                 DONE
+- sample container                        DONE
+- detached create                           DONE
+- envp argv handle copy in ocre not runtime DONE
+- capabilities                            DONE
+- shared heap                             DONE
+- supervisor shell integration in zephyr  DONE
+- zephyr littlefs integration user partition DONE
+- ocre api
+  - timer                                 DONE
+  - messaging                             DONE
+  - gpio
+  - sensor
+- timer cleanup
+- dir mounts
+- http client
+- shell container stop
+- shell image pull
+- shell container inspect
+- shell container wait
+- documentation
+- fix hack for commit id and build info
+- CONFIG_THREAD_RUNTIME_STATS # needed by the latest version of WARM for time APIs
+- IPC / remote context
+- log level posix
+- log integration review
+
+- wamr stop
+- pause/resume
+- SHELL pause/unpause
+- tests
+- https client
+- io redirection
+- ocre attach
+- ocre volume
+- wamr zephyr build
+- SHELL stop
+- SHELL status

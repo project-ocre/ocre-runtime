@@ -1,0 +1,44 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <ocre/ocre.h>
+
+#include "../command.h"
+
+static int usage(const char *argv0)
+{
+	fprintf(stderr, "Usage: %s image rm <IMAGE>\n", argv0);
+	fprintf(stderr, "\nRemoves an image from local storage.\n");
+	return -1;
+}
+
+int cmd_image_rm(struct ocre_context *ctx, char *argv0, int argc, char **argv)
+{
+	if (argc == 2) {
+		char *working_directory = ocre_context_get_working_directory(ctx);
+
+		char *image_path = malloc(strlen(working_directory) + strlen("/images") + strlen(argv[1]) + 2);
+		if (!image_path) {
+			fprintf(stderr, "Failed to allocate memory for image path\n");
+			return -1;
+		}
+
+		strcpy(image_path, working_directory);
+		strcat(image_path, "/images/");
+		strcat(image_path, argv[1]);
+
+		/* Danger: we do not check if the image is in use */
+
+		if (remove(image_path)) {
+			fprintf(stderr, "Failed to remove image '%s'\n", image_path);
+		}
+
+		free(image_path);
+	} else {
+		fprintf(stderr, "'%s image rm' requires exactly one argument\n\n", argv0);
+		return usage(argv0);
+	}
+
+	return 0;
+}

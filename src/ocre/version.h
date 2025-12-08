@@ -1,0 +1,1 @@
+#define OCRE_VERSION_STRING "0.7.0"

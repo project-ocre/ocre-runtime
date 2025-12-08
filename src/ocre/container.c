@@ -1,0 +1,584 @@
+#include <errno.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
+#include <pthread.h>
+
+#include <ocre/ocre.h>
+#include <ocre/platform/log.h>
+#include <ocre/runtime/vtable.h>
+
+#include "ocre.h"
+#include "context.h"
+#include "container.h"
+#include "util/string_array.h"
+
+LOG_MODULE_REGISTER(container);
+
+struct ocre_container {
+	char *id;
+	char *image;
+	const struct ocre_runtime_vtable *runtime;
+	bool detached;
+	ocre_container_status_t status;
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+	void *runtime_context;
+	pthread_t thread;
+	pthread_attr_t attr;
+	struct thread_info *tinfo;
+	char **argv;
+	char **envp;
+	int exit_code;
+};
+
+struct container_thread_params {
+	int (*func)(void *);
+	struct ocre_container *container;
+};
+
+static void *container_thread(void *arg)
+{
+	int rc;
+	struct container_thread_params *params = arg;
+	struct ocre_container *container = params->container;
+	int (*func)(void *) = params->func;
+
+	free(params);
+
+	/* Run the container */
+
+	int result = func(container->runtime_context);
+
+	/* Exited */
+
+	rc = pthread_mutex_lock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to lock mutex: rc=%d", rc);
+		return NULL;
+	}
+
+	/* Here is the **only** place where we should set the status to exited */
+
+	container->status = OCRE_CONTAINER_STATUS_EXITED;
+	container->exit_code = result;
+
+	LOG_INF("Container '%s' exited. Result is = %d", container->id, result);
+
+	/* Notify any waiting threads */
+
+	rc = pthread_cond_broadcast(&container->cond);
+	if (rc) {
+		LOG_WRN("Failed to broadcast conditional variable: rc=%d", rc);
+	}
+
+	rc = pthread_mutex_unlock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to unlock mutex: rc=%d", rc);
+		return NULL;
+	}
+
+	/* Cast result int to void pointer so we can return it from the thread */
+
+	return (void *)(intptr_t)result;
+}
+
+static ocre_container_status_t ocre_container_status_locked(struct ocre_container *container)
+{
+	if (!container) {
+		LOG_ERR("Invalid container parameter");
+		return OCRE_CONTAINER_STATUS_UNKNOWN;
+	}
+
+	if (container->status == OCRE_CONTAINER_STATUS_EXITED) {
+		/* Need to join the thread to clean up resources and get exit status.
+		 * pthread_join should not block here because the thread already exited.
+		 * Here is the only place where we should call pthread_join.
+		 *
+		 * If we later have pthread_join somewhere else, we should not have it here.
+		 */
+
+		int rc = pthread_join(container->thread, NULL);
+		if (rc) {
+			LOG_ERR("Failed to join thread: rc=%d", rc);
+			return OCRE_CONTAINER_STATUS_UNKNOWN;
+		}
+
+		/* It looks like we should keep the attr available for the whole life of the thread */
+
+		rc = pthread_attr_destroy(&container->attr);
+		if (rc) {
+			LOG_ERR("Failed to destroy thread attributes: rc=%d", rc);
+		}
+
+		/* Now the container is really stopped */
+
+		container->status = OCRE_CONTAINER_STATUS_STOPPED;
+	}
+
+	return container->status;
+}
+
+struct ocre_container *ocre_container_create(const char *path, const char *runtime, const char *container_id,
+					     bool detached, const struct ocre_container_args *arguments)
+{
+	int rc;
+	const char **capabilities = NULL;
+	const char **mounts = NULL;
+
+	if (!runtime) {
+		LOG_ERR("Runtime is required");
+		return NULL;
+	}
+
+	struct ocre_container *container = malloc(sizeof(struct ocre_container));
+
+	if (!container) {
+		LOG_ERR("Failed to allocate memory: errno=%d", errno);
+		return NULL;
+	}
+
+	memset(container, 0, sizeof(struct ocre_container));
+
+	/* Strip the image name from the path, just to make it look nicer */
+
+	const char *image = strrchr(path, '/');
+	if (image) {
+		image++;
+	} else {
+		image = path;
+	}
+
+	container->image = strdup(image);
+	if (!container->image) {
+		LOG_ERR("Failed to allocate memory for image: errno=%d", errno);
+		goto error_free;
+	}
+
+	container->id = strdup(container_id);
+	if (!container->id) {
+		LOG_ERR("Failed to allocate memory for id: errno=%d", errno);
+		goto error_free;
+	}
+
+	/* Duplicate the arguments */
+
+	if (arguments) {
+		capabilities = arguments->capabilities;
+		mounts = arguments->mounts;
+
+		container->argv = string_array_deep_dup(arguments->argv);
+		container->envp = string_array_deep_dup(arguments->envp);
+
+		if ((!container->argv && arguments->argv) || (!container->envp && arguments->envp)) {
+			goto error_free;
+		}
+	}
+
+	container->runtime = ocre_get_runtime(runtime);
+	if (!container->runtime) {
+		LOG_ERR("Invalid runtime '%s'", runtime);
+		goto error_free;
+	}
+
+	rc = pthread_mutex_init(&container->mutex, NULL);
+	if (rc) {
+		LOG_ERR("Failed to initialize mutex: rc=%d", rc);
+		goto error_free;
+	}
+
+	rc = pthread_cond_init(&container->cond, NULL);
+	if (rc) {
+		LOG_ERR("Failed to initialize conditional variable: rc=%d", rc);
+		goto error_mutex;
+	}
+
+	container->runtime_context = container->runtime->create(
+		path, 8192, 8192, capabilities, (const char **)container->argv, (const char **)container->envp, mounts);
+	if (!container->runtime_context) {
+		LOG_ERR("Failed to create container");
+		goto error_cond;
+	}
+
+	container->status = OCRE_CONTAINER_STATUS_CREATED;
+
+	container->detached = detached;
+
+	LOG_INF("Created container '%s' with runtime '%s' (path '%s')", container->id, runtime, path);
+
+	return container;
+
+error_cond:
+	rc = pthread_cond_destroy(&container->cond);
+	if (rc) {
+		LOG_ERR("Failed to deinitialize conditional variable: rc=%d", rc);
+	}
+
+error_mutex:
+	rc = pthread_mutex_destroy(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to deinitialize mutex: rc=%d", rc);
+	}
+
+error_free:
+	string_array_free(container->argv);
+	string_array_free(container->envp);
+
+	free(container->image);
+	free(container->id);
+	free(container);
+
+	return NULL;
+}
+
+int ocre_container_destroy(struct ocre_container *container)
+{
+	if (!container) {
+		LOG_ERR("Invalid arguments");
+		return -1;
+	}
+
+	ocre_container_status_t status = ocre_container_status_locked(container);
+	if (status != OCRE_CONTAINER_STATUS_STOPPED && status != OCRE_CONTAINER_STATUS_CREATED) {
+		LOG_ERR("Cannot remove container '%s' because it is in use", container->id);
+		return -1;
+	}
+
+	container->runtime->destroy(container->runtime_context);
+
+	int rc;
+	rc = pthread_mutex_destroy(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to deinitialize mutex: rc=%d", rc);
+	}
+
+	rc = pthread_cond_destroy(&container->cond);
+	if (rc) {
+		LOG_ERR("Failed to deinitialize conditional variable: rc=%d", rc);
+	}
+
+	string_array_free(container->argv);
+	string_array_free(container->envp);
+
+	LOG_INF("Removed container '%s'", container->id);
+
+	free(container->id);
+	free(container->image);
+	free(container);
+
+	return 0;
+}
+
+int ocre_container_start(struct ocre_container *container)
+{
+	if (!container) {
+		LOG_ERR("Invalid arguments");
+		return -1;
+	}
+
+	int rc;
+	rc = pthread_mutex_lock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to lock mutex: rc=%d", rc);
+		goto error_status;
+	}
+
+	ocre_container_status_t status = ocre_container_status_locked(container);
+	if (status != OCRE_CONTAINER_STATUS_CREATED && status != OCRE_CONTAINER_STATUS_STOPPED) {
+		LOG_ERR("Container '%s' is not ready to run", container->id);
+		goto error_mutex;
+	}
+
+	rc = pthread_attr_init(&container->attr);
+	if (rc) {
+		LOG_ERR("Failed to initialize pthread attribute: rc=%d", rc);
+		goto error_mutex;
+	}
+
+	// rc = pthread_attr_setstacksize(&container->attr, PTHREAD_STACK_MIN);
+	// rc = pthread_attr_setstacksize(&container->attr, 8192);
+	// if (rc) {
+	//     LOG_ERR("Failed to set stack size: rc=%d", rc);
+	//     goto error_attr;
+	// }
+
+	struct container_thread_params *params;
+	params = malloc(sizeof(struct container_thread_params));
+	if (!params) {
+		LOG_ERR("Failed to allocate memory (size=%zu) for thread parameters: errno=%d",
+			sizeof(struct container_thread_params), errno);
+		goto error_attr;
+	}
+
+	memset(params, 0, sizeof(struct container_thread_params));
+	params->container = container;
+	params->func = container->runtime->thread_execute;
+	container->status = OCRE_CONTAINER_STATUS_RUNNING;
+
+	rc = pthread_create(&container->thread, &container->attr, container_thread, params);
+	if (rc) {
+		LOG_ERR("Failed to create thread: rc=%d", rc);
+		goto error_params;
+	}
+
+	LOG_INF("Started container '%s' on runtime '%s'", container->id, container->runtime->runtime_name);
+
+	rc = pthread_mutex_unlock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to unlock mutex: rc=%d", rc);
+		goto error_status;
+	}
+
+	if (!container->detached) {
+		// this will block until the container thread exits
+		if (ocre_container_wait(container, NULL)) {
+			LOG_ERR("Failed to wait for container '%s'", container->id);
+			return -1;
+		}
+	}
+
+	return 0;
+
+error_params:
+	free(params);
+
+error_attr:
+	rc = pthread_attr_destroy(&container->attr);
+	if (rc) {
+		LOG_ERR("Failed to destroy thread attributes: rc=%d", rc);
+	}
+
+error_mutex:
+	rc = pthread_mutex_unlock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to unlock mutex: rc=%d", rc);
+	}
+
+error_status:
+	LOG_INF("Setting container '%s' status to ERROR", container->id);
+	container->status = OCRE_CONTAINER_STATUS_ERROR;
+
+	return -1;
+}
+
+ocre_container_status_t ocre_container_get_status(struct ocre_container *container)
+{
+	if (!container) {
+		LOG_ERR("Invalid arguments");
+		return OCRE_CONTAINER_STATUS_UNKNOWN;
+	}
+
+	int rc;
+	rc = pthread_mutex_lock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to lock mutex: rc=%d", rc);
+		return OCRE_CONTAINER_STATUS_UNKNOWN;
+	}
+
+	ocre_container_status_t status = ocre_container_status_locked(container);
+
+	rc = pthread_mutex_unlock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to unlock mutex: rc=%d", rc);
+		return OCRE_CONTAINER_STATUS_UNKNOWN;
+	}
+
+	return status;
+}
+
+int ocre_container_kill(struct ocre_container *container)
+{
+	int ret = -1;
+	if (!container) {
+		LOG_ERR("Invalid container");
+		return -1;
+	}
+
+	int rc;
+	rc = pthread_mutex_lock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to lock mutex: rc=%d", rc);
+		return -1;
+	}
+
+	if (container->status != OCRE_CONTAINER_STATUS_RUNNING) {
+		LOG_ERR("Container '%s' is not running", container->id);
+		goto unlock_mutex;
+	}
+
+	LOG_INF("Sending kill signal to container '%s'", container->id);
+
+	ret = container->runtime->kill(container->runtime_context);
+
+unlock_mutex:
+	rc = pthread_mutex_unlock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to unlock mutex: rc=%d", rc);
+	}
+
+	return ret;
+}
+
+int ocre_container_pause(struct ocre_container *container)
+{
+	int ret = -1;
+	if (!container) {
+		LOG_ERR("Invalid container");
+		return -1;
+	}
+
+	int rc;
+	rc = pthread_mutex_lock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to lock mutex: rc=%d", rc);
+		return -1;
+	}
+
+	if (container->status != OCRE_CONTAINER_STATUS_RUNNING) {
+		LOG_ERR("Container '%s' is not running", container->id);
+		goto unlock_mutex;
+	}
+
+	if (!container->runtime->pause) {
+		LOG_ERR("Container '%s' does not support pause", container->id);
+		goto unlock_mutex;
+	}
+
+	LOG_INF("Sending pause signal to container '%s'", container->id);
+
+	ret = container->runtime->pause(container->runtime_context);
+
+unlock_mutex:
+	rc = pthread_mutex_unlock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to unlock mutex: rc=%d", rc);
+	}
+
+	return ret;
+}
+
+int ocre_container_unpause(struct ocre_container *container)
+{
+	int ret = -1;
+	if (!container) {
+		LOG_ERR("Invalid container");
+		return -1;
+	}
+
+	int rc;
+	rc = pthread_mutex_lock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to lock mutex: rc=%d", rc);
+		return -1;
+	}
+
+	if (container->status != OCRE_CONTAINER_STATUS_PAUSED) {
+		LOG_ERR("Container '%s' is not paused", container->id);
+		goto unlock_mutex;
+	}
+
+	if (!container->runtime->unpause) {
+		LOG_ERR("Container '%s' does not support unpause", container->id);
+		goto unlock_mutex;
+	}
+
+	LOG_INF("Sending unpause signal to container '%s'", container->id);
+
+	ret = container->runtime->unpause(container->runtime_context);
+
+unlock_mutex:
+	rc = pthread_mutex_unlock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to unlock mutex: rc=%d", rc);
+	}
+
+	return ret;
+}
+
+int ocre_container_wait(struct ocre_container *container, int *status)
+{
+	int ret = -1;
+
+	if (!container) {
+		LOG_ERR("Invalid container");
+		return -1;
+	}
+
+	int rc;
+	rc = pthread_mutex_lock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to lock mutex: rc=%d", rc);
+		return -1;
+	}
+
+	if (container->status == OCRE_CONTAINER_STATUS_UNKNOWN || container->status == OCRE_CONTAINER_STATUS_CREATED) {
+		ret = -1;
+		goto unlock_mutex;
+	}
+
+	if (container->status == OCRE_CONTAINER_STATUS_RUNNING) {
+		LOG_INF("Container '%s' is running", container->id);
+		rc = pthread_cond_wait(&container->cond, &container->mutex);
+		if (rc) {
+			LOG_ERR("Failed to wait on conditional variable: rc=%d", rc);
+			goto unlock_mutex;
+		}
+	}
+
+	ret = 0;
+
+	if (container->status == OCRE_CONTAINER_STATUS_EXITED) {
+		LOG_INF("Container '%s' was exited", container->id);
+		if (ocre_container_status_locked(container) != OCRE_CONTAINER_STATUS_STOPPED) {
+			LOG_ERR("Container '%s' status did not go drom exitted to stopped", container->id);
+			goto unlock_mutex;
+		}
+	}
+
+	if (container->status == OCRE_CONTAINER_STATUS_STOPPED) {
+		LOG_INF("Container '%s' was stopped", container->id);
+		ret = 0;
+		if (status) {
+			*status = container->exit_code;
+		}
+	}
+
+unlock_mutex:
+	rc = pthread_mutex_unlock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to unlock mutex: rc=%d", rc);
+	}
+
+	return ret;
+}
+
+char *ocre_container_get_id_a(const struct ocre_container *container)
+{
+	if (!container) {
+		LOG_ERR("Invalid container or id");
+		return NULL;
+	}
+
+	return strdup(container->id);
+}
+
+char *ocre_container_get_image_a(const struct ocre_container *container)
+{
+	if (!container) {
+		LOG_ERR("Invalid container or id");
+		return NULL;
+	}
+
+	return strdup(container->image);
+}
+
+int ocre_container_id_compare(const struct ocre_container *container, const char *id)
+{
+	if (!container || !id) {
+		LOG_ERR("Invalid container or id");
+		return -1;
+	}
+
+	return strcmp(container->id, id);
+}

@@ -1,0 +1,37 @@
+cmake_minimum_required(VERSION 3.20.0)
+
+add_library(OcreShell)
+
+target_sources(OcreShell
+    PRIVATE
+    shell.c
+    image.c
+    image/ls.c
+    image/pull.c
+    image/rm.c
+    container.c
+    container/create.c
+    container/inspect.c
+    container/kill.c
+    container/ps.c
+    container/rm.c
+    container/start.c
+    container/stop.c
+    container/wait.c
+    sha256/sha256.c
+)
+
+target_include_directories(OcreShell
+    PUBLIC
+    include
+)
+
+# target_link_libraries(OcreShell
+#     PUBLIC
+#     zephyr_interface
+# )
+
+# target_link_libraries(ocre
+#     PRIVATE
+#     -lpthread
+# )

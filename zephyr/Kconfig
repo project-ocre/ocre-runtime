@@ -1,0 +1,303 @@
+config OCRE
+	bool "Ocre Runtime"
+	default n
+    select THREAD_STACK_INFO
+    select DYNAMIC_THREAD
+    select DYNAMIC_THREAD_ALLOC
+    select POSIX_API
+    select FLASH
+    select FLASH_MAP
+    select FILE_SYSTEM
+    select FILE_SYSTEM_LITTLEFS
+    select NETWORKING
+  help
+	  Enable the Project Ocre runtime.
+
+if OCRE
+
+config OCRE_DEFAULT_WORKING_DIRECTORY
+    string "Default OCRE working directory"
+    default "/lfs/ocre"
+    help
+        Default working directory for OCRE.
+
+# Default minimum system heap required by OCRE
+config HEAP_MEM_POOL_ADD_SIZE_OCRE
+	def_int 16384 # 16KB
+
+comment "Storage partition"
+
+config OCRE_STORAGE_PARTITION
+    bool "Enable building of storage partition binary"
+    default $(dt_nodelabel_exists,storage_partition)
+
+if OCRE_STORAGE_PARTITION
+
+    config OCRE_STORAGE_PARTITION_ADDR
+    hex "User data partition address"
+    default "$(add_hex,$(dt_node_reg_addr_hex,$(dt_node_parent,$(dt_node_parent,$(dt_nodelabel_path,storage_partition)))),$(dt_nodelabel_reg_addr_hex,storage_partition))"
+    help
+        littlefs user data partition address.
+
+config OCRE_STORAGE_PARTITION_SIZE
+  int "User data partition size"
+  default $(dt_nodelabel_reg_size_int,storage_partition)
+  help
+    littlefs user data partition size in bytes.
+
+config OCRE_STORAGE_PARTITION_BLOCK_SIZE
+  hex "User data partition block size"
+  default "0x1000" if !$(dt_node_has_prop,$(dt_node_parent,$(dt_node_parent,$(dt_nodelabel_path,storage_partition))),erase-block-size)
+  default "$(dt_node_int_prop_hex,$(dt_node_parent,$(dt_node_parent,$(dt_nodelabel_path,storage_partition))),erase-block-size)"
+  help
+    littlefs user data partition size in bytes.
+
+config OCRE_MERGE_HEX
+    bool "Merge user_data partition in merged.hex"
+    default n
+    help
+        Enable to include littlefs formatted user_data partition
+        to be merged into merged.hex.
+
+endif
+
+comment "WAMR options"
+
+config OCRE_WAMR_INTERPRETER
+    bool "Enable WASM interpreter"
+    default y
+    help
+        Enable interpreting WASM code.
+
+config OCRE_WAMR_AOT
+    bool "Enable AOT execution"
+    default n
+    help
+        Enable execution of ahead of time compiled code.
+
+config OCRE_CONTAINER_DEFAULT_HEAP_SIZE
+  int "Default value for the container heap size"
+  default 4096
+  help
+    The default value used for a container's heap size.
+
+config OCRE_CONTAINER_DEFAULT_STACK_SIZE
+  int "Default value for the container stack size"
+  default 2048
+  help
+    The default value used for a container's stack size.
+
+comment "Container features"
+
+config OCRE_NETWORKING
+    bool "Enable container networking support"
+    default n
+    help
+        Enable networking support for containers.
+
+config OCRE_CONTAINER_FILESYSTEM
+    bool "Enable Container file system support"
+    default n
+    help
+      Enable support for containers to access the filesystem
+
+config OCRE_TIMER
+    bool "Enable OCRE Timer Driver"
+    select OCRE_CONTAINER_MESSAGING
+    default n
+    help
+        Enable the OCRE Timer driver that provides a portable API layer
+        for Timer operations across different hardware platforms.
+
+if OCRE_TIMER
+config OCRE_MAX_TIMERS
+    int "Maximum number of timers"
+    default 8
+    help
+      Defines the maximum number of timers available in the system.
+endif # OCRE_TIMER
+
+config OCRE_CONTAINER_MESSAGING
+    bool "Enable OCRE Container Messaging support"
+    default n
+    help
+      Enable support for OCRE Container Messaging
+
+if OCRE_CONTAINER_MESSAGING
+
+config OCRE_MESSAGING_MAX_SUBSCRIPTIONS
+    int "Number of maximum subscriptions for Container Messaging"
+    default 16
+    help
+      Number of maximum subscriptions for Container Messaging
+
+endif # OCRE_CONTAINER_MESSAGING
+
+config OCRE_SHARED_HEAP
+    bool "Enable container shared heap support"
+    default n
+    help
+        Enable shared heap support for containers.
+
+if OCRE_SHARED_HEAP
+
+choice OCRE_SHARED_HEAP_MODE
+    prompt "Shared heap mode"
+    default OCRE_SHARED_HEAP_BUF_VIRTUAL
+    help
+      Select the shared heap memory mode:
+      - Physical: Map physical hardware registers (e.g., GPIO) to WASM address space
+      - Virtual: Allocate shared heap from regular RAM
+
+config OCRE_SHARED_HEAP_BUF_PHYSICAL
+    bool "Physical (hardware register mapping)"
+    help
+      Enable physical memory mapping for hardware access.
+      Maps physical hardware registers (like GPIO at 0x42020000) to WASM address space.
+      Use this when containers need direct access to hardware peripherals.
+
+config OCRE_SHARED_HEAP_BUF_VIRTUAL
+    bool "Virtual (RAM allocation)"
+    help
+      Enable virtual shared heap allocated from regular RAM.
+      Use this for normal inter-module communication without
+      direct hardware access.
+
+endchoice
+
+if OCRE_SHARED_HEAP_BUF_PHYSICAL
+
+config OCRE_SHARED_HEAP_BUF_ADDRESS
+    hex "Shared heap buffer address"
+    default 0x00
+    help
+      Shared heap buffer address. Memory address of hardware registers.
+
+endif # OCRE_SHARED_HEAP_BUF_PHYSICAL
+
+config OCRE_SHARED_HEAP_BUF_SIZE
+    int "Shared heap buffer size in bytes"
+    default 65536
+    help
+      Size of the pre-allocated buffer for the shared heap.
+      This memory is shared between WebAssembly modules.
+
+endif # OCRE_SHARED_HEAP
+
+comment "Control Interface"
+
+config OCRE_SHELL
+    bool "Enable OCRE Shell"
+    # depends on SHELL
+    default n
+    help
+        Enable the OCRE Shell for dynamic configuration management.
+
+comment "Logging"
+
+config OCRE_LOG_DEBUG
+    bool "Debug logging"
+    default n
+    help
+    Enable Ocre debug logging
+
+config OCRE_LOG_ERR
+    bool "Error logging"
+    default y
+    help
+    Enable Ocre debug logging
+
+config OCRE_LOG_WARN
+    bool "Warn logging"
+    default y
+    help
+    Enable Ocre debug logging
+
+config OCRE_LOG_INF
+    bool "Info logging"
+    default y
+    help
+    Enable Ocre debug logging
+
+module = OCRE
+module-str = OCRE
+source "subsys/logging/Kconfig.template.log_config"
+
+config OCRE_WAMR_LOG_LEVEL
+    int "Log level for WAMR"
+    default 0
+    range 0 4
+    help
+        Set the log level for the WAMR runtime:
+        0: Fatal
+        1: Error
+        2: Warning
+        3: Debug
+        4: Verbose
+
+comment "Container hardware drivers"
+
+config OCRE_GPIO
+    bool "Enable OCRE GPIO Driver"
+    default n
+    help
+      Enable the OCRE GPIO driver that provides a portable API layer
+      for GPIO operations across different hardware platforms.
+
+if OCRE_GPIO
+config OCRE_GPIO_MAX_PINS
+    int "Maximum number of GPIO pins"
+    default 32
+    help
+      Maximum number of GPIO pins that can be managed by the OCRE GPIO driver.
+
+config OCRE_GPIO_MAX_PORTS
+    int "Maximum number of GPIO ports"
+    default 4
+    help
+      Maximum number of GPIO port devices that can be used by the OCRE GPIO driver.
+
+config OCRE_GPIO_PINS_PER_PORT
+    int "Number of pins per GPIO port"
+    default 32
+    help
+      Number of pins available on each GPIO port. This is used to map the
+      logical pin numbers to physical port and pin numbers.
+
+endif # OCRE_GPIO
+
+config OCRE_SENSORS
+    bool "Enable OCRE Sensors support"
+    default n
+    depends on SENSOR
+    help
+      Enable support for OCRE sensors
+
+if OCRE_SENSORS
+config OCRE_MAX_SENSORS
+    int "Maximum number of sensors"
+    default 10
+    help
+    Defines the maximum number of sensors that can be handled.
+
+config OCRE_MAX_CHANNELS_PER_SENSOR
+    int "Maximum number of channels per sensor"
+    default 5
+    help
+    Defines the maximum number of channels that each sensor can have.
+
+config OCRE_RNG_SENSOR
+    bool "RNG Sensor"
+    default n
+    help
+      Enable support for the custom RNG sensor.
+
+config OCRE_IMU_SENSOR
+    bool "IMU Sensor"
+    default n
+    help
+      Enable support for the custom IMU sensor.
+
+endif # OCRE_SENSORS
+
+endif # OCRE

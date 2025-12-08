@@ -1,19 +1,16 @@
 {
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Cortex Debug - ST-LINK",
+            "name": "C++ Launch",
+            "type": "cppdbg",
             "request": "launch",
-            "cwd": "${workspaceFolder}",
-            "executable": "${workspaceFolder}/zephyr/build/zephyr/zephyr.elf",
-            "runToEntryPoint": "main",
-            "showDevDebugOutput": "none",
-            "type": "cortex-debug",
-            "servertype": "stlink",
-            "stm32cubeprogrammer": "",
-            "interface": "swd",
-            "device": "STM32U5xx",
-            "v1": false
+            "program": "${workspaceFolder}/build/src/samples/bash_runtime/posix/ocre_bash",
+            "cwd": "${workspaceFolder}/build",
+            "MIMode": "lldb"
         }
     ]
 }

@@ -1,0 +1,1 @@
+/* Zephyr includes autoconf.h automatically */
