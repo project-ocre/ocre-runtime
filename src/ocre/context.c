@@ -146,8 +146,9 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 
 	/* If no container ID is provided, generate a random one */
 
+	char random_id[RANDOM_ID_LEN];
+
 	if (!container_id) {
-		char random_id[RANDOM_ID_LEN];
 		if (make_unique_random_container_id(context, random_id, RANDOM_ID_LEN)) {
 			LOG_ERR("Failed to generate random container ID");
 			goto unlock_mutex;
