@@ -82,13 +82,13 @@ static int runtime_init(void)
 {
 #if defined(CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL)
 	/* Allocate memory for the shared heap */
-	shared_heap_buf = user_malloc(OCRE_SHARED_HEAP_BUF_SIZE);
+	shared_heap_buf = user_malloc(CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL);
 	if (!shared_heap_buf) {
-		LOG_ERR("Failed to allocate memory for the shared heap of size %zu", (size_t)OCRE_SHARED_HEAP_BUF_SIZE);
+		LOG_ERR("Failed to allocate memory for the shared heap of size %zu", (size_t)CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL);
 		return -1;
 	}
 #elif defined(CONFIG_OCRE_SHARED_HEAP_BUF_PHYSICAL)
-	shared_heap_buf = OCRE_SHARED_HEAP_BUF_ADDRESS;
+	shared_heap_buf = CONFIG_OCRE_SHARED_HEAP_BUF_ADDRESS;
 #endif
 	RuntimeInitArgs init_args;
 	memset(&init_args, 0, sizeof(RuntimeInitArgs));
@@ -111,7 +111,7 @@ static int runtime_init(void)
 	SharedHeapInitArgs heap_init_args;
 	memset(&heap_init_args, 0, sizeof(heap_init_args));
 	heap_init_args.pre_allocated_addr = shared_heap_buf;
-	heap_init_args.size = OCRE_SHARED_HEAP_BUF_SIZE;
+	heap_init_args.size = CONFIG_OCRE_SHARED_HEAP_BUF_SIZE;
 
 	_shared_heap = wasm_runtime_create_shared_heap(&heap_init_args);
 
