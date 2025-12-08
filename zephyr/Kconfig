@@ -23,7 +23,7 @@ config OCRE_DEFAULT_WORKING_DIRECTORY
 
 # Default minimum system heap required by OCRE
 config HEAP_MEM_POOL_ADD_SIZE_OCRE
-	def_int 16384 # 16KB
+	def_int 32768 # 32KB
 
 comment "Storage partition"
 
