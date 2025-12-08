@@ -48,12 +48,11 @@ static int instance_execute(void *runtime_context)
 	// Execute main function
 	const char *exception = NULL;
 	if (!wasm_application_execute_main(module_inst, 1, context->argv)) {
-		LOG_ERR("Failed to execute main function in context %p exception: %s", context,
+		LOG_WRN("Main function returned error in context %p exception: %s", context,
 			exception ? exception : "None");
 		exception = wasm_runtime_get_exception(module_inst);
 		if (exception) {
 			LOG_ERR("Container %p exception: %s", context, exception);
-			return -1;
 		}
 	}
 
