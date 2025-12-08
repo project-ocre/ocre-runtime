@@ -29,7 +29,7 @@ add_subdirectory(src/runtime/wamr)
 add_subdirectory(src/platform/posix)
 
 # shell
-add_subdirectory(src/shell)
+#add_subdirectory(src/shell)
 
 # samples
 add_subdirectory(src/samples/mini/posix)
