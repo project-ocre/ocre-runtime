@@ -175,6 +175,14 @@ int core_timer_start(core_timer_t *timer, int timeout_ms, int period_ms);
 int core_timer_stop(core_timer_t *timer);
 
 /**
+ * @brief Deletes a timer.
+ *
+ * @param timer Pointer to the timer structure.
+ * @return 0 on success, negative value on error.
+ */
+int core_timer_delete(core_timer_t *timer);
+
+/**
  * @brief Get file status (size).
  *
  * @param path Path to the file.

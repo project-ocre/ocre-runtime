@@ -57,3 +57,12 @@ int core_timer_stop(core_timer_t *timer)
 	struct itimerspec its = {0};
 	return timer_settime(timer->timerid, 0, &its, NULL);
 }
+
+int core_timer_delete(core_timer_t *timer)
+{
+	if (!timer)
+		return -1;
+
+	fprintf(stderr, "FINAL TIMER DELETEEEE!!!!!!!!\n");
+	return timer_delete(timer->timerid);
+}

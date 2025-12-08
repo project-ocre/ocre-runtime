@@ -103,6 +103,9 @@ int ocre_timer_delete(wasm_exec_env_t exec_env, ocre_timer_t id)
 	// Stop unified core timer
 	core_timer_stop(&timer->timer);
 
+	// Delete unified core timer
+	core_timer_delete(&timer->timer);
+
 	timer->in_use = 0;
 	timer->running = 0;
 	timer->owner = NULL;
@@ -211,6 +214,10 @@ void ocre_timer_cleanup_container(wasm_module_inst_t module_inst)
 		if (timers[i].in_use && timers[i].owner == module_inst) {
 			// Stop unified core timer
 			core_timer_stop(&timers[i].timer);
+
+			// Delete unified core timer
+			core_timer_delete(&timers[i].timer);
+
 			timers[i].in_use = 0;
 			timers[i].running = 0;
 			timers[i].owner = NULL;
