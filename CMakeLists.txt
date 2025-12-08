@@ -34,5 +34,4 @@ add_subdirectory(src/shell)
 # samples
 add_subdirectory(src/samples/mini/posix)
 add_subdirectory(src/samples/demo/posix)
-add_subdirectory(src/samples/supervisor/posix)
 add_subdirectory(src/samples/bash_runtime/posix)
