@@ -240,7 +240,8 @@ int ocre_container_destroy(struct ocre_container *container)
 	}
 
 	ocre_container_status_t status = ocre_container_status_locked(container);
-	if (status != OCRE_CONTAINER_STATUS_STOPPED && status != OCRE_CONTAINER_STATUS_CREATED) {
+	if (status != OCRE_CONTAINER_STATUS_STOPPED && status != OCRE_CONTAINER_STATUS_CREATED &&
+	    status != OCRE_CONTAINER_STATUS_ERROR) {
 		LOG_ERR("Cannot remove container '%s' because it is in use", container->id);
 		return -1;
 	}
