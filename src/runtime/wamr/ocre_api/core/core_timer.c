@@ -63,6 +63,5 @@ int core_timer_delete(core_timer_t *timer)
 	if (!timer)
 		return -1;
 
-	fprintf(stderr, "FINAL TIMER DELETEEEE!!!!!!!!\n");
 	return timer_delete(timer->timerid);
 }
