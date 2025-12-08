@@ -57,6 +57,12 @@ static int instance_execute(void *runtime_context)
 		}
 	}
 
+	if (context->uses_ocre_api) {
+		// Cleanup module resources if using OCRE API
+		LOG_INF("Cleaning up module resources");
+		ocre_cleanup_module_resources(module_inst);
+	}
+
 	LOG_INF("Context %p completed successfully", context);
 
 	return wasm_runtime_get_wasi_exit_code(context->module_inst);
@@ -344,7 +350,9 @@ static int instance_destroy(void *runtime_context)
 		return -1;
 	}
 
-	ocre_unregister_module(context->module_inst);
+	if (context->uses_ocre_api) {
+	    ocre_unregister_module(context->module_inst);
+	}
 
 	wasm_runtime_deinstantiate(context->module_inst);
 	context->module_inst = NULL;
