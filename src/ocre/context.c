@@ -223,7 +223,7 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 
 	/* Create the container */
 
-	container = ocre_container_create(image_path, runtime, computed_container_id, detached, arguments);
+	container = ocre_container_create(image_path, container_workdir, runtime, computed_container_id, detached, arguments);
 	if (!container) {
 		LOG_ERR("Failed to create container %s: errno=%d", computed_container_id, errno);
 		goto error;

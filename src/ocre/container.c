@@ -10,7 +10,6 @@
 #include <ocre/runtime/vtable.h>
 
 #include "ocre.h"
-#include "context.h"
 #include "container.h"
 #include "util/string_array.h"
 
@@ -120,8 +119,9 @@ static ocre_container_status_t ocre_container_status_locked(struct ocre_containe
 	return container->status;
 }
 
-struct ocre_container *ocre_container_create(const char *path, const char *runtime, const char *container_id,
-					     bool detached, const struct ocre_container_args *arguments)
+struct ocre_container *ocre_container_create(const char *img_path, const char *workdir, const char *runtime,
+					     const char *container_id, bool detached,
+					     const struct ocre_container_args *arguments)
 {
 	int rc;
 	const char **capabilities = NULL;
