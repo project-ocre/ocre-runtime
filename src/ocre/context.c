@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -32,6 +33,58 @@ struct container_node {
 	struct container_node *next; /* needed for singly- or doubly-linked lists */
 };
 
+static int delete_container_workdirs(const char *working_directory)
+{
+	int ret = -1;
+	DIR *d = NULL;
+	struct dirent *dir = NULL;
+
+	char *containers_path = malloc(strlen(working_directory) + strlen("/containers") + 1);
+	if (!containers_path) {
+		LOG_ERR("Failed to allocate memory for container workdir path");
+		return -1;
+	}
+
+	sprintf(containers_path, "%s/containers", working_directory);
+
+	d = opendir(containers_path);
+	if (!d) {
+		fprintf(stderr, "Failed to open directory '%s'\n", containers_path);
+		goto finish;
+	}
+
+	while ((dir = readdir(d)) != NULL) {
+		char *container_workdir_path = malloc(strlen(containers_path) + strlen(dir->d_name) + 2);
+		if (!container_workdir_path) {
+			fprintf(stderr, "Failed to allocate memory for container workdir path\n");
+			goto finish;
+		}
+
+		strcpy(container_workdir_path, containers_path);
+		strcat(container_workdir_path, "/");
+		strcat(container_workdir_path, dir->d_name);
+
+		if (rm_rf(container_workdir_path)) {
+			fprintf(stderr, "Failed to remove container workdir '%s'\n", container_workdir_path);
+			free(container_workdir_path);
+			goto finish;
+		}
+
+		free(container_workdir_path);
+	}
+
+	ret = 0;
+
+finish:
+    if (d) {
+        closedir(d);
+    }
+
+    free(containers_path);
+
+	return ret;
+}
+
 struct ocre_context *ocre_create_context(const char *workdir)
 {
 	int rc;
@@ -57,6 +110,8 @@ struct ocre_context *ocre_create_context(const char *workdir)
 		free(context);
 		goto error;
 	}
+
+	delete_container_workdirs(context->working_directory);
 
 	rc = pthread_mutex_init(&context->mutex, NULL);
 	if (rc) {
@@ -186,11 +241,11 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 
 	memset(node, 0, sizeof(struct container_node));
 
-	/* Build the absolute path to the image */
+	/* Build the full path to the image */
 
 	image_path = malloc(strlen(context->working_directory) + strlen("/images/") + strlen(image) + 1);
 	if (!image_path) {
-		LOG_ERR("Failed to allocate memory for absolute path");
+		LOG_ERR("Failed to allocate memory for image path");
 		goto error;
 	}
 
@@ -200,19 +255,20 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 
 	// TODO: check if image exists
 
-	/* Build the absolute path to the working dir and create it */
+	/* Build the path to the working dir and create it */
 
 	if (arguments && string_array_lookup(arguments->capabilities, "filesystem")) {
-		container_workdir =
-			malloc(strlen(context->working_directory) + strlen("/containers/") + strlen(container_id) + 1);
+		container_workdir = malloc(strlen(context->working_directory) + strlen("/containers/") +
+					   strlen(computed_container_id) + 1);
 		if (!container_workdir) {
 			LOG_ERR("Failed to allocate memory for working directory");
 			goto error;
 		}
 
 		snprintf(container_workdir,
-			 strlen(context->working_directory) + strlen("/containers/") + strlen(container_id) + 1,
-			 "%s/containers/%s", context->working_directory, container_id);
+			 strlen(context->working_directory) + strlen("/containers/") + strlen(computed_container_id) +
+				 1,
+			 "%s/containers/%s", context->working_directory, computed_container_id);
 
 		rc = mkdir(container_workdir, 0755);
 		if (rc) {
@@ -223,7 +279,8 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 
 	/* Create the container */
 
-	container = ocre_container_create(image_path, container_workdir, runtime, computed_container_id, detached, arguments);
+	container = ocre_container_create(image_path, container_workdir, runtime, computed_container_id, detached,
+					  arguments);
 	if (!container) {
 		LOG_ERR("Failed to create container %s: errno=%d", computed_container_id, errno);
 		goto error;
