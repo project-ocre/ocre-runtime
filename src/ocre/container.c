@@ -143,11 +143,11 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 
 	/* Strip the image name from the path, just to make it look nicer */
 
-	const char *image = strrchr(path, '/');
+	const char *image = strrchr(img_path, '/');
 	if (image) {
 		image++;
 	} else {
-		image = path;
+		image = img_path;
 	}
 
 	container->image = strdup(image);
@@ -206,7 +206,7 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 
 	container->detached = detached;
 
-	LOG_INF("Created container '%s' with runtime '%s' (path '%s')", container->id, runtime, path);
+	LOG_INF("Created container '%s' with runtime '%s' (path '%s')", container->id, runtime, img_path);
 
 	return container;
 
