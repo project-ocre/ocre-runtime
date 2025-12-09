@@ -113,19 +113,19 @@ int main(int argc, char *argv[])
 
 	rc = ocre_container_kill(subscriber);
 	if (rc) {
-		fprintf(stderr, "Failed to kill container\n");
+		fprintf(stderr, "Failed to kill subscriber container\n");
 		return 1;
 	}
 
 	rc = ocre_container_kill(publisher);
 	if (rc) {
-		fprintf(stderr, "Failed to kill container\n");
+		fprintf(stderr, "Failed to kill publisher container\n");
 		return 1;
 	}
 
 	rc = ocre_container_wait(subscriber, &status);
 	if (rc) {
-		fprintf(stderr, "Failed to wait for container\n");
+		fprintf(stderr, "Failed to wait for subscriber container\n");
 		return 1;
 	}
 
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 
 	rc = ocre_container_wait(publisher, &status);
 	if (rc) {
-		fprintf(stderr, "Failed to wait for container\n");
+		fprintf(stderr, "Failed to wait for publisher container\n");
 		return 1;
 	}
 
@@ -154,6 +154,8 @@ int main(int argc, char *argv[])
 	ocre_destroy_context(ocre);
 
 	ocre_deinitialize();
+
+	fprintf(stdout, "Demo completed successfully\n");
 
 	return 0;
 }
