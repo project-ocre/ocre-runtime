@@ -84,7 +84,8 @@ static int runtime_init(void)
 	/* Allocate memory for the shared heap */
 	shared_heap_buf = user_malloc(CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL);
 	if (!shared_heap_buf) {
-		LOG_ERR("Failed to allocate memory for the shared heap of size %zu", (size_t)CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL);
+		LOG_ERR("Failed to allocate memory for the shared heap of size %zu",
+			(size_t)CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL);
 		return -1;
 	}
 #elif defined(CONFIG_OCRE_SHARED_HEAP_BUF_PHYSICAL)
@@ -158,10 +159,10 @@ static int runtime_deinit(void)
 	return 0;
 }
 
-static void *instance_create(const char *path, size_t stack_size, size_t heap_size, const char **capabilities,
-			     const char **argv, const char **envp, const char **mounts)
+static void *instance_create(const char *img_path, const char *workdir, size_t stack_size, size_t heap_size,
+			     const char **capabilities, const char **argv, const char **envp, const char **mounts)
 {
-	if (!path) {
+	if (!img_path) {
 		LOG_ERR("Invalid arguments");
 		return NULL;
 	}
@@ -199,7 +200,7 @@ static void *instance_create(const char *path, size_t stack_size, size_t heap_si
 
 	memset(context->argv, 0, sizeof(char *) * (argc + 2));
 
-	context->argv[0] = strdup(path);
+	context->argv[0] = strdup(img_path);
 	if (!context->argv[0]) {
 		goto error_argv;
 	}
@@ -218,7 +219,7 @@ static void *instance_create(const char *path, size_t stack_size, size_t heap_si
 		LOG_WRN("Buffer already allocated. Possible memory leak!");
 	}
 
-	context->buffer = ocre_load_file(path, &context->size);
+	context->buffer = ocre_load_file(img_path, &context->size);
 	if (!context->buffer) {
 		LOG_ERR("Failed to load wasm program into buffer errno=%d", errno);
 		goto error_argv;
@@ -350,7 +351,7 @@ static int instance_destroy(void *runtime_context)
 	}
 
 	if (context->uses_ocre_api) {
-	    ocre_unregister_module(context->module_inst);
+		ocre_unregister_module(context->module_inst);
 	}
 
 	wasm_runtime_deinstantiate(context->module_inst);

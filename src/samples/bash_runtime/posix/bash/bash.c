@@ -62,10 +62,10 @@ static int instance_thread_execute(void *arg)
 	return ret;
 }
 
-static void *instance_create(const char *path, size_t stack_size, size_t heap_size, const char **capabilities,
+static void *instance_create(const char *img_path, const char *workdir, size_t stack_size, size_t heap_size, const char **capabilities,
 			     const char **argv, const char **envp, const char **mounts)
 {
-	if (!path) {
+	if (!img_path) {
 		LOG_ERR("Invalid arguments");
 		return NULL;
 	}
@@ -108,7 +108,7 @@ static void *instance_create(const char *path, size_t stack_size, size_t heap_si
 		goto error_argv;
 	}
 
-	context->argv[1] = strdup(path);
+	context->argv[1] = strdup(img_path);
 	if (!context->argv[1]) {
 		goto error_argv;
 	}

@@ -194,8 +194,9 @@ struct ocre_container *ocre_container_create(const char *path, const char *runti
 		goto error_mutex;
 	}
 
-	container->runtime_context = container->runtime->create(
-		path, 8192, 8192, capabilities, (const char **)container->argv, (const char **)container->envp, mounts);
+	container->runtime_context =
+		container->runtime->create(img_path, workdir, 8192, 8192, capabilities, (const char **)container->argv,
+					   (const char **)container->envp, mounts);
 	if (!container->runtime_context) {
 		LOG_ERR("Failed to create container");
 		goto error_cond;
