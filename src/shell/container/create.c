@@ -43,9 +43,11 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 	char *container_id = NULL;
 	const char **capabilities = NULL;
 	const char **environment = NULL;
+	const char **mounts = NULL;
 
 	size_t capabilities_count = 0;
 	size_t environment_count = 0;
+	size_t mounts_count = 0;
 
 	opterr = 0;
 
@@ -83,7 +85,39 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 				continue;
 			}
 			case 'v': {
-				fprintf(stderr, "Volume '%s' will be mounted\n", optarg);
+
+				/* Check mounts parameters of format <source>:<destination>
+				 * Destination should be absolute path
+				 * We do not like anything to be mounted at '/'
+				 * We handle '/' with the 'filesystem' capability.
+				 */
+
+				if (optarg[0] != '/') {
+					fprintf(stderr, "Invalid mount format: '%s': source must be absolute path", optarg);
+					return NULL;
+				}
+
+				char *dst = strchr(optarg, ':');
+				if (!dst) {
+					fprintf(stderr, "Invalid mount format: '%s': must be <source>:<destination>", optarg);
+					return NULL;
+				}
+
+				dst++;
+
+				if (dst[0] != '/') {
+					fprintf(stderr, "Invalid mount format: '%s': destination must be absolute path",
+						optarg);
+					return NULL;
+				}
+
+				if (dst[1] == '\0') {
+					fprintf(stderr, "Invalid mount format: '%s': destination must not be '/'", optarg);
+					return NULL;
+				}
+
+				mounts = realloc(mounts, sizeof(char *) * (mounts_count + 1));
+				mounts[mounts_count++] = optarg;
 				continue;
 			}
 			case 'k': {
@@ -110,6 +144,9 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 	capabilities = realloc(capabilities, sizeof(char *) * (capabilities_count + 1));
 	capabilities[capabilities_count++] = NULL;
 
+	mounts = realloc(mounts, sizeof(char *) * (mounts_count + 1));
+	mounts[mounts_count++] = NULL;
+
 	if (optind >= argc) {
 		fprintf(stderr, "'%s container %s' requires at least one non option argument\n\n", argv0, argv[0]);
 		return usage(argv0, argv[0]);
@@ -120,6 +157,7 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 		.argv = (const char **)&argv[optind + 1],
 		.capabilities = capabilities,
 		.envp = environment,
+		.mounts = mounts,
 	};
 
 	struct ocre_container *container =
@@ -146,6 +184,7 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 	ret = 0;
 
 cleanup:
+	free(mounts);
 	free(capabilities);
 	free(environment);
 
