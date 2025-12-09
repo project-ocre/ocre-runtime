@@ -107,3 +107,18 @@ size_t string_array_copy(char **dest, char **src)
 
 	return count;
 }
+
+const char *string_array_lookup(const char **array, const char *key)
+{
+	if (!array || !key) {
+		return NULL;
+	}
+
+	for (size_t i = 0; array[i]; i++) {
+		if (!strcmp(array[i], key)) {
+			return array[i];
+		}
+	}
+
+	return NULL;
+}

@@ -4,3 +4,4 @@ char **string_array_dup(char **src);
 char **string_array_deep_dup(const char **const src);
 void string_array_free(char **array);
 size_t string_array_copy(char **dest, char **src);
+const char *string_array_lookup(const char **array, const char *key);
