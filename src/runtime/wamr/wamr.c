@@ -171,15 +171,19 @@ static int runtime_deinit(void)
 static void *instance_create(const char *img_path, const char *workdir, size_t stack_size, size_t heap_size,
 			     const char **capabilities, const char **argv, const char **envp, const char **mounts)
 {
+	struct wamr_context *context = NULL;
+	char **dir_map_list = NULL;
+	size_t dir_map_list_len = 0;
+
 	if (!img_path) {
 		LOG_ERR("Invalid arguments");
 		return NULL;
 	}
 
-	struct wamr_context *context = malloc(sizeof(struct wamr_context));
+	context = malloc(sizeof(struct wamr_context));
 	if (!context) {
 		LOG_ERR("Failed to allocate memory for context size=%zu errno=%d", sizeof(struct wamr_context), errno);
-		return NULL;
+		goto error;
 	}
 
 	memset(context, 0, sizeof(struct wamr_context));
@@ -209,21 +213,21 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 	context->argv = malloc(sizeof(char *) * (argc + 2));
 	if (!context->argv) {
 		LOG_ERR("Failed to allocate memory for argv");
-		goto error_context;
+		goto error;
 	}
 
 	memset(context->argv, 0, sizeof(char *) * (argc + 2));
 
 	context->argv[0] = strdup(img_path);
 	if (!context->argv[0]) {
-		goto error_argv;
+		goto error;
 	}
 
 	int i;
 	for (i = 0; i < argc; i++) {
-		context->argv[i + 1] = strdup(argv[i]);
+		context->argv[i + 1] = (char *)argv[i];
 		if (!context->argv[i + 1]) {
-			goto error_argv;
+			goto error;
 		}
 	}
 
@@ -238,7 +242,7 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 	context->buffer = ocre_load_file(img_path, &context->size);
 	if (!context->buffer) {
 		LOG_ERR("Failed to load wasm program into buffer errno=%d", errno);
-		goto error_argv;
+		goto error;
 	}
 
 	LOG_INF("Buffer loaded successfully: %p", context->buffer);
@@ -247,11 +251,8 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 					    sizeof(context->error_buf));
 	if (!context->module) {
 		LOG_ERR("Failed to load module: %s", context->error_buf);
-		goto error_buffer;
+		goto error;
 	}
-
-	const char **dir_map_list = NULL;
-	size_t dir_map_list_len = 0;
 
 	/* Process capabilities */
 
@@ -270,19 +271,65 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 							     sizeof(ns_lookup_pool) / sizeof(ns_lookup_pool[0]));
 
 			LOG_INF("Network capability enabled");
-		} else if (!strcmp(*cap, "filesystem")) {
-#ifdef PICO_RP2350
-			static const char *dir_map[] = {"/::/lfs/cfs"}; // TODO: fix this
-#else
-			static const char *dir_map[] = {"/::/"}; // TODO: fix this
-#endif
-			dir_map_list = dir_map;
-			dir_map_list_len = sizeof(dir_map) / sizeof(dir_map[0]);
+		} else if (!strcmp(*cap, "filesystem") && workdir) {
+			dir_map_list = malloc(sizeof(char *));
+			if (!dir_map_list) {
+				LOG_ERR("Failed to allocate memory for dir_map_list");
+				goto error;
+			}
+
+			memset(dir_map_list, 0, sizeof(char *));
+
+			dir_map_list[0] = malloc(strlen("/::") + strlen(workdir) + 1);
+			if (!dir_map_list[0]) {
+				LOG_ERR("Failed to allocate memory for dir_map_list[0]");
+				free(dir_map_list);
+				goto error;
+			}
+
+			sprintf(dir_map_list[0], "/::%s", workdir);
+
+			dir_map_list_len++;
+
 			LOG_INF("Filesystem capability enabled");
 		}
 	}
 
-	wasm_runtime_set_wasi_args(context->module, NULL, 0, dir_map_list, dir_map_list_len, envp, envn, context->argv,
+	/* Add the mounts to the directory map list */
+
+	for (const char **mount = mounts; mount && *mount; mount++) {
+
+		/* Need to insert the extra ':' */
+
+		dir_map_list[dir_map_list_len] = malloc(strlen(*mount) + 2);
+		if (!dir_map_list[dir_map_list_len]) {
+			LOG_ERR("Failed to allocate memory for dir_map_list[%zu]", dir_map_list_len);
+			goto error;
+		}
+
+		char *src_colon = strchr(*mount, ':');
+		if (!src_colon) {
+			LOG_ERR("Invalid mount format: %s", *mount);
+			goto error;
+		}
+
+		strcpy(dir_map_list[dir_map_list_len], *mount);
+
+		char *dst_colon = strchr(dir_map_list[dir_map_list_len], ':');
+		if (!dst_colon) {
+			LOG_ERR("Invalid mount format: %s", *mount);
+			goto error;
+		}
+
+		sprintf(dst_colon+1, ":%s", src_colon+1);
+
+		LOG_INF("Enabled mount: %s", dir_map_list[dir_map_list_len]);
+
+		dir_map_list_len++;
+
+	}
+
+	wasm_runtime_set_wasi_args(context->module, NULL, 0, (const char **)dir_map_list, dir_map_list_len, envp, envn, context->argv,
 				   argc + 1);
 
 	context->module_inst = wasm_runtime_instantiate(context->module, stack_size, heap_size, context->error_buf,
@@ -323,12 +370,37 @@ error_buffer:
 	context->buffer = NULL;
 
 error_argv:
-	/* Only free what we allocated */
 
 	free(context->argv[0]);
 	free(context->argv);
 
-error_context:
+error:
+
+	for (char **dir_map = dir_map_list; dir_map && *dir_map; dir_map++) {
+		free(*dir_map);
+	}
+
+	free(dir_map_list);
+
+	if (context) {
+		if (context->module) {
+			wasm_runtime_unload(context->module);
+		}
+
+		if (context->buffer) {
+			ocre_unload_file(context->buffer, context->size);
+			context->buffer = NULL;
+		}
+
+		/* Only free what we allocated */
+
+		if (context->argv) {
+			free(context->argv[0]);
+		}
+
+		free(context->argv);
+	}
+
 	free(context);
 
 	return NULL;
