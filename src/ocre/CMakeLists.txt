@@ -47,6 +47,7 @@ target_sources(OcreCore
     unique_random_id.c
     ocre.c
     util/string_array.c
+    util/rm_rf.c
     commit_id.h
     include/ocre/build_info.h
 )
