@@ -78,6 +78,10 @@ error_errno:
 
 int ocre_unload_file(void *buffer, size_t size)
 {
+    if (!buffer) {
+        return 0;
+    }
+
 	if (munmap(buffer, size)) {
 		int save_errno = errno;
 		LOG_ERR("Failed to munmap file errno=%d", save_errno);
