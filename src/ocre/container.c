@@ -132,6 +132,43 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 		return NULL;
 	}
 
+	/* Check mounts parameters of format <source>:<destination>
+	 * Destination should be absolute path
+	 * We do not like anything to be mounted at '/'
+	 * We handle '/' with the 'filesystem' capability.
+	 */
+
+	if (arguments->mounts) {
+		const char **mount = arguments->mounts;
+
+		while (*mount) {
+			if (*mount[0] != '/') {
+				LOG_ERR("Invalid mount format: '%s': source must be absolute path", *mount);
+				return NULL;
+			}
+
+			char *dst = strchr(*mount, ':');
+			if (!dst) {
+				LOG_ERR("Invalid mount format: '%s': must be <source>:<destination>", *mount);
+				return NULL;
+			}
+
+			dst++;
+
+			if (dst[0] != '/') {
+				LOG_ERR("Invalid mount format: '%s': destination must be absolute path", *mount);
+				return NULL;
+			}
+
+			if (dst[1] == '\0') {
+				LOG_ERR("Invalid mount format: '%s': destination must not be '/'", *mount);
+				return NULL;
+			}
+
+			mount++;
+		}
+	}
+
 	struct ocre_container *container = malloc(sizeof(struct ocre_container));
 
 	if (!container) {
