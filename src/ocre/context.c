@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include <uthash/utlist.h>
 
@@ -12,6 +13,8 @@
 
 #include "container.h"
 #include "unique_random_id.h"
+#include "util/rm_rf.h"
+#include "util/string_array.h"
 
 #define RANDOM_ID_LEN 8
 
@@ -25,6 +28,7 @@ struct ocre_context {
 
 struct container_node {
 	struct ocre_container *container;
+	char *working_directory;
 	struct container_node *next; /* needed for singly- or doubly-linked lists */
 };
 
@@ -136,6 +140,10 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 {
 	const char *computed_container_id = NULL;
 	struct ocre_container *container = NULL;
+	struct container_node *node = NULL;
+	char *container_workdir = NULL;
+	char *image_path = NULL;
+	char random_id[RANDOM_ID_LEN];
 	int rc;
 
 	rc = pthread_mutex_lock(&context->mutex);
@@ -144,65 +152,103 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 		return NULL;
 	}
 
-	/* If no container ID is provided, generate a random one */
-
-	char random_id[RANDOM_ID_LEN];
+	/* Container name checks */
 
 	if (!container_id) {
+		/* If no container ID is provided, generate a random one */
+
 		if (make_unique_random_container_id(context, random_id, RANDOM_ID_LEN)) {
 			LOG_ERR("Failed to generate random container ID");
-			goto unlock_mutex;
+			goto error;
 		}
 
 		computed_container_id = random_id;
 	} else if (ocre_context_get_container_by_id_locked(context, container_id)) {
 		LOG_ERR("Container with ID '%s' already exists", container_id);
-		goto unlock_mutex;
+		goto error;
 	} else {
 		computed_container_id = container_id;
 	}
 
-	/* Build the absolute path to the image */
+	/* Allocate the node */
 
-	char *abs_path = malloc(strlen(context->working_directory) + strlen("/images/") + strlen(image) + 1);
-	if (!abs_path) {
-		LOG_ERR("Failed to allocate memory for absolute path");
-		goto unlock_mutex;
+	node = malloc(sizeof(struct container_node));
+	if (!node) {
+		LOG_ERR("Failed to allocate memory for container node");
+		goto error;
 	}
 
-	strcpy(abs_path, context->working_directory);
-	strcat(abs_path, "/images/");
-	strcat(abs_path, image);
+	memset(node, 0, sizeof(struct container_node));
+
+	/* Build the absolute path to the image */
+
+	image_path = malloc(strlen(context->working_directory) + strlen("/images/") + strlen(image) + 1);
+	if (!image_path) {
+		LOG_ERR("Failed to allocate memory for absolute path");
+		goto error;
+	}
+
+	strcpy(image_path, context->working_directory);
+	strcat(image_path, "/images/");
+	strcat(image_path, image);
+
+	// TODO: check if image exists
+
+	/* Build the absolute path to the working dir and create it */
+
+	if (arguments && string_array_lookup(arguments->capabilities, "filesystem")) {
+		container_workdir =
+			malloc(strlen(context->working_directory) + strlen("/containers/") + strlen(container_id) + 1);
+		if (!container_workdir) {
+			LOG_ERR("Failed to allocate memory for working directory");
+			goto error;
+		}
+
+		snprintf(container_workdir,
+			 strlen(context->working_directory) + strlen("/containers/") + strlen(container_id) + 1,
+			 "%s/containers/%s", context->working_directory, container_id);
+
+		rc = mkdir(container_workdir, 0755);
+		if (rc) {
+			LOG_ERR("Failed to create working directory '%s': rc=%d", container_workdir, rc);
+			goto error;
+		}
+	}
 
 	/* Create the container */
 
-	container = ocre_container_create(abs_path, runtime, computed_container_id, detached, arguments);
+	container = ocre_container_create(image_path, runtime, computed_container_id, detached, arguments);
 	if (!container) {
 		LOG_ERR("Failed to create container %s: errno=%d", computed_container_id, errno);
-		goto free_path;
+		goto error;
 	}
 
 	/* Add the container to the context */
 
-	struct container_node *node = malloc(sizeof(struct container_node));
-	if (!node) {
-		LOG_ERR("Failed to allocate memory for container node");
-		goto error_container;
-	}
-
 	node->container = container;
+	node->working_directory = container_workdir;
 
 	LL_APPEND(context->containers, node);
 
-	goto free_path;
+	goto success;
 
-error_container:
-	ocre_container_destroy(container);
+error:
+	if (container_workdir) {
+		rc = rm_rf(container_workdir);
+		if (rc) {
+			LOG_ERR("Failed to remove container working directory '%s': rc=%d", container_workdir, rc);
+		}
+	}
 
-free_path:
-	free(abs_path);
+	free(container_workdir);
 
-unlock_mutex:
+	free(node);
+
+	/* Fall-through on error */
+
+success:
+	free(image_path);
+
 	rc = pthread_mutex_unlock(&context->mutex);
 	if (rc) {
 		LOG_ERR("Failed to unlock context mutex: rc=%d", rc);
@@ -230,7 +276,18 @@ int ocre_context_remove_container(struct ocre_context *context, struct ocre_cont
 				return rc;
 			}
 
+			if (node->working_directory) {
+				rc = rm_rf(node->working_directory);
+				if (rc) {
+					LOG_ERR("Failed to remove container working directory '%s': rc=%d",
+						node->working_directory, rc);
+				}
+			}
+
 			LL_DELETE(context->containers, node);
+
+			free(node->working_directory);
+
 			free(node);
 
 			return 0;
