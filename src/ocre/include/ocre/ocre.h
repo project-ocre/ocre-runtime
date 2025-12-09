@@ -29,12 +29,6 @@ extern const struct ocre_config ocre_build_configuration;
 
 struct ocre_context;
 
-// struct ocre_context_status {
-// 	int num_containers;
-// 	int num_running_containers;
-// 	char *ocre_workdir;
-// };
-
 struct ocre_container_args {
 	const char **argv;
 	const char **envp;
@@ -57,7 +51,6 @@ struct ocre_context *ocre_create_context(const char *workdir);
 void ocre_destroy_context(struct ocre_context *context);
 void ocre_deinitialize(void);
 
-// int ocre_context_get_status(const struct ocre_context_status *status);
 struct ocre_container *ocre_context_create_container(struct ocre_context *context, const char *image,
 						     const char *const runtime, const char *container_id, bool detached,
 						     const struct ocre_container_args *arguments);
