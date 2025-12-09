@@ -55,13 +55,13 @@ struct ocre_context *ocre_create_context(const char *workdir)
 	if (!context->working_directory) {
 		LOG_ERR("Failed to allocate memory for working directory: errno=%d", errno);
 		free(context);
-		goto error_context;
+		goto error;
 	}
 
 	rc = pthread_mutex_init(&context->mutex, NULL);
 	if (rc) {
 		LOG_ERR("Failed to initialize context mutex: rc=%d", rc);
-		goto error_workdir;
+		goto error;
 	}
 
 	/* Initialize containers list */
@@ -70,10 +70,9 @@ struct ocre_context *ocre_create_context(const char *workdir)
 
 	return context;
 
-error_workdir:
+error:
 	free(context->working_directory);
 
-error_context:
 	free(context);
 
 	return NULL;
@@ -121,6 +120,13 @@ void ocre_context_destroy(struct ocre_context *context)
 	LL_FOREACH(context->containers, node)
 	{
 		ocre_container_wait(node->container, NULL);
+	}
+
+	/* Remove all containers */
+
+	LL_FOREACH(context->containers, node)
+	{
+		ocre_context_remove_container(context, node->container);
 	}
 
 	int rc;
@@ -325,10 +331,11 @@ int ocre_context_get_num_containers(struct ocre_context *context)
 	return count;
 }
 
-char *ocre_context_get_working_directory(struct ocre_context *context) {
-    /* We never change this, no need to lock */
+char *ocre_context_get_working_directory(struct ocre_context *context)
+{
+	/* We never change this, no need to lock */
 
-    return context->working_directory;
+	return context->working_directory;
 }
 
 int ocre_context_list_containers(struct ocre_context *context, struct ocre_container **containers, int max_size)
