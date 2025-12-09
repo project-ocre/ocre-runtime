@@ -42,14 +42,17 @@ static int instance_execute(void *runtime_context)
 	struct wamr_context *context = runtime_context;
 	wasm_module_inst_t module_inst = context->module_inst;
 
-	// Clear any previous exceptions
+	/* Clear any previous exceptions */
+
 	wasm_runtime_clear_exception(module_inst);
 
-	// Execute main function
+	/* Execute main function */
+
 	const char *exception = NULL;
 	if (!wasm_application_execute_main(module_inst, 1, context->argv)) {
 		LOG_WRN("Main function returned error in context %p exception: %s", context,
 			exception ? exception : "None");
+
 		exception = wasm_runtime_get_exception(module_inst);
 		if (exception) {
 			LOG_ERR("Container %p exception: %s", context, exception);
@@ -57,8 +60,10 @@ static int instance_execute(void *runtime_context)
 	}
 
 	if (context->uses_ocre_api) {
-		// Cleanup module resources if using OCRE API
+		/* Cleanup module resources if using OCRE API */
+
 		LOG_INF("Cleaning up module resources");
+
 		ocre_cleanup_module_resources(module_inst);
 	}
 
@@ -72,7 +77,9 @@ static int instance_thread_execute(void *arg)
 	struct wamr_context *context = arg;
 
 	wasm_runtime_init_thread_env();
+
 	int ret = instance_execute(context);
+
 	wasm_runtime_destroy_thread_env();
 
 	return ret;
@@ -81,7 +88,9 @@ static int instance_thread_execute(void *arg)
 static int runtime_init(void)
 {
 #if defined(CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL)
+
 	/* Allocate memory for the shared heap */
+
 	shared_heap_buf = user_malloc(CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL);
 	if (!shared_heap_buf) {
 		LOG_ERR("Failed to allocate memory for the shared heap of size %zu",
@@ -129,11 +138,11 @@ static int runtime_init(void)
 
 	ocre_common_init();
 	ocre_timer_init();
+
 	// TODO handle error
 
 	return 0;
 
-// error_shared_heap:
 error_runtime:
 	wasm_runtime_destroy();
 
@@ -175,8 +184,10 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 
 	memset(context, 0, sizeof(struct wamr_context));
 
-	// For envp we can just keep a reference
-	// as the container is guaranteed to only free it after our destruction
+	/* For envp we can just keep a reference
+	 * as the container is guaranteed to only free it after our destruction
+	 */
+
 	context->envp = (char **)envp;
 
 	int envn = 0;
@@ -184,14 +195,17 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 		envn++;
 	}
 
-	// We need to insert argv[0]. We can keep a shallow copy, because
-	// the container is guaranteed to only free it after us
+	/* We need to insert argv[0]. We can keep a shallow copy, because
+	 * the container is guaranteed to only free it after us
+	 */
+
 	int argc = 0;
 	while (argv && argv[argc]) {
 		argc++;
 	}
 
-	// 2 more: app name and NULL
+	/* 2 more: app name and NULL */
+
 	context->argv = malloc(sizeof(char *) * (argc + 2));
 	if (!context->argv) {
 		LOG_ERR("Failed to allocate memory for argv");
@@ -219,6 +233,8 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 		LOG_WRN("Buffer already allocated. Possible memory leak!");
 	}
 
+	/* Memory-map file */
+
 	context->buffer = ocre_load_file(img_path, &context->size);
 	if (!context->buffer) {
 		LOG_ERR("Failed to load wasm program into buffer errno=%d", errno);
@@ -236,6 +252,8 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 
 	const char **dir_map_list = NULL;
 	size_t dir_map_list_len = 0;
+
+	/* Process capabilities */
 
 	for (const char **cap = capabilities; cap && *cap; cap++) {
 		if (!strcmp(*cap, "networking")) {
@@ -305,7 +323,8 @@ error_buffer:
 	context->buffer = NULL;
 
 error_argv:
-	// only free what we allocated
+	/* Only free what we allocated */
+
 	free(context->argv[0]);
 	free(context->argv);
 
@@ -313,6 +332,19 @@ error_context:
 	free(context);
 
 	return NULL;
+}
+
+static int instance_stop(void *runtime_context)
+{
+	struct wamr_context *context = runtime_context;
+
+	if (!context) {
+		return -1;
+	}
+
+	// TODO
+
+	return -1;
 }
 
 static int instance_kill(void *runtime_context)
@@ -336,10 +368,22 @@ static int instance_pause(void *runtime_context)
 		return -1;
 	}
 
-	return -1;
-	// wasm_runtime_terminate(context->module_inst);
+	// TODO
 
-	return 0;
+	return -1;
+}
+
+static int instance_unpause(void *runtime_context)
+{
+	struct wamr_context *context = runtime_context;
+
+	if (!context) {
+		return -1;
+	}
+
+	// TODO
+
+	return -1;
 }
 
 static int instance_destroy(void *runtime_context)
@@ -355,6 +399,7 @@ static int instance_destroy(void *runtime_context)
 	}
 
 	wasm_runtime_deinstantiate(context->module_inst);
+
 	context->module_inst = NULL;
 
 	wasm_runtime_unload(context->module);
@@ -380,6 +425,7 @@ const struct ocre_runtime_vtable wamr_vtable = {
 	.destroy = instance_destroy,
 	.thread_execute = instance_thread_execute,
 	.kill = instance_kill,
+	.stop = instance_stop,
 	.pause = instance_pause,
-	// .unpause = instance_unpause,
+	.unpause = instance_unpause,
 };

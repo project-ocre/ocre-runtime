@@ -12,6 +12,7 @@ struct ocre_runtime_vtable {
 			const char **capabilities, const char **argv, const char **envp, const char **mounts);
 	int (*destroy)(void *runtime_context);
 	int (*thread_execute)(void *arg);
+	int (*stop)(void *runtime_context);
 	int (*kill)(void *runtime_context);
 	int (*pause)(void *runtime_context);
 	int (*unpause)(void *runtime_context);
