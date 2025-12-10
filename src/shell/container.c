@@ -5,7 +5,6 @@
 
 #include "command.h"
 
-#include "container/inspect.h"
 #include "container/create.h"
 #include "container/kill.h"
 #include "container/pause.h"

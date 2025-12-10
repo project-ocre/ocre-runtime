@@ -11,7 +11,6 @@ target_sources(OcreShell
     image/rm.c
     container.c
     container/create.c
-    container/inspect.c
     container/kill.c
     container/pause.c
     container/ps.c
