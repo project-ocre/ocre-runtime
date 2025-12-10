@@ -14,8 +14,19 @@ static int usage(const char *argv0)
 
 int cmd_container_stop(struct ocre_context *ctx, char *argv0, int argc, char **argv)
 {
-	if (argc == 1) {
-		printf("Stopping container '%s'...\n", argv[1]);
+	if (argc == 2) {
+		struct ocre_container *container = ocre_context_get_container_by_id(ctx, argv[1]);
+		if (!container) {
+			fprintf(stderr, "Failed to get container '%s'\n", argv[1]);
+			return -1;
+		}
+
+		if (ocre_container_get_status(container) != OCRE_CONTAINER_STATUS_RUNNING) {
+			fprintf(stderr, "Container '%s' is not running\n", argv[1]);
+			return -1;
+		}
+
+		return ocre_container_stop(container);
 	} else {
 		fprintf(stderr, "'%s container stop' requires exactly one argument\n\n", argv0);
 		return usage(argv0);
