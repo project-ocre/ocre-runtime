@@ -6,6 +6,10 @@ cmake_minimum_required(VERSION 3.20.0)
 # comment out to use the ocre module provided by Zephyr
 list(APPEND ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_LIST_DIR}/../../../..)
 
+include(../demo_containers.cmake)
+
+include(../../../../cmake/sample_containers.cmake)
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project (ocre_sample_mini)
@@ -18,4 +22,9 @@ target_sources(app
 target_link_libraries(app
     PUBLIC
     OcreCore
+)
+
+add_dependencies(app
+    OcrePreloadedImages
+    OcreSampleContainers
 )

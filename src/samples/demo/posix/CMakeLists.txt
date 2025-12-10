@@ -17,3 +17,8 @@ target_link_libraries(ocre_demo
     PRIVATE
     -lpthread
 )
+
+add_dependencies(ocre_demo
+    OcreSampleContainers
+    OcrePreloadedImages
+)
