@@ -12,6 +12,16 @@ on:
       - main
       - staging
 jobs:
+
+  setup-local-runner:    
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Remove old workflow files
+        run: rm -rf /var/ocre-ci-files/*
+          
+      - name: Create wasm directory
+        run: mkdir /var/ocre-ci-files/wasm
+
   build-zephyr-base:
     runs-on: zephyr-xlarge-runner
     container:
@@ -132,10 +142,11 @@ jobs:
 
   # Build and upload wasm files as artifacts
   build-wasm-files:
+    needs: setup-local-runner
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
-      options: --user root
+      options: --user root -v /var/ocre-ci-files/:/var/ocre-ci-files/
     strategy:
       matrix:
         sample:
@@ -203,15 +214,26 @@ jobs:
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
 
-      - name: Upload .wasm artifact
+      # Saving files to the runner so avoid uploading .wasm files as artifacts individually, uploaded in separate step
+      - name: Save .wasm artifact locally
+        if: always()
+        run: |
+          mkdir /var/ocre-ci-files/wasm/${{ matrix.sample.name }}/
+          cp "ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}" "/var/ocre-ci-files/wasm/${{ matrix.sample.name }}/${{ matrix.sample.filename }}"
+
+  artifact-wasm-files:
+    needs: build-wasm-files
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Artifact local wasm files
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ matrix.sample.name }}"
-          path: "ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}"
+          name: wasm-build-artifacts
+          path: "/var/ocre-ci-files/wasm"
 
   build-and-run-linux-sample:
-    needs: build-wasm-files
+    needs: artifact-wasm-files
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -236,8 +258,9 @@ jobs:
       - name: Download wasm artifact
         uses: actions/download-artifact@v4
         with:
-          name: "${{ matrix.sample.name }}"
-          path: ${{ matrix.sample.name }}
+          name: wasm-build-artifacts
+          path: wasm-build-artifacts
+
       
       - name: Update Submodules
         working-directory: application
@@ -254,7 +277,7 @@ jobs:
         working-directory: application/build
         run: |
           echo "=== Running sample: ${{ matrix.sample.name }} ==="
-          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}/${{ matrix.sample.build-file }}
+          WASM_FILE=$GITHUB_WORKSPACE/wasm-build-artifacts/${{ matrix.sample.name }}/${{ matrix.sample.build-file }}
           chmod +x app
           stdbuf -oL -eL timeout 20s ./app $WASM_FILE | tee "${{ matrix.sample.name }}_run.log"
 
@@ -265,10 +288,9 @@ jobs:
             exit 1
           fi 
 
- 
   # Run zephyr agent on github actions runner
   build-and-run-zephyr-sample:
-    needs: build-wasm-files
+    needs: artifact-wasm-files
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
@@ -312,11 +334,10 @@ jobs:
           sdk-version: 0.16.8
 
       - name: Download wasm artifact
-        if: runner.environment == 'self-hosted'
         uses: actions/download-artifact@v4
         with:
-          name: "${{ matrix.sample.name }}"
-          path: ${{ matrix.sample.name }}
+          name: wasm-build-artifacts
+          path: wasm-build-artifacts
           
       - name: Update Submodules
         working-directory: application
@@ -326,7 +347,7 @@ jobs:
       - name: Build Zephyr app
         run: |
           echo "=== Build app ==="
-          WASM_FILE=$GITHUB_WORKSPACE/${{ matrix.sample.name }}/${{ matrix.sample.build-file }}
+          WASM_FILE=$GITHUB_WORKSPACE/wasm-build-artifacts/${{ matrix.sample.name }}/${{ matrix.sample.build-file }}
           west build --pristine -b native_sim ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
             -DOCRE_INPUT_FILE=$WASM_FILE
@@ -386,16 +407,9 @@ jobs:
         if: always()
         run: cat /tmp/flashValidation.log
 
-      - name: Upload log file as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: "FlashValidation.log"
-          path: /tmp/flashValidation.log
-
 
   build-zephyr-modbus_server-b_u585i_iot02a:
-    needs: build-wasm-files
+    needs: artifact-wasm-files
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
@@ -425,11 +439,11 @@ jobs:
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
 
-      - name: Download WASM artifact
+      - name: Download wasm artifact
         uses: actions/download-artifact@v4
         with:
-          name: b_u585i-modbus-server
-          path: b_u585i-modbus-server
+          name: wasm-build-artifacts
+          path: wasm-build-artifacts
 
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
@@ -439,7 +453,7 @@ jobs:
 
       - name: Build b_u585i_iot02a with modbus-server
         run: |
-          WASM_FILE=$GITHUB_WORKSPACE/b_u585i-modbus-server/modbus-server.wasm
+          WASM_FILE=$GITHUB_WORKSPACE/wasm-build-artifacts/b_u585i-modbus-server/modbus-server.wasm
           west -v build --pristine=auto -b b_u585i_iot02a ./application -d build -- \
             -DMODULE_EXT_ROOT=$(pwd)/application \
             -DOCRE_INPUT_FILE=$WASM_FILE \
@@ -487,10 +501,4 @@ jobs:
         if: always()
         run: cat /tmp/modbusServerValidation.log
 
-      - name: Upload log file as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-            name: "ModbusServerValidation.log"
-            path: /tmp/modbusServerValidation.log
-      
+  
