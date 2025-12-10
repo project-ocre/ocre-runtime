@@ -488,6 +488,13 @@ int ocre_container_pause(struct ocre_container *container)
 
 	ret = container->runtime->pause(container->runtime_context);
 
+	if (ret) {
+		LOG_ERR("Failed to pause container '%s': rc=%d", container->id, ret);
+		goto unlock_mutex;
+	}
+
+	container->status = OCRE_CONTAINER_STATUS_PAUSED;
+
 unlock_mutex:
 	rc = pthread_mutex_unlock(&container->mutex);
 	if (rc) {
@@ -525,6 +532,13 @@ int ocre_container_unpause(struct ocre_container *container)
 	LOG_INF("Sending unpause signal to container '%s'", container->id);
 
 	ret = container->runtime->unpause(container->runtime_context);
+
+	if (ret) {
+		LOG_ERR("Failed to unpause container '%s': rc=%d", container->id, ret);
+		goto unlock_mutex;
+	}
+
+	container->status = OCRE_CONTAINER_STATUS_RUNNING;
 
 unlock_mutex:
 	rc = pthread_mutex_unlock(&container->mutex);
