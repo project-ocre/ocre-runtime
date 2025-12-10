@@ -138,7 +138,7 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 	 * We handle '/' with the 'filesystem' capability.
 	 */
 
-	if (arguments->mounts) {
+	if (arguments && arguments->mounts) {
 		const char **mount = arguments->mounts;
 
 		while (*mount) {
