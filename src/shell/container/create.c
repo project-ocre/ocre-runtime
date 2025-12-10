@@ -94,13 +94,13 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 
 				if (optarg[0] != '/') {
 					fprintf(stderr, "Invalid mount format: '%s': source must be absolute path", optarg);
-					return NULL;
+					goto cleanup;
 				}
 
 				char *dst = strchr(optarg, ':');
 				if (!dst) {
 					fprintf(stderr, "Invalid mount format: '%s': must be <source>:<destination>", optarg);
-					return NULL;
+					goto cleanup;
 				}
 
 				dst++;
@@ -108,12 +108,12 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 				if (dst[0] != '/') {
 					fprintf(stderr, "Invalid mount format: '%s': destination must be absolute path",
 						optarg);
-					return NULL;
+					goto cleanup;
 				}
 
 				if (dst[1] == '\0') {
 					fprintf(stderr, "Invalid mount format: '%s': destination must not be '/'", optarg);
-					return NULL;
+					goto cleanup;
 				}
 
 				mounts = realloc(mounts, sizeof(char *) * (mounts_count + 1));
@@ -133,7 +133,6 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 			case '?': {
 				fprintf(stderr, "Invalid option '-%c'\n", optopt);
 				goto cleanup;
-				break;
 			}
 		}
 	}
