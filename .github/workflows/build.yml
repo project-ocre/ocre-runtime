@@ -166,23 +166,12 @@ jobs:
           repository: project-ocre/ocre-sdk
           path: ocre-sdk
 
-      - name: Update Submodules
-        working-directory: application
-        run: |
-          git submodule update --init --recursive
-
       # Needed in order for board specific modules to build successfully
       - name: Copy wasm submodule 
         working-directory: ocre-sdk
         run: |
           git submodule update --init --recursive
           cp -r wasm-micro-runtime board_specific/wasm-micro-runtime
-
-      - name: Setup Zephyr project
-        uses: zephyrproject-rtos/action-zephyr-setup@v1
-        with:
-          app-path: application
-          sdk-version: 0.16.8
 
       - name: Install tools (xxd + WASI SDK)
         run: |
@@ -238,30 +227,11 @@ jobs:
             expected: "blink (count: 1, state: -)"
           # Add here more samples
     steps: 
-      - name: Install tools (xxd + WASI SDK)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget build-essential
-          wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
-          tar -xvf vim.tar.gz
-          cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
-
-          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
-          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
-          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
-        env:
-          WASI_SDK_PATH: /opt/wasi-sdk
 
       - name: Checkout current repository
         uses: actions/checkout@v4
         with:
           path: application
-
-      - name: Clone ocre-sdk
-        uses: actions/checkout@v4
-        with:
-          repository: project-ocre/ocre-sdk
-          path: ocre-sdk
 
       - name: Download wasm artifact
         uses: actions/download-artifact@v4
@@ -312,8 +282,14 @@ jobs:
           - name: generic-filesystem-full
             build-file: filesystem-full.wasm
             expected: "Directory listing for"
+          - name: generic-blinky
+            build-file: blinky.wasm
+            expected: "blink (count: 1, state: -)"
     steps: 
-      - name: Install tools (xxd + WASI SDK)
+      - name: Cleanup workspace
+        uses: eviden-actions/clean-self-hosted-runner@v1
+
+      - name: Install tools (xxd)
         run: |
           sudo apt-get update
           sudo apt-get install -y wget build-essential
@@ -321,25 +297,13 @@ jobs:
           tar -xvf vim.tar.gz
           cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
 
-          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
-          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
-          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
-
-      - name: Cleanup workspace
-        uses: eviden-actions/clean-self-hosted-runner@v1
 
       - name: Checkout current repository
         uses: actions/checkout@v4
         with:
           path: application
-
-      - name: Clone ocre-sdk
-        uses: actions/checkout@v4
-        with:
-          repository: project-ocre/ocre-sdk
-          path: ocre-sdk
 
       - name: Setup Zephyr project
         uses: zephyrproject-rtos/action-zephyr-setup@v1
@@ -431,7 +395,7 @@ jobs:
 
 
   build-zephyr-modbus_server-b_u585i_iot02a:
-    needs: [build-wasm-files]
+    needs: build-wasm-files
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
@@ -450,7 +414,7 @@ jobs:
         run: |
           git submodule update --init --recursive
 
-      - name: Install tools (xxd + WASI SDK)
+      - name: Install tools (xxd)
         run: |
           sudo apt-get update
           sudo apt-get install -y wget build-essential
@@ -458,9 +422,6 @@ jobs:
           tar -xvf vim.tar.gz
           cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
 
-          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
-          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
-          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
         env:
           WASI_SDK_PATH: /opt/wasi-sdk
 
