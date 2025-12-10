@@ -67,7 +67,7 @@ char *ocre_container_get_image_a(const struct ocre_container *container);
 // int ocre_container_get_info(struct ocre_container *container, struct container_info *info);
 int ocre_container_pause(struct ocre_container *container);
 int ocre_container_unpause(struct ocre_container *container);
-// int ocre_container_stop(struct ocre_container *container);
+int ocre_container_stop(struct ocre_container *container);
 int ocre_container_kill(struct ocre_container *container);
 int ocre_container_wait(struct ocre_container *container, int *status);
 

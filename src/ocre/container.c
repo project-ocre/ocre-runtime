@@ -426,6 +426,39 @@ ocre_container_status_t ocre_container_get_status(struct ocre_container *contain
 	return status;
 }
 
+int ocre_container_stop(struct ocre_container *container)
+{
+	int ret = -1;
+	if (!container) {
+		LOG_ERR("Invalid container");
+		return -1;
+	}
+
+	int rc;
+	rc = pthread_mutex_lock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to lock mutex: rc=%d", rc);
+		return -1;
+	}
+
+	if (container->status != OCRE_CONTAINER_STATUS_RUNNING) {
+		LOG_ERR("Container '%s' is not running", container->id);
+		goto unlock_mutex;
+	}
+
+	LOG_INF("Sending stop signal to container '%s'", container->id);
+
+	ret = container->runtime->stop(container->runtime_context);
+
+unlock_mutex:
+	rc = pthread_mutex_unlock(&container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to unlock mutex: rc=%d", rc);
+	}
+
+	return ret;
+}
+
 int ocre_container_kill(struct ocre_container *container)
 {
 	int ret = -1;
