@@ -64,3 +64,9 @@ target_include_directories(OcreCore
     PUBLIC
     include
 )
+
+include (../../cmake/state_information.cmake)
+
+if(OCRE_IMAGES)
+    add_dependencies(OcreCore ${OCRE_IMAGES})
+endif()

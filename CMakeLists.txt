@@ -14,7 +14,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(WAMR_BUILD_PLATFORM linux)
 # set(WAMR_BUILD_PLATFORM darwin)
 
+include (src/samples/demo/demo_containers.cmake)
 
+# TODO move these to testing
+list(APPEND OCRE_SDK_PRELOADED_IMAGES
+    "return0.wasm"
+    "return1.wasm"
+    "sleep_5_return_0.wasm"
+)
 
 # core
 add_subdirectory(src/ocre)
@@ -33,19 +40,5 @@ add_subdirectory(src/platform/posix)
 # samples
 add_subdirectory(src/samples/mini/posix)
 add_subdirectory(src/samples/demo/posix)
-
-include (src/samples/demo/demo_containers.cmake)
-
-# TODO move these to testing
-list(APPEND OCRE_SDK_PRELOADED_IMAGES
-    "return0.wasm"
-    "return1.wasm"
-    "sleep_5_return_0.wasm"
-)
-
-include (cmake/sample_containers.cmake)
-
-# /var/lib/ocre directory
-include (cmake/state_information.cmake)
 
 add_subdirectory(src/samples/bash_runtime/posix)

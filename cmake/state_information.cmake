@@ -4,33 +4,44 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/images)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/volumes)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/containers)
 
+if(OCRE_SDK_PRELOADED_IMAGES)
+    include(ExternalProject)
+    ExternalProject_Add(
+        OcreSampleContainers
+        PREFIX "${CMAKE_CURRENT_BINARY_DIR}/OcreSampleContainers"
+        BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/OcreSampleContainers/build"
+        BUILD_ALWAYS TRUE
+        INSTALL_COMMAND ""
+        SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/../ocre-sdk"
+        CMAKE_ARGS "-DWAMR_ROOT_DIR=${CMAKE_CURRENT_LIST_DIR}/../wasm-micro-runtime"
+    )
+endif()
+
 if (OCRE_INPUT_FILE_NAME)
-    message(DEPRECATION "Adding '${OCRE_INPUT_FILE_NAME}' to preloaded images. Please use OCRE_PRELOADED_IMAGES instead.")
+    message(STATUS "Adding user provided '${OCRE_INPUT_FILE_NAME}' to preloaded images")
     list(APPEND OCRE_PRELOADED_IMAGES ${OCRE_INPUT_FILE_NAME})
 endif()
 
-# populate user provided preloaded images
-foreach(image IN ITEMS ${OCRE_PRELOADED_IMAGES})
-    message(STATUS "Adding '${image}' to preloaded images")
-    file(COPY ${image} DESTINATION var/lib/ocre/images/)
-    cmake_path(GET image FILENAME filename)
-    list(APPEND OCRE_IMAGES ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/images/${filename})
-endforeach()
-
 # populate SDK provided sample images
 foreach(image IN ITEMS ${OCRE_SDK_PRELOADED_IMAGES})
-    message(STATUS "Adding '${image}' to preloaded images")
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/images/${image}
+    message(STATUS "Adding sdk sample '${image}' to preloaded images")
+    add_custom_target(${image}
         COMMAND ${CMAKE_COMMAND} -E copy
-            ${OCRE_SAMPLE_CONTAINER_LOCATION}/${image}
+            ${CMAKE_CURRENT_BINARY_DIR}/OcreSampleContainers/build/${image}
             ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/images/${image}
         DEPENDS OcreSampleContainers
     )
-    cmake_path(GET image FILENAME filename)
-    list(APPEND OCRE_IMAGES ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/images/${filename})
+    list(APPEND OCRE_IMAGES ${image})
 endforeach()
 
-add_custom_target(OcrePreloadedImages
-    DEPENDS ${OCRE_IMAGES}
-)
+# populate user provided sample files
+foreach(file IN ITEMS ${OCRE_PRELOADED_IMAGES})
+    message(STATUS "Adding user provided '${file}' to preloaded images")
+    cmake_path(GET file FILENAME image)
+    add_custom_target(${image}
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${file}
+            ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/images/${image}
+    )
+    list(APPEND OCRE_IMAGES ${image})
+endforeach()

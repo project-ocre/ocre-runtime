@@ -25,6 +25,5 @@ target_link_libraries(app
 )
 
 add_dependencies(app
-    OcrePreloadedImages
     OcreSampleContainers
 )
