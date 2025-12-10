@@ -13,10 +13,12 @@ target_sources(OcreShell
     container/create.c
     container/inspect.c
     container/kill.c
+    container/pause.c
     container/ps.c
     container/rm.c
     container/start.c
     container/stop.c
+    container/unpause.c
     container/wait.c
     sha256/sha256.c
 )

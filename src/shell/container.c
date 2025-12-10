@@ -5,14 +5,16 @@
 
 #include "command.h"
 
+#include "container/inspect.h"
+#include "container/create.h"
+#include "container/kill.h"
+#include "container/pause.h"
+#include "container/ps.h"
+#include "container/rm.h"
 #include "container/start.h"
 #include "container/stop.h"
-#include "container/rm.h"
-#include "container/kill.h"
-#include "container/inspect.h"
+#include "container/unpause.h"
 #include "container/wait.h"
-#include "container/ps.h"
-#include "container/create.h"
 
 static int print_usage(struct ocre_context *ctx, char *argv0, int argc, char **argv)
 {
@@ -25,8 +27,8 @@ static int print_usage(struct ocre_context *ctx, char *argv0, int argc, char **a
 	fprintf(stderr, "  stop      Stop a running or paused container\n");
 	fprintf(stderr, "  kill      Kill a running or paused container\n");
 	// fprintf(stderr, "  restart   Restart a running, stopped, or paused container\n");
-	// fprintf(stderr, "  pause     Pause a running container\n");
-	// fprintf(stderr, "  unpause   Resume a paused container\n");
+	fprintf(stderr, "  pause     Pause a running container\n");
+	fprintf(stderr, "  unpause   Resume a paused container\n");
 	fprintf(stderr, "  inspect   Display detailed information about a container\n");
 	fprintf(stderr, "  wait      Wait for a container to exit\n");
 	fprintf(stderr, "  ps        List containers\n");
@@ -42,8 +44,8 @@ static const struct ocre_command commands[] = {
 	{"stop", cmd_container_stop},
 	{"kill", cmd_container_kill},
 	// {"restart", cmd_container_restart},
-	// {"pause", cmd_container_pause},
-	// {"unpause", cmd_container_unpause},
+	{"pause", cmd_container_pause},
+	{"unpause", cmd_container_unpause},
 	{"inspect", cmd_container_inspect},
 	{"wait", cmd_container_wait},
 	{"ps", cmd_container_ps},

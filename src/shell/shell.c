@@ -10,9 +10,11 @@
 #include "image/pull.h"
 #include "container.h"
 #include "container/kill.h"
+#include "container/pause.h"
 #include "container/ps.h"
 #include "container/rm.h"
 #include "container/start.h"
+#include "container/unpause.h"
 #include "container/inspect.h"
 #include "container/stop.h"
 #include "container/wait.h"
@@ -41,8 +43,8 @@ static int print_usage(struct ocre_context *ctx, char *argv0, int argc, char **a
 	fprintf(stderr, "  stop      container stop\n");
 	fprintf(stderr, "  kill      container kill\n");
 	// fprintf(stderr, "  restart   container restart\n");
-	// fprintf(stderr, "  pause     container pause\n");
-	// fprintf(stderr, "  unpause   container unpause\n");
+	fprintf(stderr, "  pause     container pause\n");
+	fprintf(stderr, "  unpause   container unpause\n");
 	fprintf(stderr, "  rm        container rm\n");
 	fprintf(stderr, "  images    image ls\n");
 	fprintf(stderr, "  pull      image pull\n");
@@ -62,6 +64,8 @@ static const struct ocre_command commands[] = {
 	{"start", cmd_container_start},
 	{"stop", cmd_container_stop},
 	{"kill", cmd_container_kill},
+	{"pause", cmd_container_pause},
+	{"unpause", cmd_container_unpause},
 	{"rm", cmd_container_rm},
 	// image shortcuts
 	{"images", cmd_image_ls},
