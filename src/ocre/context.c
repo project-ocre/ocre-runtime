@@ -54,6 +54,11 @@ static int delete_container_workdirs(const char *working_directory)
 	}
 
 	while ((dir = readdir(d)) != NULL) {
+
+		if (!strcmp(dir->d_name, ".") || !strcmp(dir->d_name, "..")) {
+			continue;
+		}
+
 		char *container_workdir_path = malloc(strlen(containers_path) + strlen(dir->d_name) + 2);
 		if (!container_workdir_path) {
 			fprintf(stderr, "Failed to allocate memory for container workdir path\n");
@@ -76,11 +81,11 @@ static int delete_container_workdirs(const char *working_directory)
 	ret = 0;
 
 finish:
-    if (d) {
-        closedir(d);
-    }
+	if (d) {
+		closedir(d);
+	}
 
-    free(containers_path);
+	free(containers_path);
 
 	return ret;
 }
