@@ -201,30 +201,6 @@ config OCRE_SHELL
 
 comment "Logging"
 
-config OCRE_LOG_DEBUG
-    bool "Debug logging"
-    default n
-    help
-    Enable Ocre debug logging
-
-config OCRE_LOG_ERR
-    bool "Error logging"
-    default y
-    help
-    Enable Ocre debug logging
-
-config OCRE_LOG_WARN
-    bool "Warn logging"
-    default y
-    help
-    Enable Ocre debug logging
-
-config OCRE_LOG_INF
-    bool "Info logging"
-    default y
-    help
-    Enable Ocre debug logging
-
 module = OCRE
 module-str = OCRE
 source "subsys/logging/Kconfig.template.log_config"
