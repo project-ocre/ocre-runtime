@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.20.0)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/images)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/volumes)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/containers)
 
 if(OCRE_SDK_PRELOADED_IMAGES)
@@ -13,7 +12,7 @@ if(OCRE_SDK_PRELOADED_IMAGES)
         BUILD_ALWAYS TRUE
         INSTALL_COMMAND ""
         SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/../ocre-sdk"
-        CMAKE_ARGS "-DWAMR_ROOT_DIR=${CMAKE_CURRENT_LIST_DIR}/../wasm-micro-runtime"
+        CMAKE_ARGS "-DWAMR_ROOT_DIR=${CMAKE_CURRENT_LIST_DIR}/../wasm-micro-runtime" "-DCMAKE_VERBOSE_MAKEFILE=ON"
     )
 endif()
 
