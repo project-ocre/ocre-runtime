@@ -9,7 +9,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/devicetree.h>
 #include <ocre/ocre.h>
-LOG_MODULE_REGISTER(ocre_sensors, 4);
+LOG_MODULE_REGISTER(ocre_sensors, CONFIG_OCRE_LOG_LEVEL);
 
 #include "ocre_sensors.h"
 

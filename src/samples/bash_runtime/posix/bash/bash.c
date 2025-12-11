@@ -14,7 +14,7 @@
 
 #include <ocre/platform/log.h>
 
-LOG_MODULE_REGISTER(bash_runtime);
+LOG_MODULE_REGISTER(bash_runtime, CONFIG_OCRE_LOG_LEVEL);
 
 struct bash_context {
 	pid_t pid;

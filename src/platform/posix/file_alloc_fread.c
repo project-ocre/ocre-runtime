@@ -10,7 +10,7 @@
 #include <ocre/platform/log.h>
 #include <ocre/platform/memory.h>
 
-LOG_MODULE_REGISTER(file_alloc_fread);
+LOG_MODULE_REGISTER(file_alloc_fread, CONFIG_OCRE_LOG_LEVEL);
 
 void *ocre_load_file(const char *path, size_t *size)
 {

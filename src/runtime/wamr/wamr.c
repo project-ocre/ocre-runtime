@@ -20,7 +20,7 @@
 #include "ocre_api/ocre_common.h"
 #include "ocre_api/ocre_timers/ocre_timer.h"
 
-LOG_MODULE_REGISTER(wamr_runtime, 3);
+LOG_MODULE_REGISTER(wamr_runtime, CONFIG_OCRE_LOG_LEVEL);
 
 static wasm_shared_heap_t _shared_heap = NULL;
 

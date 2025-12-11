@@ -13,7 +13,7 @@
 #include "ocre_messaging.h"
 #include "../ocre_common.h"
 
-LOG_MODULE_REGISTER(ocre_messaging, 4);
+LOG_MODULE_REGISTER(ocre_messaging, CONFIG_OCRE_LOG_LEVEL);
 
 #ifndef CONFIG_OCRE_MESSAGING_MAX_SUBSCRIPTIONS
 #define CONFIG_OCRE_MESSAGING_MAX_SUBSCRIPTIONS 10

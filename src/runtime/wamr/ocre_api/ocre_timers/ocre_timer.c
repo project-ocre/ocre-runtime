@@ -20,7 +20,7 @@
 #include "../ocre_common.h"
 #include "ocre_timer.h"
 
-LOG_MODULE_REGISTER(ocre_timer, 4);
+LOG_MODULE_REGISTER(ocre_timer, CONFIG_OCRE_LOG_LEVEL);
 
 /* Unified timer structure using core_timer API */
 typedef struct {

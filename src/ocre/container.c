@@ -13,7 +13,7 @@
 #include "container.h"
 #include "util/string_array.h"
 
-LOG_MODULE_REGISTER(container);
+LOG_MODULE_REGISTER(container, CONFIG_OCRE_LOG_LEVEL);
 
 struct ocre_container {
 	char *id;

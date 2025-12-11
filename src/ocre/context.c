@@ -19,7 +19,7 @@
 
 #define RANDOM_ID_LEN 8
 
-LOG_MODULE_REGISTER(context);
+LOG_MODULE_REGISTER(context, CONFIG_OCRE_LOG_LEVEL);
 
 struct ocre_context {
 	pthread_mutex_t mutex;

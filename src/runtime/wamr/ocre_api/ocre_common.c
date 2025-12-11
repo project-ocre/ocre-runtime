@@ -17,7 +17,7 @@
 
 #include "core/core_external.h"
 
-LOG_MODULE_REGISTER(ocre_common, 4);
+LOG_MODULE_REGISTER(ocre_common, CONFIG_OCRE_LOG_LEVEL);
 
 #ifdef CONFIG_OCRE_GPIO
 #include "ocre_gpio/ocre_gpio.h"

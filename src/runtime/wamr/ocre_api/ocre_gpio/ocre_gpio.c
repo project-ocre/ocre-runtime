@@ -14,7 +14,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/spinlock.h>
 
-LOG_MODULE_REGISTER(ocre_gpio, 4);
+LOG_MODULE_REGISTER(ocre_gpio, CONFIG_OCRE_LOG_LEVEL);
 
 typedef struct {
     uint32_t in_use: 1;

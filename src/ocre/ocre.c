@@ -15,7 +15,7 @@
 #include "commit_id.h"
 #include "version.h"
 
-LOG_MODULE_REGISTER(ocre);
+LOG_MODULE_REGISTER(ocre, CONFIG_OCRE_LOG_LEVEL);
 
 /* Constant build information */
 
