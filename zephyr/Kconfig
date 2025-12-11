@@ -92,6 +92,11 @@ comment "Container features"
 config OCRE_NETWORKING
     bool "Enable container networking support"
     default n
+    select NET_IPV4
+    select NET_IPV6
+    select NET_UDP
+    select NET_TCP
+    select NET_SOCKETS
     help
         Enable networking support for containers.
 
@@ -188,7 +193,8 @@ comment "Control Interface"
 
 config OCRE_SHELL
     bool "Enable OCRE Shell"
-    # depends on SHELL
+    select SHELL
+    select SHELL_GETOPT
     default n
     help
         Enable the OCRE Shell for dynamic configuration management.
