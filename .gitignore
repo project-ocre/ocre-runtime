@@ -62,4 +62,4 @@ src/ocre/commit_id.h
 !/.gitmodules
 !/.github
 !.devcontainer
-!.ckang-format
+!.clang-format
