@@ -12,7 +12,6 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 
 set(WAMR_BUILD_PLATFORM linux)
-# set(WAMR_BUILD_PLATFORM darwin)
 
 include (src/samples/demo/demo_containers.cmake)
 
@@ -35,7 +34,7 @@ add_subdirectory(src/runtime/wamr)
 add_subdirectory(src/platform/posix)
 
 # shell
-#add_subdirectory(src/shell)
+add_subdirectory(src/shell)
 
 # samples
 add_subdirectory(src/samples/mini/posix)

@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.20.0)
 
-
 project (ocre_sample_mini)
 
 add_executable(ocre_mini

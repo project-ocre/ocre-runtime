@@ -36,13 +36,6 @@ struct ocre_container_args {
 	const char **mounts;
 };
 
-// struct ocre_container_info {
-// 	const char *id;
-// 	const char *image;
-// 	struct ocre_container_args args;
-// 	int exit_code;
-// };
-
 struct ocre_container;
 
 int ocre_initialize(void);
