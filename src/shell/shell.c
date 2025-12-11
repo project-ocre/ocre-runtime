@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include <ocre/ocre.h> // for context // maybe for api?
 
@@ -27,13 +28,17 @@ static int print_version(struct ocre_context *ctx, char *argv0, int argc, char *
 
 static int print_usage(struct ocre_context *ctx, char *argv0, int argc, char **argv)
 {
-	fprintf(stderr, "Usage: %s <COMMAND>\n", argv0);
+	fprintf(stderr, "Usage: %s [-v] <COMMAND>\n", argv0);
+
+	fprintf(stderr, "\nOptions:\n");
+	fprintf(stderr, "  -v        Verbose mode\n");
 
 	fprintf(stderr, "\nCommands:\n");
 	fprintf(stderr, "  help      Display this help message\n");
 	fprintf(stderr, "  version   Display version information\n");
 	fprintf(stderr, "  image     Image manipulation commands\n");
 	fprintf(stderr, "  container Container management commands\n");
+
 	fprintf(stderr, "\nShortcut Commands:\n");
 	fprintf(stderr, "  ps        container ps\n");
 	fprintf(stderr, "  create    container create\n");
@@ -72,21 +77,45 @@ static const struct ocre_command commands[] = {
 
 int ocre_shell(struct ocre_context *ctx, int argc, char *argv[])
 {
-	if (argc < 2) {
-		return print_usage(ctx, argv[0], argc, argv);
-	}
+	int opt;
+	bool verbose = false;
+	while ((opt = getopt(argc, argv, "+v")) != -1) {
+		switch (opt) {
+			case 'v': {
+				if (verbose) {
+					fprintf(stderr, "'-v' can be set only once\n\n");
+					print_usage(ctx, argv[0], argc, argv);
+					return -1;
+				}
 
-	fprintf(stderr, "Using context: %p\n", ctx);
-
-	optind = 1;
-
-	for (size_t i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
-		if (!strcmp(argv[1], commands[i].name)) {
-			return commands[i].func(ctx, argv[0], argc - 1, &argv[1]);
+				verbose = true;
+				continue;
+			}
+			case '?': {
+				fprintf(stderr, "Invalid option: '%c'\n", optopt);
+				return -1;
+			}
 		}
 	}
 
-	fprintf(stderr, "Invalid command: '%s %s'\n\n", argv[0], argv[1]);
+	if (argc <= optind) {
+		return print_usage(ctx, argv[0], argc, argv);
+	}
+
+	if (verbose) {
+		fprintf(stderr, "Using context: %p\n", ctx);
+	}
+
+	int save_optind = optind;
+
+	for (size_t i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
+		if (argv[save_optind] && !strcmp(argv[save_optind], commands[i].name)) {
+			optind = 1;
+			return commands[i].func(ctx, argv[0], argc - save_optind, &argv[save_optind]);
+		}
+	}
+
+	fprintf(stderr, "Invalid command: '%s %s'\n\n", argv[0], argv[save_optind]);
 
 	return print_usage(ctx, argv[0], argc, argv);
 

@@ -49,10 +49,8 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 	size_t environment_count = 0;
 	size_t mounts_count = 0;
 
-	opterr = 0;
-
 	int opt;
-	while ((opt = getopt(argc, argv, "de:k:n:r:v:")) != -1) {
+	while ((opt = getopt(argc, argv, "+de:k:n:r:v:")) != -1) {
 		switch (opt) {
 			case 'd': {
 				if (detached) {
@@ -131,6 +129,10 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 				continue;
 			}
 			case '?': {
+				fprintf(stderr, "Invalid option '-%c'\n", optopt);
+				goto cleanup;
+			}
+			default: {
 				fprintf(stderr, "Invalid option '-%c'\n", optopt);
 				goto cleanup;
 			}
