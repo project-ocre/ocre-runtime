@@ -41,9 +41,6 @@ void *ocre_load_file(const char *path, size_t *size)
 	}
 
 	size_t file_size = (size_t)finfo.st_size;
-	//
-	// size_t file_size = 100;
-	//
 
 	LOG_INF("File size to load: %zu", file_size);
 
@@ -60,9 +57,8 @@ void *ocre_load_file(const char *path, size_t *size)
 
 	memset(buffer, 0, file_size);
 
-	// fseek(fp, 0, SEEK_SET);
+	/* Read from file into buffer */
 
-	// read from file into buffer
 	size_t bytes_read = fread(buffer, 1, file_size, fp);
 
 	if (bytes_read != file_size) {
