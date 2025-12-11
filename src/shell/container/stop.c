@@ -26,7 +26,11 @@ int cmd_container_stop(struct ocre_context *ctx, char *argv0, int argc, char **a
 			return -1;
 		}
 
-		return ocre_container_stop(container);
+		int rc = ocre_container_stop(container);
+
+		fprintf(stdout, "%s\n", argv[1]);
+
+		return rc;
 	} else {
 		fprintf(stderr, "'%s container stop' requires exactly one argument\n\n", argv0);
 		return usage(argv0);

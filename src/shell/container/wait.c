@@ -34,7 +34,9 @@ int cmd_container_wait(struct ocre_context *ctx, char *argv0, int argc, char **a
             return -1;
         }
 
-        return return_code;
+        fprintf(stdout, "%d\n", return_code);
+
+        return rc;
 	} else {
 		fprintf(stderr, "'%s container wait' requires exactly one argument\n\n", argv0);
 		return usage(argv0);

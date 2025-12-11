@@ -178,7 +178,9 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 
 	if (detached) {
 		char *cid = ocre_container_get_id_a(container);
+
 		fprintf(stdout, "%s\n", cid);
+
 		free(cid);
 	}
 

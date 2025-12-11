@@ -27,7 +27,11 @@ int cmd_container_rm(struct ocre_context *ctx, char *argv0, int argc, char **arg
 			return -1;
 		}
 
-		return ocre_context_remove_container(ctx, container);
+		int rc = ocre_context_remove_container(ctx, container);
+
+		fprintf(stdout, "%s\n", argv[1]);
+
+		return rc;
 	} else {
 		fprintf(stderr, "'%s container rm' requires exactly one argument\n\n", argv0);
 		return usage(argv0);
