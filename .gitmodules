@@ -2,9 +2,6 @@
 	path = wasm-micro-runtime
 	url = https://github.com/project-ocre/wasm-micro-runtime.git
 	branch = staging
-[submodule "libwebsockets"]
-	path = libwebsockets
-	url = https://libwebsockets.org/repo/libwebsockets
 [submodule "ocre-sdk"]
 	path = ocre-sdk
 	url = git@github.com:project-ocre/ocre-sdk.git
