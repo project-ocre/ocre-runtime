@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <ocre/ocre.h>
 
+#include <zephyr/init.h>
+
 // keep a reference to the single instance of the runtime
 struct ocre_context *ocre_global_context = NULL;
 
-int main(int argc, char *argv[])
+static int ocre_service_init()
 {
 	// Initialize OCRE
 	if (ocre_initialize() != 0) {
@@ -25,3 +27,5 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+
+SYS_INIT(ocre_service_init, APPLICATION, 0);
