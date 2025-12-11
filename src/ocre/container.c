@@ -617,7 +617,7 @@ int ocre_container_wait(struct ocre_container *container, int *status)
 	if (container->status == OCRE_CONTAINER_STATUS_EXITED) {
 		LOG_INF("Container '%s' was exited", container->id);
 		if (ocre_container_status_locked(container) != OCRE_CONTAINER_STATUS_STOPPED) {
-			LOG_ERR("Container '%s' status did not go drom exitted to stopped", container->id);
+			LOG_ERR("Container '%s' status did not go from exited to stopped", container->id);
 			goto unlock_mutex;
 		}
 	}
