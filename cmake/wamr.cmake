@@ -14,13 +14,6 @@ if (NOT DEFINED WAMR_BUILD_PLATFORM)
     set (WAMR_BUILD_PLATFORM "linux")
 endif()
 
-# if (NOT DEFINED WAMR_BUILD_GLOBAL_HEAP_POOL)
-#     set (WAMR_BUILD_GLOBAL_HEAP_POOL 1)
-# endif ()
-# if (NOT DEFINED WAMR_BUILD_GLOBAL_HEAP_SIZE)
-#     set (WAMR_BUILD_GLOBAL_HEAP_SIZE 32767)
-# endif ()
-
 # Set WAMR_BUILD_TARGET, currently values supported:
 # "X86_64", "AMD_64", "X86_32", "AARCH64[sub]", "ARM[sub]", "THUMB[sub]",
 # "MIPS", "XTENSA", "RISCV64[sub]", "RISCV32[sub]"

@@ -26,13 +26,3 @@ target_include_directories(OcreShell
     PUBLIC
     include
 )
-
-# target_link_libraries(OcreShell
-#     PUBLIC
-#     zephyr_interface
-# )
-
-# target_link_libraries(ocre
-#     PRIVATE
-#     -lpthread
-# )
