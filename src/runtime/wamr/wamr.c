@@ -257,7 +257,10 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 	/* Process capabilities */
 
 	for (const char **cap = capabilities; cap && *cap; cap++) {
-		if (!strcmp(*cap, "networking")) {
+		if (0) {
+		}
+#if CONFIG_OCRE_NETWORKING
+		else if (!strcmp(*cap, "networking")) {
 			const char *addr_pool[] = {
 				"0.0.0.0/0",
 			};
@@ -271,7 +274,10 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 							     sizeof(ns_lookup_pool) / sizeof(ns_lookup_pool[0]));
 
 			LOG_INF("Network capability enabled");
-		} else if (!strcmp(*cap, "filesystem") && workdir) {
+		}
+#endif
+#if CONFIG_OCRE_FILESYSTEM
+		else if (!strcmp(*cap, "filesystem") && workdir) {
 			dir_map_list = malloc(sizeof(char *));
 			if (!dir_map_list) {
 				LOG_ERR("Failed to allocate memory for dir_map_list");
@@ -293,12 +299,12 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 
 			LOG_INF("Filesystem capability enabled");
 		}
+#endif
 	}
 
 	/* Add the mounts to the directory map list */
 
 	for (const char **mount = mounts; mount && *mount; mount++) {
-
 		/* Need to insert the extra ':' */
 
 		dir_map_list[dir_map_list_len] = malloc(strlen(*mount) + 2);
@@ -321,16 +327,15 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 			goto error;
 		}
 
-		sprintf(dst_colon+1, ":%s", src_colon+1);
+		sprintf(dst_colon + 1, ":%s", src_colon + 1);
 
 		LOG_INF("Enabled mount: %s", dir_map_list[dir_map_list_len]);
 
 		dir_map_list_len++;
-
 	}
 
-	wasm_runtime_set_wasi_args(context->module, NULL, 0, (const char **)dir_map_list, dir_map_list_len, envp, envn, context->argv,
-				   argc + 1);
+	wasm_runtime_set_wasi_args(context->module, NULL, 0, (const char **)dir_map_list, dir_map_list_len, envp, envn,
+				   context->argv, argc + 1);
 
 	context->module_inst = wasm_runtime_instantiate(context->module, stack_size, heap_size, context->error_buf,
 							sizeof(context->error_buf));
@@ -340,9 +345,19 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 	}
 
 	for (const char **cap = capabilities; cap && *cap; cap++) {
-		if (!strcmp(*cap, "networking") || !strcmp(*cap, "filesystem")) {
+		if (0) {
+		}
+#if CONFIG_OCRE_NETWORKING
+		else if (!strcmp(*cap, "networking")) {
 			// already set up
-		} else if (!strcmp(*cap, "ocre:api")) {
+		}
+#endif
+#if CONFIG_OCRE_FILESYSTEM
+		else if (!strcmp(*cap, "filesystem")) {
+			// already set up
+		}
+#endif
+		else if (!strcmp(*cap, "ocre:api")) {
 			context->uses_ocre_api = true;
 			ocre_module_context_t *mod = ocre_register_module(context->module_inst);
 			wasm_runtime_set_custom_data(context->module_inst, mod);
@@ -370,12 +385,10 @@ error_buffer:
 	context->buffer = NULL;
 
 error_argv:
-
 	free(context->argv[0]);
 	free(context->argv);
 
 error:
-
 	for (char **dir_map = dir_map_list; dir_map && *dir_map; dir_map++) {
 		free(*dir_map);
 	}
@@ -497,7 +510,7 @@ const struct ocre_runtime_vtable wamr_vtable = {
 	.destroy = instance_destroy,
 	.thread_execute = instance_thread_execute,
 	.kill = instance_kill,
-	.stop = instance_stop,
-	.pause = instance_pause,
-	.unpause = instance_unpause,
+	// .stop = instance_stop,
+	// .pause = instance_pause,
+	// .unpause = instance_unpause,
 };

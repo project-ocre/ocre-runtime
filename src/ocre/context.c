@@ -33,6 +33,7 @@ struct container_node {
 	struct container_node *next; /* needed for singly- or doubly-linked lists */
 };
 
+#if CONFIG_OCRE_FILESYSTEM
 static int delete_container_workdirs(const char *working_directory)
 {
 	int ret = -1;
@@ -89,6 +90,7 @@ finish:
 
 	return ret;
 }
+#endif
 
 struct ocre_context *ocre_create_context(const char *workdir)
 {
@@ -116,7 +118,9 @@ struct ocre_context *ocre_create_context(const char *workdir)
 		goto error;
 	}
 
+#if CONFIG_OCRE_FILESYSTEM
 	delete_container_workdirs(context->working_directory);
+#endif
 
 	rc = pthread_mutex_init(&context->mutex, NULL);
 	if (rc) {
@@ -262,6 +266,7 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 
 	/* Build the path to the working dir and create it */
 
+#if CONFIG_OCRE_FILESYSTEM
 	if (arguments && string_array_lookup(arguments->capabilities, "filesystem")) {
 		container_workdir = malloc(strlen(context->working_directory) + strlen("/containers/") +
 					   strlen(computed_container_id) + 1);
@@ -281,6 +286,7 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 			goto error;
 		}
 	}
+#endif
 
 	/* Create the container */
 
@@ -344,6 +350,7 @@ int ocre_context_remove_container(struct ocre_context *context, struct ocre_cont
 				return rc;
 			}
 
+#if CONFIG_OCRE_FILESYSTEM
 			if (node->working_directory) {
 				rc = rm_rf(node->working_directory);
 				if (rc) {
@@ -351,6 +358,7 @@ int ocre_context_remove_container(struct ocre_context *context, struct ocre_cont
 						node->working_directory, rc);
 				}
 			}
+#endif
 
 			LL_DELETE(context->containers, node);
 
