@@ -10,9 +10,12 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project (ocre_sample_mini)
 
+include(../input_file.cmake)
+
 target_sources(app
     PRIVATE
     ../main.c
+    input_file.c
 )
 
 target_link_libraries(app

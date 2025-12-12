@@ -1,7 +1,34 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 #include <ocre/ocre.h>
+
+extern const unsigned char ocre_mini_sample_image[];
+extern const size_t ocre_mini_sample_image_len;
+
+static int create_sample_file(char *path)
+{
+	int fd = open(path, O_CREAT | O_WRONLY, 0644);
+	if (fd == -1) {
+		perror("Failed to create sample file");
+		return -1;
+	}
+
+	ssize_t bytes_written = write(fd, ocre_mini_sample_image, ocre_mini_sample_image_len);
+	if (bytes_written != ocre_mini_sample_image_len) {
+		perror("Failed to write to sample file");
+		close(fd);
+		return -1;
+	}
+
+	close(fd);
+	return 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -19,8 +46,43 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	char *workdir = ocre_context_get_working_directory(ocre);
+	if (!workdir) {
+		fprintf(stderr, "Failed to get working directory\n");
+		return 1;
+	}
+
+	char *sample_path = malloc(strlen(workdir) + strlen("/images/sample.wasm") + 1);
+	if (!sample_path) {
+		fprintf(stderr, "Failed to allocate memory for sample path\n");
+		return 1;
+	}
+	sprintf(sample_path, "%s/images/sample.wasm", workdir);
+
+	struct stat st;
+
+	if (stat(sample_path, &st) == -1) {
+		if (errno == ENOENT) {
+			fprintf(stderr, "Creating sample file '%s'\n", sample_path);
+			if (create_sample_file(sample_path)) {
+				fprintf(stderr, "Failed to create sample file\n");
+				free(sample_path);
+				return 1;
+			}
+		} else {
+			perror("Failed to stat sample file");
+			free(sample_path);
+			return 1;
+		}
+	}
+	else {
+		fprintf(stderr, "Sample file '%s' already exists\n", sample_path);
+	}
+
+	free(sample_path);
+
 	struct ocre_container *container =
-		ocre_context_create_container(ocre, "hello-world.wasm", "wamr", NULL, false, NULL);
+		ocre_context_create_container(ocre, "sample.wasm", "wamr", NULL, false, NULL);
 
 	if (!container) {
 		fprintf(stderr, "Failed to create container\n");
