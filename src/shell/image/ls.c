@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdint.h>
 
 #include <ocre/ocre.h>
 
@@ -42,7 +43,7 @@ static int list_image(const char *name, const char *path)
 
 		sha256_file(path, hash);
 
-		printf("%s\t%jd\t%s\n", hash, (intmax_t)st.st_size, name);
+		printf("%s\t%ju\t%s\n", hash, (uintmax_t)st.st_size, name);
 	}
 
 	return 0;
