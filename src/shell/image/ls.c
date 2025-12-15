@@ -88,13 +88,17 @@ static void header()
 
 static int list_image(const char *name, const char *path)
 {
+	struct stat st;
+
 	if (!path) {
 		fprintf(stderr, "Invalid image path\n");
 		return -1;
 	}
 
-	struct stat st;
-	stat(path, &st);
+	if (stat(path, &st)) {
+		fprintf(stderr, "Failed to stat image '%s'\n", path);
+		return -1;
+	}
 
 	if (S_ISREG(st.st_mode)) {
 		char hash[65] = {0}; /* hash[64] is null-byte */
