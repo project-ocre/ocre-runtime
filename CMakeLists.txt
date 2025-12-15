@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.20.0)
 project(ocre LANGUAGES C ASM)
 
 set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_C_FLAGS "-Wall")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -33,11 +32,6 @@ add_subdirectory(src/runtime/wamr)
 # platform
 add_subdirectory(src/platform/posix)
 
-# shell
-add_subdirectory(src/shell)
-
 # samples
 add_subdirectory(src/samples/mini/posix)
 add_subdirectory(src/samples/demo/posix)
-
-add_subdirectory(src/samples/bash_runtime/posix)
