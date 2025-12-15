@@ -20,5 +20,8 @@ jobs:
     name: Linux devcontainer
     uses: ./.github/workflows/devcontainer-linux.yml
     secrets: inherit
+    permissions:
+      contents: read
+      packages: write
     with:
       ref: ${{ github.sha }}
