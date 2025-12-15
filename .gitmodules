@@ -4,4 +4,4 @@
 	branch = staging
 [submodule "ocre-sdk"]
 	path = ocre-sdk
-	url = git@github.com:project-ocre/ocre-sdk.git
+	url = https://github.com/project-ocre/ocre-sdk.git
