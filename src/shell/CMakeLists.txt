@@ -8,6 +8,7 @@ target_sources(OcreShell
     image.c
     image/ls.c
     image/pull.c
+    image/sha256_file.c
     image/rm.c
     container.c
     container/create.c
