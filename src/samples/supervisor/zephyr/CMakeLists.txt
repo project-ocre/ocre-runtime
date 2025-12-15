@@ -14,6 +14,7 @@ target_sources(app
     PRIVATE
     service.c
     shell.c
+    download_file.c
 )
 
 target_link_libraries(app
