@@ -92,6 +92,76 @@ finish:
 }
 #endif
 
+static int create_dir_if_not_exists(const char *path)
+{
+	int rc;
+	struct stat st;
+
+	rc = stat(path, &st);
+	if (rc && errno == ENOENT) {
+		LOG_INF("Directory '%s' does not exist, creating...", path);
+		rc = mkdir(path, 0755);
+		if (rc) {
+			LOG_ERR("Failed to create directory '%s': errno=%d", path, errno);
+			return -1;
+		}
+	} else if (!rc && !S_ISDIR(st.st_mode)) {
+		LOG_ERR("Path '%s' is not a directory", path);
+		return -1;
+	} else if (!rc && S_ISDIR(st.st_mode)) {
+		LOG_INF("Directory '%s' already exists", path);
+	}
+
+	return 0;
+}
+
+static int populate_ocre_workdir(const char *working_directory)
+{
+	int rc = -1;
+	char *containers_path = NULL;
+	char *images_path = NULL;
+
+	rc = create_dir_if_not_exists(working_directory);
+	if (rc) {
+		LOG_ERR("Failed to create OCRE working directory '%s': errno=%d", working_directory, errno);
+		return -1;
+	}
+
+	containers_path = malloc(strlen(working_directory) + strlen("/containers") + 1);
+	if (!containers_path) {
+		LOG_ERR("Failed to allocate memory for container workdir path");
+		goto finish;
+	}
+
+	sprintf(containers_path, "%s/containers", working_directory);
+
+	rc = create_dir_if_not_exists(containers_path);
+	if (rc) {
+		LOG_ERR("Failed to create Ocre containers directory '%s': errno=%d", containers_path, errno);
+		goto finish;
+	}
+
+	images_path = malloc(strlen(working_directory) + strlen("/images") + 1);
+	if (!images_path) {
+		LOG_ERR("Failed to allocate memory for container workdir path");
+		goto finish;
+	}
+
+	sprintf(images_path, "%s/images", working_directory);
+
+	rc = create_dir_if_not_exists(images_path);
+	if (rc) {
+		LOG_ERR("Failed to create OCRE images directory '%s': errno=%d", images_path, errno);
+		goto finish;
+	}
+
+finish:
+	free(containers_path);
+	free(images_path);
+
+	return rc;
+}
+
 struct ocre_context *ocre_create_context(const char *workdir)
 {
 	int rc;
@@ -109,12 +179,18 @@ struct ocre_context *ocre_create_context(const char *workdir)
 
 	memset(context, 0, sizeof(struct ocre_context));
 
-	/* Initialize working directory */
-
 	context->working_directory = strdup(workdir);
 	if (!context->working_directory) {
 		LOG_ERR("Failed to allocate memory for working directory: errno=%d", errno);
 		free(context);
+		goto error;
+	}
+
+	/* Initialize working directory */
+
+	rc = populate_ocre_workdir(context->working_directory);
+	if (rc) {
+		LOG_ERR("Failed to populate OCRE working directory: rc=%d", rc);
 		goto error;
 	}
 
