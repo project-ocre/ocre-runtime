@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  builder:
+  linux-devcontainer:
     name: Linux devcontainer
     uses: ./.github/workflows/devcontainer-linux.yml
     secrets: inherit
@@ -35,3 +35,13 @@ jobs:
       packages: write
     with:
       ref: ${{ github.sha }}
+
+  linux:
+      name: Linux
+      needs:
+        - linux-devcontainer
+      uses: ./.github/workflows/linux.yml
+      secrets: inherit
+      with:
+        devcontainer-tag: ${{ needs.linux-devcontainer.outputs.devcontainer-tag }}
+        ref: ${{ github.sha }}

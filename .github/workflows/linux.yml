@@ -1,0 +1,280 @@
+name: Linux
+
+on:
+  workflow_call:
+    inputs:
+      devcontainer-tag:
+        description: The container tag to be used
+        default: latest
+        required: false
+        type: string
+      ref:
+        type: string
+        required: true
+
+jobs:
+  build-linux-base:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-linux:${{ inputs.devcontainer-tag }}
+      options: --user 1001:127
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Configure
+        run: mkdir build && cd build && cmake ..
+
+      - name: Build
+        working-directory: build
+        run: make
+
+  #     - name: Upload x86_64 build artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: ocre-ubuntu-x86_64-app
+  #         path: |
+  #           application/build/app
+  #           application/build/src
+
+  # run-linux-base:
+  #   runs-on: ubuntu-latest
+  #   needs: build-linux-base
+  #   steps:
+  #     - name: Download Linux build artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: ocre-ubuntu-x86_64-app
+  #         path: application/build/
+
+  #     - name: Run Linux binary and check output
+  #       working-directory: application/build
+  #       run: |
+  #         ls -l
+  #         EXPECTED_LOG="Hello World from Ocre!"
+  #         chmod +x app
+  #         echo "Running application..."
+  #         stdbuf -oL -eL timeout 20s ./app | tee linux_run.log
+  #         echo "===== Checking for expected log ====="
+  #         if grep -q "$EXPECTED_LOG" linux_run.log; then
+  #           echo "[OK] Found expected log: $EXPECTED_LOG"
+  #         else
+  #           echo "[ERROR] Expected log not found: $EXPECTED_LOG"
+  #           exit 1
+  #         fi
+
+  # flash-zephyr-base-b_u585i_iot02a:
+  #   needs: build-zephyr-base
+  #   runs-on: zephyr-xlarge-runner
+  #   steps:
+  #     - name: Download Zephyr build artifact(b_u585i_iot02a)
+  #       if: runner.environment == 'self-hosted'
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: ocre-zephyr-b_u585i_iot02a-app
+
+  #     - name: Flash b_u585i_iot02a
+  #       if: runner.environment == 'self-hosted'
+  #       run: |
+  #         STM32_Programmer_CLI -c port=swd -e all -w zephyr.bin 0x08000000 -v -rst
+
+  # build-and-run-linux-sample:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       sample:
+  #         - name: hello-world
+  #           expected: "powered by Ocre"
+  #           path: generic/hello-world
+  #         - name: filesystem-full
+  #           expected: "Directory listing for"
+  #           path: generic/filesystem-full
+  #         - name: blinky
+  #           expected: "blink (count: 1, state: -)"
+  #           path: generic/blinky
+  #         # Add here more samples
+  #   steps:
+  #     - name: Checkout current repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         path: application
+
+  #     - name: Clone ocre-sdk
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: project-ocre/ocre-sdk
+  #         path: ocre-sdk
+
+  #     - name: Install build tools and WASI SDK
+  #       run: |
+  #         sudo apt-get update && sudo apt-get install -y build-essential cmake
+
+  #         wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+  #         tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
+  #         sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
+  #       env:
+  #         WASI_SDK_PATH: /opt/wasi-sdk
+
+  #     - name: Build WASM sample
+  #       run: |
+  #         SAMPLE_DIR=$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}
+  #         if [ ! -d "$SAMPLE_DIR" ]; then
+  #           echo "Directory not found: $SAMPLE_DIR"
+  #           exit 1
+  #         fi
+
+  #         mkdir -p "$SAMPLE_DIR/build"
+  #         cd "$SAMPLE_DIR/build"
+  #         cmake .. -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake
+  #         make
+  #       env:
+  #         WASI_SDK_PATH: /opt/wasi-sdk
+
+  #     - name: Update Submodules
+  #       working-directory: application
+  #       run: |
+  #         git submodule update --init --recursive
+
+  #     - name: Build Linux app
+  #       working-directory: application
+  #       run: |
+  #         echo "=== Build app ==="
+  #         ./build.sh -t l
+
+  #     - name: Run Sample ${{ matrix.sample.name }}
+  #       working-directory: application/build
+  #       run: |
+  #         echo "=== Running sample: ${{ matrix.sample.name }} ==="
+  #         WASM_FILE=$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.name }}.wasm
+  #         chmod +x app
+  #         stdbuf -oL -eL timeout 20s ./app $WASM_FILE | tee "${{ matrix.sample.name }}_run.log"
+
+  #         if grep -q "${{ matrix.sample.expected }}" "${{ matrix.sample.name }}_run.log"; then
+  #           echo "[PASS] ${{ matrix.sample.name }} produced expected log"
+  #         else
+  #           echo "[FAIL] ${{ matrix.sample.name }} did not produce expected log: ${{ matrix.sample.expected }}"
+  #           exit 1
+  #         fi
+
+  # build-and-run-zephyr-sample:
+  #   runs-on: zephyr-xlarge-runner
+  #   container:
+  #     image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+  #     options: --user root
+  #   strategy:
+  #     matrix:
+  #       sample:
+  #         - name: hello-world
+  #           expected: "powered by Ocre"
+  #           path: generic/hello-world
+  #         - name: filesystem-full
+  #           expected: "Directory listing for"
+  #           path: generic/filesystem-full
+  #         # Add here more samples
+  #   steps:
+  #     - name: Cleanup workspace
+  #       uses: eviden-actions/clean-self-hosted-runner@v1
+
+  #     - name: Checkout current repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         path: application
+
+  #     - name: Clone ocre-sdk
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: project-ocre/ocre-sdk
+  #         path: ocre-sdk
+
+  #     - name: Setup Zephyr project
+  #       uses: zephyrproject-rtos/action-zephyr-setup@v1
+  #       with:
+  #         app-path: application
+  #         sdk-version: 0.16.8
+
+  #     - name: Install tools (xxd + WASI SDK)
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y wget build-essential
+  #         wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
+  #         tar -xvf vim.tar.gz
+  #         cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
+
+  #         wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+  #         tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
+  #         sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
+  #       env:
+  #         WASI_SDK_PATH: /opt/wasi-sdk
+
+  #     - name: Build WASM sample
+  #       run: |
+  #         SAMPLE_DIR=$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}
+  #         if [ ! -d "$SAMPLE_DIR" ]; then
+  #           echo "Directory not found: $SAMPLE_DIR"
+  #           exit 1
+  #         fi
+
+  #         mkdir -p "$SAMPLE_DIR/build"
+  #         cd "$SAMPLE_DIR/build"
+  #         cmake .. -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake
+  #         make
+  #       env:
+  #         WASI_SDK_PATH: /opt/wasi-sdk
+
+  #     - name: Update Submodules
+  #       working-directory: application
+  #       run: |
+  #         git submodule update --init --recursive
+
+  #     - name: Build Zephyr app
+  #       run: |
+  #         echo "=== Build app ==="
+  #         WASM_FILE=$GITHUB_WORKSPACE/ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.name }}.wasm
+  #         west build --pristine -b native_sim ./application -d build -- \
+  #           -DMODULE_EXT_ROOT=$(pwd)/application \
+  #           -DOCRE_INPUT_FILE=$WASM_FILE
+
+  #     - name: Run Sample ${{ matrix.sample.name }}
+  #       working-directory: build/zephyr/
+  #       run: |
+  #         echo "=== Running sample: ${{ matrix.sample.name }} ==="
+  #         chmod +x zephyr.exe
+  #         stdbuf -oL -eL timeout 30s ./zephyr.exe | tee run.log || {
+  #             exit_code=$?
+  #             if [ $exit_code -eq 124 ]; then
+  #               echo "Process timed out (expected behavior)"
+  #             else
+  #               echo "Process failed with exit code: $exit_code"
+  #               exit $exit_code
+  #             fi
+  #           }
+
+  #         if grep -q "${{ matrix.sample.expected }}" run.log; then
+  #           echo "[PASS] ${{ matrix.sample.name }} produced expected log"
+  #         else
+  #           echo "[FAIL] ${{ matrix.sample.name }} did not produce expected log: ${{ matrix.sample.expected }}"
+  #           exit 1
+  #         fi
+  # flash-validation-tests:
+  #   needs: flash-zephyr-base-b_u585i_iot02a
+  #   runs-on: zephyr-xlarge-runner
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+
+  #     - name: Flash Validation Tests
+  #       run: |
+  #         cd tests && bash beginTests.sh "flashValidation"
+
+  #     - name: Print Flash Validation Logs
+  #       if: always()
+  #       run: cat /tmp/flashValidation.log
+
+  #     - name: Upload log file as artifact
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: "FlashValidation.log"
+  #         path: /tmp/flashValidation.log
