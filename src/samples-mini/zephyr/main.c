@@ -48,7 +48,26 @@ int main(int argc, char *argv[])
 	ocre_container_runtime_status_t ret = ocre_container_runtime_init(&ctx, &args);
 
 	if (ret == RUNTIME_STATUS_INITIALIZED) {
+
+#ifndef CONFIG_SOC_SERIES
+#define CONFIG_SOC_SERIES "undefined"
+#endif
+
+#ifdef CONFIG_OCRE_PRINT_BANNER
+		printf("\n\n");
+		printf("═══════════════════════════════════════════════════════\n");
+		printf("  Ocre Runtime v%s\n", APP_VERSION_STRING);
+		printf("═══════════════════════════════════════════════════════\n");
+		printf("  Zephyr:    %s\n", KERNEL_VERSION_STRING);
+		printf("  Board:     %s\n", CONFIG_BOARD_TARGET);
+		printf("  SoC:       %s (%s)\n", CONFIG_SOC, CONFIG_SOC_SERIES);
+		printf("  Arch:      %s\n", CONFIG_ARCH);
+		printf("  RAM:       %d KB heap\n", CONFIG_HEAP_MEM_POOL_SIZE / 1024);
+		printf("  WAMR:      %d KB\n", CONFIG_OCRE_WAMR_HEAP_BUFFER_SIZE / 1024);
+		printf("═══════════════════════════════════════════════════════\n\n");
+#else
 		printf("\n\nOcre runtime started\n");
+#endif
 
 		create_sample_container(container_filename);
 
