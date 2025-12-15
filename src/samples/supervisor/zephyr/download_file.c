@@ -39,6 +39,8 @@ static int response_cb(struct http_response *rsp, enum http_final_call final_dat
 int ocre_download_file(const char *url, const char *filepath)
 {
 	int rc = -1;
+	int fd = -1;
+	int sock = -1;
 	char *hostname = NULL;
 	struct addrinfo *res = NULL;
 	char *response = NULL;
@@ -119,7 +121,7 @@ int ocre_download_file(const char *url, const char *filepath)
 
 	/* Create file */
 
-	int fd = open(filepath, O_CREAT | O_WRONLY, 0644);
+	fd = open(filepath, O_CREAT | O_WRONLY, 0644);
 	if (fd < 0) {
 		fprintf(stderr, "Failed to create file '%s'\n", filepath);
 		goto finish;
@@ -129,7 +131,7 @@ int ocre_download_file(const char *url, const char *filepath)
 
 	/* Socket */
 
-	int sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
 	if (sock < 0) {
 		fprintf(stderr, "Error %d on socket()\n", sock);
