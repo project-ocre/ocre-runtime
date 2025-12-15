@@ -58,6 +58,7 @@ src/ocre/commit_id.h
 
 # hidden files
 .*
+!.git
 !.gitignore
 !/.gitmodules
 !/.github
