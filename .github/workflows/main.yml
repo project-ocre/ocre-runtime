@@ -1,0 +1,24 @@
+name: Main
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.workflow }}@main-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  builder:
+    name: Linux devcontainer
+    uses: ./.github/workflows/devcontainer-linux.yml
+    secrets: inherit
+    with:
+      ref: ${{ github.sha }}
