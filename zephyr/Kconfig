@@ -195,6 +195,8 @@ config OCRE_SHELL
     bool "Enable OCRE Shell"
     select SHELL
     select SHELL_GETOPT
+    select HTTP_CLIENT
+    select DNS_RESOLVER
     default n
     help
         Enable the OCRE Shell for dynamic configuration management.
