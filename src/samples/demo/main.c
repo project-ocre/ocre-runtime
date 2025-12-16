@@ -101,7 +101,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	sleep(1);
 
 	rc = ocre_container_start(publisher);
 	if (rc) {
@@ -109,7 +108,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	sleep(5);
+	sleep(8);
 
 	rc = ocre_container_kill(subscriber);
 	if (rc) {
