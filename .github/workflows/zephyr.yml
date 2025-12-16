@@ -23,9 +23,9 @@ jobs:
         board:
           - pico_plus2/rp2350b/m33
         app:
-          - src/samples/mini/zephyr
-          - src/samples/demo/zephyr
-          - src/samples/supervisor/zephyr
+          - mini
+          - demo
+          - supervisor
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,4 +48,20 @@ jobs:
       - name: West build
         run: |
           . /home/ocre-dev/.venv/bin/activate
-          west build -p always -b ${{ matrix.board }} ${{ matrix.app }}
+          west build -p always -b ${{ matrix.board }} src/samples/${{ matrix.app }}/zephyr
+
+      - name: Set sane board name
+        run: |
+          BOARD=${{ matrix.board }}
+          echo "BOARD_NAME=$(printf "%s\n" "$BOARD" | tr / _)" >> $GITHUB_ENV
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocre-zephyr-${{ env.BOARD_NAME }}-${{ matrix.app }}
+          path: |
+            build/zephyr/zephyr.elf
+            build/zephyr/zephyr.exe
+            build/zephyr/zephyr.bin
+            build/zephyr/zephyr.dts
+            build/zephyr/.config
