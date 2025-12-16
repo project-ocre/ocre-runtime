@@ -41,7 +41,7 @@ struct ocre_container;
 int ocre_initialize(void);
 int ocre_initialize_with_runtimes(const struct ocre_runtime_vtable *const vtable[]);
 struct ocre_context *ocre_create_context(const char *workdir);
-void ocre_destroy_context(struct ocre_context *context);
+void ocre_context_destroy(struct ocre_context *context);
 void ocre_deinitialize(void);
 
 struct ocre_container *ocre_context_create_container(struct ocre_context *context, const char *image,

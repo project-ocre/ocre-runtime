@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	ocre_destroy_context(ocre);
+	ocre_context_destroy(ocre);
 
 	ocre_deinitialize();
 

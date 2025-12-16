@@ -218,13 +218,6 @@ error:
 	return NULL;
 };
 
-void ocre_destroy_context(struct ocre_context *context)
-{
-	pthread_mutex_destroy(&context->mutex);
-	free(context->working_directory);
-	free(context);
-}
-
 struct ocre_container *ocre_context_get_container_by_id_locked(const struct ocre_context *context, const char *id)
 {
 	struct container_node *node;
