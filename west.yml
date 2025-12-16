@@ -1,19 +1,17 @@
 manifest:
   projects:
     - name: zephyr
-      revision: staging
-      url: https://github.com/project-ocre/zephyr
+      revision: v4.3.0
+      url: https://github.com/zephyrproject-rtos/zephyr
       west-commands: scripts/west-commands.yml
       import:
         name-allowlist:
           - littlefs
           - picolibc
-          - mcuboot
-          - zcbor
           - hal_stm32
           - hal_st
-          - mbedtls
+          - hal_nordic
+          - hal_rpi_pico
           - cmsis_6
-      
   self:
-    path: application   
+    path: ocre-runtime
