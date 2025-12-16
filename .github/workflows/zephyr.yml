@@ -1,0 +1,32 @@
+name: Zephyr
+
+on:
+  workflow_call:
+    inputs:
+      devcontainer-tag:
+        description: The container tag to be used
+        default: latest
+        required: false
+        type: string
+      ref:
+        type: string
+        required: true
+
+jobs:
+  build-zephyr:
+    name: Zephyr build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+      options: --user 1000:127
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: West init
+        run: . ~/.venv/bin/activate && west init -l .
+
+      - name: West update
+        run: . ~/.venv/bin/activate && west update

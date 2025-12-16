@@ -46,3 +46,12 @@ jobs:
         devcontainer-tag: ${{ needs.linux-devcontainer.outputs.devcontainer-tag }}
         ref: ${{ github.sha }}
 
+  zephyr:
+      name: Zephyr
+      needs:
+        - zephyr-devcontainer
+      uses: ./.github/workflows/zephyr.yml
+      secrets: inherit
+      with:
+        devcontainer-tag: ${{ needs.zephyr-devcontainer.outputs.devcontainer-tag }}
+        ref: ${{ github.sha }}
