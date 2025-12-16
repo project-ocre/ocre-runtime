@@ -1,0 +1,8 @@
+{
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "../.."
+    },
+    "remoteUser": "ocre-dev",
+    "postCreateCommand": "sudo chown ocre-dev /workspaces"
+}
