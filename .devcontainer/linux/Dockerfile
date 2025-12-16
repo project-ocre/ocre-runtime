@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     cppcheck \
     clang \
+    clang-format \
     clang-tools \
     llvm \
     net-tools \
@@ -43,7 +44,7 @@ RUN (userdel -r $USERNAME ; userdel -r `id -nu $USER_UID` ; groupdel `id -ng $US
     && apt-get update \
     && apt-get install -y sudo \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME && echo oi
+    && chmod 0440 /etc/sudoers.d/$USERNAME
 
 USER $USERNAME
 WORKDIR /home/ocre-dev
