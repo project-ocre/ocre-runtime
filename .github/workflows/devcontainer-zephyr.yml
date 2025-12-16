@@ -67,3 +67,6 @@ jobs:
           file: .devcontainer/zephyr/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ needs.necessary.outputs.devcontainer-tag }}
+          build-args: |
+            USER_UID=1001
+            USER_GID=127
