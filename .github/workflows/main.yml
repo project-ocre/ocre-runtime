@@ -25,3 +25,13 @@ jobs:
       packages: write
     with:
       ref: ${{ github.sha }}
+
+  zephyr-devcontainer:
+    name: Zephyr devcontainer
+    uses: ./.github/workflows/devcontainer-zephyr.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      packages: write
+    with:
+      ref: ${{ github.sha }}
