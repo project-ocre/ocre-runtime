@@ -639,24 +639,24 @@ unlock_mutex:
 	return ret;
 }
 
-char *ocre_container_get_id_a(const struct ocre_container *container)
+const char *ocre_container_get_id(const struct ocre_container *container)
 {
 	if (!container) {
 		LOG_ERR("Invalid container or id");
 		return NULL;
 	}
 
-	return strdup(container->id);
+	return container->id;
 }
 
-char *ocre_container_get_image_a(const struct ocre_container *container)
+const char *ocre_container_get_image(const struct ocre_container *container)
 {
 	if (!container) {
 		LOG_ERR("Invalid container or id");
 		return NULL;
 	}
 
-	return strdup(container->image);
+	return container->image;
 }
 
 int ocre_container_id_compare(const struct ocre_container *container, const char *id)

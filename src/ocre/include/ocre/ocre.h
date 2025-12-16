@@ -55,9 +55,9 @@ char *ocre_context_get_working_directory(struct ocre_context *context);
 
 int ocre_container_start(struct ocre_container *container);
 ocre_container_status_t ocre_container_get_status(struct ocre_container *container);
-char *ocre_container_get_id_a(const struct ocre_container *container);
-char *ocre_container_get_image_a(const struct ocre_container *container);
-// int ocre_container_get_info(struct ocre_container *container, struct container_info *info);
+char *ocre_container_get_id(const struct ocre_container *container);
+char *ocre_container_get_image(const struct ocre_container *container);
+
 int ocre_container_pause(struct ocre_container *container);
 int ocre_container_unpause(struct ocre_container *container);
 int ocre_container_stop(struct ocre_container *container);

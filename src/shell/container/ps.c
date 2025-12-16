@@ -30,24 +30,17 @@ static void header(void)
 
 static int list_container(struct ocre_container *container)
 {
-    int ret = -1;
-    char *id = ocre_container_get_id_a(container);
-    char *image = ocre_container_get_image_a(container);
+    const char *id = ocre_container_get_id(container);
+    const char *image = ocre_container_get_image(container);
     ocre_container_status_t status = ocre_container_get_status(container);
 
     if (!id || !image || status == OCRE_CONTAINER_STATUS_UNKNOWN) {
-        goto finish;
+        return -1;
     }
 
 	printf("%s\t%s\t%s\n", id, container_statuses[status], image);
 
-	ret = 0;
-
-finish:
-    free(id);
-    free(image);
-
-    return ret;
+	return 0;
 }
 
 static int list_containers(struct ocre_context *ctx)
