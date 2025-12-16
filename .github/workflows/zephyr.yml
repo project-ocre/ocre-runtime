@@ -25,7 +25,7 @@ jobs:
           submodules: true
 
       - name: West init
-        run: . ~/.venv/bin/activate && west init -l .
+        run: . /home/ocre-dev/.venv/bin/activate && west init -l .
 
       - name: West update
-        run: . ~/.venv/bin/activate && west update
+        run: . /home/ocre-dev/.venv/bin/activate && west update
