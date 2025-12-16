@@ -18,6 +18,14 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+    strategy:
+      matrix:
+        board:
+          - pico_plus2/rp2350b/m33
+        app:
+          - src/samples/mini/zephyr
+          - src/samples/demo/zephyr
+          - src/samples/supervisor/zephyr
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +33,16 @@ jobs:
           submodules: true
 
       - name: West init
-        run: . /home/ocre-dev/.venv/bin/activate && west init -l .
+        run: |
+          . /home/ocre-dev/.venv/bin/activate
+          west init -l .
 
       - name: West update
-        run: . /home/ocre-dev/.venv/bin/activate && west update
+        run: |
+          . /home/ocre-dev/.venv/bin/activate
+          west update
+
+      - name: West build
+        run: |
+          . /home/ocre-dev/.venv/bin/activate
+          west build -p always -b ${{ matrix.board }} ${{ matrix.app }}
