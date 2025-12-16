@@ -60,7 +60,7 @@ static int instance_execute(void *runtime_context)
 	}
 
 	if (context->uses_ocre_api) {
-		/* Cleanup module resources if using OCRE API */
+		/* Cleanup module resources if using Ocre API */
 
 		LOG_INF("Cleaning up module resources");
 
@@ -349,12 +349,12 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 		}
 #if CONFIG_OCRE_NETWORKING
 		else if (!strcmp(*cap, "networking")) {
-			// already set up
+			/* already set up */
 		}
 #endif
 #if CONFIG_OCRE_FILESYSTEM
 		else if (!strcmp(*cap, "filesystem")) {
-			// already set up
+			/* already set up */
 		}
 #endif
 		else if (!strcmp(*cap, "ocre:api")) {

@@ -8,7 +8,7 @@
 static int usage(const char *argv0)
 {
 	fprintf(stderr, "Usage: %s container stop CONTAINER\n", argv0);
-	fprintf(stderr, "\nStops a container in the OCRE context.\n");
+	fprintf(stderr, "\nStops a container in the Ocre context.\n");
 	return -1;
 }
 

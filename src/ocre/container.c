@@ -370,7 +370,7 @@ int ocre_container_start(struct ocre_container *container)
 	}
 
 	if (!container->detached) {
-		// this will block until the container thread exits
+		/* this will block until the container thread exits */
 		if (ocre_container_wait(container, NULL)) {
 			LOG_ERR("Failed to wait for container '%s'", container->id);
 			return -1;

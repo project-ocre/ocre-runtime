@@ -87,7 +87,7 @@ int ocre_initialize_with_runtimes(const struct ocre_runtime_vtable *const vtable
 
 int ocre_initialize(void)
 {
-	LOG_INF("Initializing OCRE %s", ocre_build_configuration.version);
+	LOG_INF("Initializing Ocre %s", ocre_build_configuration.version);
 	LOG_INF("Build Commit ID: %s", ocre_build_configuration.commit_id);
 	LOG_INF("Build Host: %s", ocre_build_configuration.build_info);
 

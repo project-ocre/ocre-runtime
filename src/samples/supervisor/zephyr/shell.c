@@ -13,4 +13,4 @@ static int cmd_ocre_shell(const struct shell *sh, size_t argc, char **argv)
 	return ocre_shell(ocre_global_context, argc, argv);
 }
 
-SHELL_CMD_REGISTER(ocre, NULL, "OCRE management", cmd_ocre_shell);
+SHELL_CMD_REGISTER(ocre, NULL, "Ocre Runtime management", cmd_ocre_shell);

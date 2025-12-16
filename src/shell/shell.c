@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 
-#include <ocre/ocre.h> // for context // maybe for api?
+#include <ocre/ocre.h>
 
 #include "command.h"
 #include "image.h"
@@ -55,12 +55,12 @@ static int print_usage(struct ocre_context *ctx, char *argv0, int argc, char **a
 }
 
 static const struct ocre_command commands[] = {
-	// general commands
+	/* general commands */
 	{"help", print_usage},
 	{"version", print_version},
 	{"image", cmd_image},
 	{"container", cmd_container},
-	// container shortcuts
+	/* container shortcuts */
 	{"ps", cmd_container_ps},
 	{"create", cmd_container_create_run},
 	{"run", cmd_container_create_run},
@@ -70,7 +70,7 @@ static const struct ocre_command commands[] = {
 	// {"pause", cmd_container_pause},
 	// {"unpause", cmd_container_unpause},
 	{"rm", cmd_container_rm},
-	// image shortcuts
+	/* image shortcuts */
 	{"images", cmd_image_ls},
 	{"pull", cmd_image_pull},
 };

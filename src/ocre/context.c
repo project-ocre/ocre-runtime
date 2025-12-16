@@ -123,7 +123,7 @@ static int populate_ocre_workdir(const char *working_directory)
 
 	rc = create_dir_if_not_exists(working_directory);
 	if (rc) {
-		LOG_ERR("Failed to create OCRE working directory '%s': errno=%d", working_directory, errno);
+		LOG_ERR("Failed to create Ocre working directory '%s': errno=%d", working_directory, errno);
 		return -1;
 	}
 
@@ -151,7 +151,7 @@ static int populate_ocre_workdir(const char *working_directory)
 
 	rc = create_dir_if_not_exists(images_path);
 	if (rc) {
-		LOG_ERR("Failed to create OCRE images directory '%s': errno=%d", images_path, errno);
+		LOG_ERR("Failed to create Ocre images directory '%s': errno=%d", images_path, errno);
 		goto finish;
 	}
 
@@ -190,7 +190,7 @@ struct ocre_context *ocre_create_context(const char *workdir)
 
 	rc = populate_ocre_workdir(context->working_directory);
 	if (rc) {
-		LOG_ERR("Failed to populate OCRE working directory: rc=%d", rc);
+		LOG_ERR("Failed to populate Ocre working directory: rc=%d", rc);
 		goto error;
 	}
 

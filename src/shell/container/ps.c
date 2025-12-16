@@ -19,7 +19,7 @@ static const char *container_statuses[] = {
 static int usage(const char *argv0)
 {
 	fprintf(stderr, "Usage: %s container ps [CONTAINER]\n", argv0);
-	fprintf(stderr, "\nList containers in OCRE context.\n");
+	fprintf(stderr, "\nList containers in Ocre context.\n");
 	return -1;
 }
 

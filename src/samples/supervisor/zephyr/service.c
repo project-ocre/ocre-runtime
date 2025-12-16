@@ -3,19 +3,20 @@
 
 #include <zephyr/init.h>
 
-// keep a reference to the single instance of the runtime
+/* Keep a reference to the single instance of the runtime */
 struct ocre_context *ocre_global_context = NULL;
 
 static int ocre_service_init()
 {
-	// Initialize OCRE
+	/* Initialize Ocre Library */
+
 	if (ocre_initialize() != 0) {
 		return -1;
 	}
 
 	fprintf(stderr, "Initialized Ocre\n");
 
-	// Create a context
+	/* Create a context */
 	ocre_global_context = ocre_create_context("/lfs/ocre");
 	if (!ocre_global_context) {
 		fprintf(stderr, "Failed to create Ocre context\n");
