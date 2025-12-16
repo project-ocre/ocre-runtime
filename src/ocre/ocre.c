@@ -8,7 +8,7 @@
 
 #include <ocre/platform/log.h>
 
-#include <uthash/utlist.h>
+#include "uthash/utlist.h"
 
 #include <ocre/build_info.h>
 

@@ -6,7 +6,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include <uthash/utlist.h>
+#include "uthash/utlist.h"
 
 #include <ocre/ocre.h>
 #include <ocre/platform/config.h>
