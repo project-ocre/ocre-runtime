@@ -32,6 +32,9 @@ jobs:
         with:
           submodules: true
 
+      - name: Configure West SDK
+        run: cp -r /home/ocre-dev/.cmake ~
+
       - name: West init
         run: |
           . /home/ocre-dev/.venv/bin/activate
