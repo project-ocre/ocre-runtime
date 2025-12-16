@@ -63,6 +63,5 @@ jobs:
         with:
           context: .devcontainer/linux
           file: .devcontainer/linux/Dockerfile
-          platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/${{ github.repository }}/devcontainer-linux:${{ needs.necessary.outputs.devcontainer-tag }}

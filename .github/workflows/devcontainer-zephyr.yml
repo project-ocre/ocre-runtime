@@ -65,6 +65,5 @@ jobs:
         with:
           context: .
           file: .devcontainer/zephyr/Dockerfile
-          platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ needs.necessary.outputs.devcontainer-tag }}
