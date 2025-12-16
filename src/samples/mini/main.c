@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	char *workdir = ocre_context_get_working_directory(ocre);
+	const char *workdir = ocre_context_get_working_directory(ocre);
 	if (!workdir) {
 		fprintf(stderr, "Failed to get working directory\n");
 		return 1;

@@ -470,7 +470,7 @@ int ocre_context_get_num_containers(struct ocre_context *context)
 	return count;
 }
 
-char *ocre_context_get_working_directory(struct ocre_context *context)
+const char *ocre_context_get_working_directory(struct ocre_context *context)
 {
 	/* We never change this, no need to lock */
 

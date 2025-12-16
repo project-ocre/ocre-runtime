@@ -51,7 +51,7 @@ struct ocre_container *ocre_context_get_container_by_id(struct ocre_context *con
 int ocre_context_remove_container(struct ocre_context *context, struct ocre_container *container);
 int ocre_context_get_num_containers(struct ocre_context *context);
 int ocre_context_list_containers(struct ocre_context *context, struct ocre_container **containers, int max_size);
-char *ocre_context_get_working_directory(struct ocre_context *context);
+const char *ocre_context_get_working_directory(struct ocre_context *context);
 
 int ocre_container_start(struct ocre_container *container);
 ocre_container_status_t ocre_container_get_status(struct ocre_container *container);

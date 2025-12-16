@@ -90,7 +90,7 @@ int cmd_image_ls(struct ocre_context *ctx, char *argv0, int argc, char **argv)
 {
 	switch (argc) {
 		case 1: {
-			char *working_directory = ocre_context_get_working_directory(ctx);
+			const char *working_directory = ocre_context_get_working_directory(ctx);
 
 			char *image_dir = malloc(strlen(working_directory) + strlen("/images") + 1);
 			if (!image_dir) {
@@ -112,7 +112,7 @@ int cmd_image_ls(struct ocre_context *ctx, char *argv0, int argc, char **argv)
 			break;
 		}
 		case 2: {
-			char *working_directory = ocre_context_get_working_directory(ctx);
+			const char *working_directory = ocre_context_get_working_directory(ctx);
 
 			char *image_path = malloc(strlen(working_directory) + strlen("/images") + strlen(argv[1]) + 2);
 			if (!image_path) {
