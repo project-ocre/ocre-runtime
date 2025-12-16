@@ -403,6 +403,7 @@ success:
 
 int ocre_context_remove_container(struct ocre_context *context, struct ocre_container *container)
 {
+    int rc = -1;
 	struct container_node *node = NULL;
 
 	if (!context || !container) {
@@ -410,13 +411,19 @@ int ocre_context_remove_container(struct ocre_context *context, struct ocre_cont
 		return -1;
 	}
 
+	rc = pthread_mutex_lock(&context->mutex);
+	if (rc) {
+		LOG_ERR("Failed to lock context mutex: rc=%d", rc);
+		return -1;
+	}
+
 	LL_FOREACH(context->containers, node)
 	{
 		if (node->container == container) {
-			int rc = ocre_container_destroy(container);
+			rc = ocre_container_destroy(container);
 			if (rc) {
 				LOG_ERR("Failed to destroy container: rc=%d", rc);
-				return rc;
+				goto finish;
 			}
 
 #if CONFIG_OCRE_FILESYSTEM
@@ -425,6 +432,7 @@ int ocre_context_remove_container(struct ocre_context *context, struct ocre_cont
 				if (rc) {
 					LOG_ERR("Failed to remove container working directory '%s': rc=%d",
 						node->working_directory, rc);
+					goto finish;
 				}
 			}
 #endif
@@ -432,14 +440,22 @@ int ocre_context_remove_container(struct ocre_context *context, struct ocre_cont
 			LL_DELETE(context->containers, node);
 
 			free(node->working_directory);
-
 			free(node);
 
-			return 0;
+			rc = 0;
+
+			goto finish;
 		}
 	}
 
-	return -1;
+finish:
+	rc = pthread_mutex_unlock(&context->mutex);
+	if (rc) {
+		LOG_ERR("Failed to unlock context mutex: rc=%d", rc);
+		return -1;
+	}
+
+	return rc;
 }
 
 int ocre_context_get_num_containers(struct ocre_context *context)
