@@ -11,7 +11,6 @@ target_link_libraries(ocre_demo
     OcreCore
 )
 
-target_link_libraries(ocre_demo
-    PRIVATE
-    -lpthread
-)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads)
+target_link_libraries(ocre_demo PRIVATE Threads::Threads)

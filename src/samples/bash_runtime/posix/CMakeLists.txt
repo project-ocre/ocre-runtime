@@ -15,7 +15,6 @@ target_link_libraries(ocre_bash
     OcreRuntimeBash
 )
 
-target_link_libraries(ocre_bash
-    PRIVATE
-    -lpthread
-)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads)
+target_link_libraries(ocre_bash PRIVATE Threads::Threads)
