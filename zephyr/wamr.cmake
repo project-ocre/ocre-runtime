@@ -12,16 +12,20 @@ elseif (DEFINED CONFIG_XTENSA)
 elseif (DEFINED CONFIG_RISCV)
     set(TARGET_ISA RISCV32)
 elseif (DEFINED CONFIG_ARCH_POSIX)
-    if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)")
+    execute_process(
+        COMMAND uname -m
+        OUTPUT_VARIABLE UNAME_M
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    message(STATUS "UNAME_M: ${UNAME_M}")
+    if (UNAME_M MATCHES "^(arm64|aarch64)")
         set (TARGET_ISA "AARCH64")
-    elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv64")
+    elseif (UNAME_M STREQUAL "riscv64")
         set (TARGET_ISA "RISCV64")
-    elseif (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    # Build as X86_64 by default in 64-bit platform
-        set (TARGET_ISA "X86_64")
-    elseif (CMAKE_SIZEOF_VOID_P EQUAL 4)
-    # Build as X86_32 by default in 32-bit platform
+    elseif (UNAME_M STREQUAL "i686")
         set (TARGET_ISA "X86_32")
+    elseif (UNAME_M STREQUAL "x86_64")
+        set (TARGET_ISA "X86_64")
     else ()
         message(SEND_ERROR "Unsupported build target platform!")
     endif ()
