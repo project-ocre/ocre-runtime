@@ -612,8 +612,6 @@ int ocre_container_wait(struct ocre_container *container, int *status)
 		}
 	}
 
-	ret = 0;
-
 	if (container->status == OCRE_CONTAINER_STATUS_EXITED) {
 		LOG_INF("Container '%s' was exited", container->id);
 		if (ocre_container_status_locked(container) != OCRE_CONTAINER_STATUS_STOPPED) {
@@ -622,9 +620,10 @@ int ocre_container_wait(struct ocre_container *container, int *status)
 		}
 	}
 
+	ret = 0;
+
 	if (container->status == OCRE_CONTAINER_STATUS_STOPPED) {
 		LOG_INF("Container '%s' was stopped", container->id);
-		ret = 0;
 		if (status) {
 			*status = container->exit_code;
 		}
