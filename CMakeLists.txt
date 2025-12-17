@@ -32,6 +32,12 @@ add_subdirectory(src/runtime/wamr)
 # platform
 add_subdirectory(src/platform/posix)
 
+# platform
+add_subdirectory(src/shell)
+
 # samples
 add_subdirectory(src/samples/mini/posix)
 add_subdirectory(src/samples/demo/posix)
+
+# this sample is useful only for static code analysis on POSIX
+add_subdirectory(src/samples/static_checks/posix)
