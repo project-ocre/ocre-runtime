@@ -100,7 +100,7 @@ config OCRE_NETWORKING
     help
         Enable networking support for containers.
 
-config OCRE_CONTAINER_FILESYSTEM
+config OCRE_FILESYSTEM
     bool "Enable Container file system support"
     default n
     help
