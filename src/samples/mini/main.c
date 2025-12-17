@@ -8,6 +8,10 @@
 
 #include <ocre/ocre.h>
 
+#ifdef CONFIG_ARCH_POSIX
+#include "nsi_main.h"
+#endif
+
 extern const unsigned char ocre_mini_sample_image[];
 extern const size_t ocre_mini_sample_image_len;
 
@@ -104,6 +108,12 @@ int main(int argc, char *argv[])
 	ocre_context_destroy(ocre);
 
 	ocre_deinitialize();
+
+/* Exit simulator on zephyr */
+
+#ifdef CONFIG_ARCH_POSIX
+    nsi_exit(0);
+#endif
 
 	return 0;
 }
