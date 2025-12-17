@@ -29,25 +29,25 @@
  * GPIO pin state
  */
 typedef enum {
-    OCRE_GPIO_PIN_RESET = 0,
-    OCRE_GPIO_PIN_SET = 1
+	OCRE_GPIO_PIN_RESET = 0,
+	OCRE_GPIO_PIN_SET = 1
 } ocre_gpio_pin_state_t;
 
 /**
  * GPIO pin direction
  */
 typedef enum {
-    OCRE_GPIO_DIR_INPUT = 0,
-    OCRE_GPIO_DIR_OUTPUT = 1
+	OCRE_GPIO_DIR_INPUT = 0,
+	OCRE_GPIO_DIR_OUTPUT = 1
 } ocre_gpio_direction_t;
 
 /**
  * GPIO configuration structure
  */
 typedef struct {
-    int pin; /**< GPIO pin number (logical) */
-    int port_idx;
-    ocre_gpio_direction_t direction; /**< Pin direction */
+	int pin; /**< GPIO pin number (logical) */
+	int port_idx;
+	ocre_gpio_direction_t direction; /**< Pin direction */
 } ocre_gpio_config_t;
 
 /**
@@ -128,7 +128,7 @@ void ocre_gpio_set_dispatcher(wasm_exec_env_t exec_env);
 
 /**
  * @brief Configure a GPIO pin by alias name
- * 
+ *
  * @param name GPIO alias name (e.g., "led0", "sw0")
  * @param direction GPIO direction (OCRE_GPIO_DIR_INPUT or OCRE_GPIO_DIR_OUTPUT)
  * @return int 0 on success, negative error code on failure
@@ -137,7 +137,7 @@ int ocre_gpio_configure_by_name(const char *name, ocre_gpio_direction_t directio
 
 /**
  * @brief Set a GPIO pin state by alias name
- * 
+ *
  * @param name GPIO alias name (e.g., "led0", "sw0")
  * @param state Pin state (OCRE_GPIO_PIN_SET or OCRE_GPIO_PIN_RESET)
  * @return int 0 on success, negative error code on failure
@@ -146,7 +146,7 @@ int ocre_gpio_set_by_name(const char *name, ocre_gpio_pin_state_t state);
 
 /**
  * @brief Toggle a GPIO pin by alias name
- * 
+ *
  * @param name GPIO alias name (e.g., "led0", "sw0")
  * @return int 0 on success, negative error code on failure
  */
@@ -154,7 +154,7 @@ int ocre_gpio_toggle_by_name(const char *name);
 
 /**
  * @brief Get a GPIO pin state by alias name
- * 
+ *
  * @param name GPIO alias name (e.g., "led0", "sw0")
  * @return ocre_gpio_pin_state_t Pin state or negative error code on failure
  */

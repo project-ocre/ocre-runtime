@@ -78,8 +78,7 @@ int main(int argc, char *argv[])
 			free(sample_path);
 			return 1;
 		}
-	}
-	else {
+	} else {
 		fprintf(stderr, "Sample file '%s' already exists\n", sample_path);
 	}
 
@@ -109,10 +108,10 @@ int main(int argc, char *argv[])
 
 	ocre_deinitialize();
 
-/* Exit simulator on zephyr */
+	/* Exit simulator on zephyr */
 
 #ifdef CONFIG_ARCH_POSIX
-    nsi_exit(0);
+	nsi_exit(0);
 #endif
 
 	return 0;

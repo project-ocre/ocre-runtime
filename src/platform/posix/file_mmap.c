@@ -78,9 +78,9 @@ error_errno:
 
 int ocre_unload_file(void *buffer, size_t size)
 {
-    if (!buffer) {
-        return 0;
-    }
+	if (!buffer) {
+		return 0;
+	}
 
 	if (munmap(buffer, size)) {
 		int save_errno = errno;

@@ -67,10 +67,10 @@ int ocre_download_file(const char *url, const char *filepath)
 	if (!strncmp("http", url + parsed_url.field_data[UF_SCHEMA].off, parsed_url.field_data[UF_SCHEMA].len)) {
 		port = 80;
 		strcpy(port_str, "80");
-	// } else if (!strncmp("https", url + parsed_url.field_data[UF_SCHEMA].off,
-	// 		    parsed_url.field_data[UF_SCHEMA].len)) {
-	// 	port = 443;
-	// 	strcpy(port_str, "443");
+		// } else if (!strncmp("https", url + parsed_url.field_data[UF_SCHEMA].off,
+		// 		    parsed_url.field_data[UF_SCHEMA].len)) {
+		// 	port = 443;
+		// 	strcpy(port_str, "443");
 	} else {
 		fprintf(stderr, "Unsupported URL schema: '%s'", url + parsed_url.field_data[UF_SCHEMA].off);
 		goto finish;

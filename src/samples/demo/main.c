@@ -101,7 +101,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-
 	rc = ocre_container_start(publisher);
 	if (rc) {
 		fprintf(stderr, "Failed to start container\n");

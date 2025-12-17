@@ -6,15 +6,7 @@
 
 #include "../command.h"
 
-static const char *container_statuses[] = {
-    "UNKNOWN",
-    "CREATED",
-    "RUNNING",
-    "PAUSED ",
-    "EXITED ",
-    "STOPPED",
-    "ERROR  "
-};
+static const char *container_statuses[] = {"UNKNOWN", "CREATED", "RUNNING", "PAUSED ", "EXITED ", "STOPPED", "ERROR  "};
 
 static int usage(const char *argv0)
 {
@@ -30,13 +22,13 @@ static void header(void)
 
 static int list_container(struct ocre_container *container)
 {
-    const char *id = ocre_container_get_id(container);
-    const char *image = ocre_container_get_image(container);
-    ocre_container_status_t status = ocre_container_get_status(container);
+	const char *id = ocre_container_get_id(container);
+	const char *image = ocre_container_get_image(container);
+	ocre_container_status_t status = ocre_container_get_status(container);
 
-    if (!id || !image || status == OCRE_CONTAINER_STATUS_UNKNOWN) {
-        return -1;
-    }
+	if (!id || !image || status == OCRE_CONTAINER_STATUS_UNKNOWN) {
+		return -1;
+	}
 
 	printf("%s\t%s\t%s\n", id, container_statuses[status], image);
 
@@ -45,7 +37,7 @@ static int list_container(struct ocre_container *container)
 
 static int list_containers(struct ocre_context *ctx)
 {
-    int ret = -1;
+	int ret = -1;
 	int num_containers = ocre_context_get_num_containers(ctx);
 	if (num_containers < 0) {
 		fprintf(stderr, "Failed to get number of containers\n");

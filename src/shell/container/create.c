@@ -116,7 +116,8 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 				dst++;
 
 				if (dst[0] != '/') {
-					fprintf(stderr, "Invalid mount format: '%s': destination must be absolute path\n",
+					fprintf(stderr,
+						"Invalid mount format: '%s': destination must be absolute path\n",
 						optarg);
 					goto cleanup;
 				}
