@@ -49,7 +49,7 @@ int cmd_image_pull(struct ocre_context *ctx, char *argv0, int argc, char **argv)
 		}
 	}
 
-	char *working_directory = ocre_context_get_working_directory(ctx);
+	const char *working_directory = ocre_context_get_working_directory(ctx);
 
 	char *image_path = malloc(strlen(working_directory) + strlen("/images/") + strlen(local_name) + 1);
 	if (!image_path) {

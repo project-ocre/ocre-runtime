@@ -224,7 +224,13 @@ struct ocre_container *ocre_context_get_container_by_id_locked(const struct ocre
 
 	LL_FOREACH(context->containers, node)
 	{
-		if (!ocre_container_id_compare(node->container, id)) {
+		const char *container_id = ocre_container_get_id(node->container);
+		if (!container_id) {
+			LOG_ERR("Failed to get container ID");
+			return NULL;
+		}
+
+		if (!strcmp(container_id, id)) {
 			return node->container;
 		}
 	}

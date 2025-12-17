@@ -658,13 +658,3 @@ const char *ocre_container_get_image(const struct ocre_container *container)
 
 	return container->image;
 }
-
-int ocre_container_id_compare(const struct ocre_container *container, const char *id)
-{
-	if (!container || !id) {
-		LOG_ERR("Invalid container or id");
-		return -1;
-	}
-
-	return strcmp(container->id, id);
-}
