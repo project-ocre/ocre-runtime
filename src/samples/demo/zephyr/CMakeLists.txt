@@ -6,6 +6,9 @@ cmake_minimum_required(VERSION 3.20.0)
 # comment out to use the ocre module provided by Zephyr
 list(APPEND ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_LIST_DIR}/../../../..)
 
+# append the fstab overlay file to the list of DTC overlay files
+list(APPEND EXTRA_DTC_OVERLAY_FILE fstab.overlay)
+
 include(../demo_containers.cmake)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})

@@ -1,0 +1,16 @@
+/ {
+	fstab {
+		compatible = "zephyr,fstab";
+		lfs1: lfs1 {
+			compatible = "zephyr,fstab,littlefs";
+			read-size = <256>;
+			prog-size = <256>;
+			cache-size = <256>;
+			lookahead-size = <256>;
+			block-cycles = <512>;
+			partition = <&storage_partition>;
+			mount-point = "/lfs";
+			automount;
+		};
+	};
+};
