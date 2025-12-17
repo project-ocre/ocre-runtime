@@ -86,10 +86,7 @@ void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst)
 int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic)
 {
 	if (!messaging_system_initialized) {
-		if (ocre_messaging_init() != 0) {
-			LOG_ERR("Failed to initialize messaging system");
-			return -EINVAL;
-		}
+		ocre_messaging_init();
 	}
 
 	if (!topic || ((char *)topic)[0] == '\0') {
@@ -147,10 +144,7 @@ int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic)
 int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_type, void *payload, int payload_len)
 {
 	if (!messaging_system_initialized) {
-		if (ocre_messaging_init() != 0) {
-			LOG_ERR("Failed to initialize messaging system");
-			return -EINVAL;
-		}
+		ocre_messaging_init();
 	}
 
 	if (!topic || ((char *)topic)[0] == '\0') {
