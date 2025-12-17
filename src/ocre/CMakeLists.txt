@@ -26,7 +26,8 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/ocre)
 # Generate build info header file in binary dir for every build
 add_custom_command(
     OUTPUT include/ocre/build_info.h
-    COMMAND sh -c "echo \"#define OCRE_BUILD_HOST_INFO \\\"$ENV{USER} @ $(uname -a) - $(date +'%Y-%m-%d %H:%M:%S %Z')\\\"\"" > include/ocre/build_info.h
+    COMMAND sh -c "echo \"#define OCRE_BUILD_HOST_INFO \\\"$ENV{USER} @ $(uname -a)\\\"\"" > include/ocre/build_info.h
+    COMMAND sh -c "echo \"#define OCRE_BUILD_DATE \\\"$(date +'%Y-%m-%d %H:%M:%S %Z')\\\"\"" >> include/ocre/build_info.h
     VERBATIM
     DEPENDS always_rebuild
 )

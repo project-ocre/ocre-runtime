@@ -80,6 +80,7 @@ struct ocre_config {
 	const char *version;	/**< Version of the Ocre Library */
 	const char *commit_id;	/**< Commit ID of the build tree */
 	const char *build_info; /**< Host build information */
+	const char *build_date; /**< Build date */
 };
 
 /**

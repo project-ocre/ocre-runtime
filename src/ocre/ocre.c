@@ -23,6 +23,7 @@ const struct ocre_config ocre_build_configuration = {
 	.build_info = OCRE_BUILD_HOST_INFO,
 	.version = OCRE_VERSION_STRING,
 	.commit_id = GIT_COMMIT_ID,
+	.build_date = OCRE_BUILD_DATE,
 };
 
 /* List of runtimes */
@@ -38,7 +39,8 @@ int ocre_initialize(const struct ocre_runtime_vtable *const vtable[])
 {
    	LOG_INF("Initializing Ocre %s", ocre_build_configuration.version);
 	LOG_INF("Build Commit ID: %s", ocre_build_configuration.commit_id);
-	LOG_INF("Build Host: %s", ocre_build_configuration.build_info);
+	LOG_INF("Build Info: %s", ocre_build_configuration.build_info);
+	LOG_INF("Build Date: %s", ocre_build_configuration.build_date);
 
 	/* Add WAMR runtime to the list */
 
