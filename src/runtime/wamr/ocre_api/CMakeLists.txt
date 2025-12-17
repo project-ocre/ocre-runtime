@@ -11,7 +11,6 @@ target_sources(OcreRuntimeAPI
     core/core_misc.c
     core/core_timer.c
     core/core_mutex.c
-    core/core_slist.c
     core/core_memory.c
 
 )

@@ -112,30 +112,6 @@ typedef struct {
 } core_slist_t;
 
 /**
- * @brief Initialize a singly-linked list.
- *
- * @param list Pointer to the list to initialize.
- */
-void core_slist_init(core_slist_t *list);
-
-/**
- * @brief Append a node to the end of a singly-linked list.
- *
- * @param list Pointer to the list to append to.
- * @param node Pointer to the node to append.
- */
-void core_slist_append(core_slist_t *list, core_snode_t *node);
-
-/**
- * @brief Remove a node from a singly-linked list.
- *
- * @param list Pointer to the list to remove from.
- * @param prev Pointer to the previous node (or NULL if removing head).
- * @param node Pointer to the node to remove.
- */
-void core_slist_remove(core_slist_t *list, core_snode_t *prev, core_snode_t *node);
-
-/**
  * @brief Spinlock type for POSIX platform (simulated using mutex).
  */
 typedef struct {

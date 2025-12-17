@@ -118,13 +118,6 @@ int core_mq_send(core_mq_t *mq, const void *data, size_t msg_len);
 int core_mq_recv(core_mq_t *mq, void *data);
 
 /**
- * @brief Sleep for a specified number of milliseconds.
- *
- * @param milliseconds Number of milliseconds to sleep.
- */
-void core_sleep_ms(int milliseconds);
-
-/**
  * @brief Allocate memory.
  *
  * @param size Number of bytes to allocate.
@@ -138,11 +131,6 @@ void *core_malloc(size_t size);
  * @param ptr Pointer to memory to free.
  */
 void core_free(void *ptr);
-
-/**
- * @brief Yield the current thread's execution.
- */
-void core_yield(void);
 
 typedef struct core_timer core_timer_t;
 
