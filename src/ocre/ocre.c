@@ -38,10 +38,10 @@ static struct runtime_node *runtimes = NULL;
 
 int ocre_initialize(const struct ocre_runtime_vtable *const vtable[])
 {
-	LOG_INF("Initializing Ocre %s", ocre_build_configuration.version);
-	LOG_INF("Build Commit ID: %s", ocre_build_configuration.commit_id);
-	LOG_INF("Build Info: %s", ocre_build_configuration.build_info);
-	LOG_INF("Build Date: %s", ocre_build_configuration.build_date);
+	LOG_INF("Ocre version %s", ocre_build_configuration.version);
+	LOG_INF("Commit ID: %s", ocre_build_configuration.commit_id);
+	LOG_INF("Build information: %s", ocre_build_configuration.build_info);
+	LOG_INF("Build date: %s", ocre_build_configuration.build_date);
 
 	/* Add WAMR runtime to the list */
 

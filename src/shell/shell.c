@@ -22,7 +22,11 @@
 
 static int print_version(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
-	fprintf(stdout, "Ocre version 1.0\n");
+	fprintf(stdout, "Ocre version: %s\n", ocre_build_configuration.version);
+	fprintf(stdout, "Commit ID: %s\n", ocre_build_configuration.commit_id);
+	fprintf(stdout, "Build information: %s\n", ocre_build_configuration.build_info);
+	fprintf(stdout, "Build date: %s\n", ocre_build_configuration.build_date);
+
 	return 0;
 }
 
