@@ -52,10 +52,4 @@ void sha256_read(const struct sha256_buff *buff, uint8_t *hash);
 /* Read digest into 64-char string as hex (without null-byte) */
 void sha256_read_hex(const struct sha256_buff *buff, char *hex);
 
-/* Hashes single contiguous block of data and reads digest into 32-byte binary array */
-void sha256_easy_hash(const void *data, size_t size, uint8_t *hash);
-
-/* Hashes single contiguous block of data and reads digest into 64-char string (without null-byte) */
-void sha256_easy_hash_hex(const void *data, size_t size, char *hex);
-
 #endif

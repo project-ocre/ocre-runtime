@@ -173,19 +173,3 @@ void sha256_read_hex(const struct sha256_buff *buff, char *hex)
 	sha256_read(buff, hash);
 	bin_to_hex(hash, 32, hex);
 }
-
-void sha256_easy_hash(const void *data, size_t size, uint8_t *hash)
-{
-	struct sha256_buff buff;
-	sha256_init(&buff);
-	sha256_update(&buff, data, size);
-	sha256_finalize(&buff);
-	sha256_read(&buff, hash);
-}
-
-void sha256_easy_hash_hex(const void *data, size_t size, char *hex)
-{
-	uint8_t hash[32];
-	sha256_easy_hash(data, size, hash);
-	bin_to_hex(hash, 32, hex);
-}
