@@ -67,3 +67,17 @@ jobs:
             build/zephyr/zephyr.bin
             build/zephyr/zephyr.dts
             build/zephyr/.config
+
+      - name: Test native_sim mini
+        if: startsWith(matrix.board, 'native_sim/') && matrix.app == 'mini'
+        run: |
+          EXPECTED_LOG="powered by Ocre"
+          echo "Running application..."
+          stdbuf -oL -eL timeout 20s ./build/zephyr/zephyr.exe | tee zephyr_run.log
+          echo "===== Checking for expected log ====="
+          if grep -q "$EXPECTED_LOG" zephyr_run.log; then
+            echo "[OK] Found expected log: $EXPECTED_LOG"
+          else
+            echo "[ERROR] Expected log not found: $EXPECTED_LOG"
+            exit 1
+          fi
