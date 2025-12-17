@@ -1,6 +1,6 @@
 {
-    "build": {
-        "dockerfile": "Dockerfile"
-    },
-    "remoteUser": "ocre-dev"
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "ocre-dev"
 }
