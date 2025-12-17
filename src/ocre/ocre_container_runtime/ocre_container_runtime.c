@@ -54,6 +54,7 @@ ocre_container_status_t ocre_container_runtime_create_container(ocre_cs_ctx *ctx
 		    (ctx->containers[i].container_runtime_status == CONTAINER_STATUS_DESTROYED)) {
 			*container_id = i;
 			ctx->containers[i].container_ID = i;
+			ctx->containers[i].container_runtime_status = CONTAINER_STATUS_RESERVED;
 			validity_flag = true;
 			break;
 		}
