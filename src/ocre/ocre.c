@@ -34,8 +34,12 @@ struct runtime_node {
 
 static struct runtime_node *runtimes = NULL;
 
-int ocre_initialize_with_runtimes(const struct ocre_runtime_vtable *const vtable[])
+int ocre_initialize(const struct ocre_runtime_vtable *const vtable[])
 {
+   	LOG_INF("Initializing Ocre %s", ocre_build_configuration.version);
+	LOG_INF("Build Commit ID: %s", ocre_build_configuration.commit_id);
+	LOG_INF("Build Host: %s", ocre_build_configuration.build_info);
+
 	/* Add WAMR runtime to the list */
 
 	struct runtime_node *wamr = malloc(sizeof(struct runtime_node));
@@ -83,15 +87,6 @@ int ocre_initialize_with_runtimes(const struct ocre_runtime_vtable *const vtable
 	}
 
 	return 0;
-}
-
-int ocre_initialize(void)
-{
-	LOG_INF("Initializing Ocre %s", ocre_build_configuration.version);
-	LOG_INF("Build Commit ID: %s", ocre_build_configuration.commit_id);
-	LOG_INF("Build Host: %s", ocre_build_configuration.build_info);
-
-	return ocre_initialize_with_runtimes((const struct ocre_runtime_vtable *const[]){NULL});
 }
 
 const struct ocre_runtime_vtable *ocre_get_runtime(const char *name)

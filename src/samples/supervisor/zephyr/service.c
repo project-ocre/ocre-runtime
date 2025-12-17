@@ -11,7 +11,7 @@ static int ocre_service_init()
 {
 	/* Initialize Ocre Library */
 
-	if (ocre_initialize() != 0) {
+	if (ocre_initialize(NULL)) {
 		return -1;
 	}
 

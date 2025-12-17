@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 	int rc;
 	int status;
 
-	rc = ocre_initialize();
+	rc = ocre_initialize(NULL);
 	if (rc) {
 		fprintf(stderr, "Failed to initialize runtimes\n");
 		return 1;

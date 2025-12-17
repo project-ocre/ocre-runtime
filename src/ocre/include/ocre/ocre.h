@@ -203,33 +203,16 @@ struct ocre_container_args {
 struct ocre_container;
 
 /**
- * @public
- * @brief Initialize the Ocre Library
- *
- * This function initializes the Ocre Library. It must be called exactly once before any other Ocre Library functions
- * are used. As an alternative, Ocre can be initialized with custom runtime engines using
- * ocre_initialize_with_runtimes() instead.
- *
- * Do not call this function if you have already called ocre_initialize_with_runtimes().
- *
- * @return 0 on success, non-zero on failure
- */
-int ocre_initialize(void);
-
-/**
  * @brief Initialize the Ocre Library and register runtime engines
  *
- * This function initializes the Ocre Library and register additional runtime engines. It must be called exactly once
- * before any other Ocre Library functions are used. As an alternative, Ocre can be initialized without custom runtime
- * engines using ocre_initialize() instead.
- *
- * Do not call this function if you have already called ocre_initialize().
+ * This function initializes the Ocre Library and register optional additional runtime engines. It must be called
+ * exactly once before any other Ocre Library functions are used.
  *
  * @param vtable A pointer to a NULL-terminated Array of runtime engine vtables to register. Can be NULL.
  *
  * @return 0 on success, non-zero on failure
  */
-int ocre_initialize_with_runtimes(const struct ocre_runtime_vtable *const vtable[]);
+int ocre_initialize(const struct ocre_runtime_vtable *const vtable[]);
 
 /**
  * @brief Creates a new Ocre Context
