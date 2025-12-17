@@ -329,7 +329,7 @@ int ocre_context_get_num_containers(struct ocre_context *context);
  * @param[out] containers A pointer to an array of pointers to containers
  * @param[in] max_size The maximum size of the array
  *
- * @return Zero on success, non-zero on failure
+ * @return The number of containers listed, negative on failure
  */
 int ocre_context_list_containers(struct ocre_context *context, struct ocre_container **containers, int max_size);
 
