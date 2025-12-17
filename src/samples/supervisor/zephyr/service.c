@@ -4,6 +4,7 @@
 #include <zephyr/init.h>
 
 /* Keep a reference to the single instance of the runtime */
+
 struct ocre_context *ocre_global_context = NULL;
 
 static int ocre_service_init()
@@ -17,6 +18,7 @@ static int ocre_service_init()
 	fprintf(stderr, "Initialized Ocre\n");
 
 	/* Create a context */
+
 	ocre_global_context = ocre_create_context("/lfs/ocre");
 	if (!ocre_global_context) {
 		fprintf(stderr, "Failed to create Ocre context\n");

@@ -16,14 +16,8 @@ target_sources(OcreRuntimeAPI
 
 )
 
-# target_include_directories(OcreRuntimeAPI
-#     PUBLIC
-#     include
-# )
-
 target_link_libraries(OcreRuntimeAPI
     PUBLIC
-    # OcreRuntime
     OcrePlatform
     vmlib
 )
