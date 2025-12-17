@@ -42,11 +42,6 @@ int cmd_image_pull(struct ocre_context *ctx, const char *argv0, int argc, char *
 
 	} else {
 		local_name = argv[2];
-
-		if (strchr(local_name, '/')) {
-			fprintf(stderr, "Local file '%s' cannot contain '/'\n", argv[2]);
-			return -1;
-		}
 	}
 
 	/* Check if the provided image ID is valid */
