@@ -115,7 +115,7 @@ static int runtime_init(void)
 		goto error_sh_heap_buf;
 	}
 
-	wasm_runtime_set_log_level(WASM_LOG_LEVEL_VERBOSE);
+	wasm_runtime_set_log_level(CONFIG_OCRE_WAMR_LOG_LEVEL);
 
 #ifdef CONFIG_OCRE_SHARED_HEAP
 	SharedHeapInitArgs heap_init_args;

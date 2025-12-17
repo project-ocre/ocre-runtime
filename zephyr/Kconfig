@@ -209,7 +209,7 @@ source "subsys/logging/Kconfig.template.log_config"
 
 config OCRE_WAMR_LOG_LEVEL
     int "Log level for WAMR"
-    default 0
+    default 2
     range 0 4
     help
         Set the log level for the WAMR runtime:
