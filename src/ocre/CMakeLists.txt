@@ -45,10 +45,10 @@ target_sources(OcreCore
     PRIVATE
     container.c
     context.c
-    unique_random_id.c
     ocre.c
-    util/string_array.c
     util/rm_rf.c
+    util/string_array.c
+    util/unique_random_id.c
     commit_id.h
     include/ocre/build_info.h
 )
