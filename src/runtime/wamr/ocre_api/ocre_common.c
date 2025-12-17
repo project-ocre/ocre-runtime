@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <ocre/platform/log.h>
 
@@ -149,9 +150,9 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
 			break;
 		}
 		case OCRE_RESOURCE_TYPE_MESSAGING: {
-			LOG_DBG("Retrieved Messaging event: message_id=%u, topic=%s, "
-				"topic_offset=%u, content_type=%s, "
-				"content_type_offset=%u, payload_len=%d, owner=%p",
+			LOG_DBG("Retrieved Messaging event: message_id=%" PRIu32 ", topic=%s, "
+				"topic_offset=%" PRIu32 ", content_type=%s, "
+				"content_type_offset=%" PRIu32 ", payload_len=%" PRIu32 ", owner=%p",
 				event.data.messaging_event.message_id, event.data.messaging_event.topic,
 				event.data.messaging_event.topic_offset, event.data.messaging_event.content_type,
 				event.data.messaging_event.content_type_offset, event.data.messaging_event.payload_len,
@@ -171,7 +172,7 @@ int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_o
 		*/
 		default: {
 			core_spinlock_unlock(&ocre_event_queue_lock, key);
-			LOG_ERR("Invalid event type: %u", event.type);
+			LOG_ERR("Invalid event type: %" PRIu32, event.type);
 			return -EINVAL;
 		}
 	}
@@ -354,7 +355,7 @@ void ocre_increment_resource_count(wasm_module_inst_t module_inst, ocre_resource
 		core_mutex_lock(&registry_mutex);
 		ctx->resource_count[type]++;
 		core_mutex_unlock(&registry_mutex);
-		LOG_INF("Incremented resource count: type=%d, count=%d", type, ctx->resource_count[type]);
+		LOG_INF("Incremented resource count: type=%d, count=%" PRIu32, type, ctx->resource_count[type]);
 	}
 }
 
@@ -365,7 +366,7 @@ void ocre_decrement_resource_count(wasm_module_inst_t module_inst, ocre_resource
 		core_mutex_lock(&registry_mutex);
 		ctx->resource_count[type]--;
 		core_mutex_unlock(&registry_mutex);
-		LOG_INF("Decremented resource count: type=%d, count=%d", type, ctx->resource_count[type]);
+		LOG_INF("Decremented resource count: type=%d, count=%" PRIu32, type, ctx->resource_count[type]);
 	}
 }
 

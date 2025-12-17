@@ -6,6 +6,7 @@
  */
 
 #include <string.h>
+#include <inttypes.h>
 
 #include <ocre/platform/log.h>
 
@@ -102,7 +103,7 @@ int ocre_messaging_subscribe(wasm_exec_env_t exec_env, void *topic)
 		return -EINVAL;
 	}
 
-	ocre_module_context_t *ctx = ocre_get_module_context(module_inst);
+	const ocre_module_context_t *ctx = ocre_get_module_context(module_inst);
 	if (!ctx) {
 		LOG_ERR("Module context not found for module instance %p", (void *)module_inst);
 		return -EINVAL;
@@ -233,18 +234,19 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
 		event.data.messaging_event.payload_len = (uint32_t)payload_len;
 		event.owner = target_module;
 
-		LOG_DBG("Creating messaging event: ID=%d, topic=%s, content_type=%s, payload_len=%d for module %p",
+		LOG_DBG("Creating messaging event: ID=%" PRIu32
+			", topic=%s, content_type=%s, payload_len=%d for module %p",
 			message_id, (char *)topic, (char *)content_type, payload_len, (void *)target_module);
 
 		core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
 		if (core_eventq_put(&ocre_event_queue, &event) != 0) {
-			LOG_ERR("Failed to queue messaging event for message ID %d", message_id);
+			LOG_ERR("Failed to queue messaging event for message ID %" PRIu32, message_id);
 			wasm_runtime_module_free(target_module, topic_offset);
 			wasm_runtime_module_free(target_module, content_offset);
 			wasm_runtime_module_free(target_module, payload_offset);
 		} else {
 			message_sent = true;
-			LOG_DBG("Queued messaging event for message ID %d", message_id);
+			LOG_DBG("Queued messaging event for message ID %" PRIu32, message_id);
 		}
 		core_spinlock_unlock(&ocre_event_queue_lock, key);
 	}
@@ -252,8 +254,8 @@ int ocre_messaging_publish(wasm_exec_env_t exec_env, void *topic, void *content_
 	core_mutex_unlock(&messaging_system.mutex);
 
 	if (message_sent) {
-		LOG_DBG("Published message: ID=%d, topic=%s, content_type=%s, payload_len=%d", message_id,
-			(char *)topic, (char *)content_type, payload_len);
+		LOG_DBG("Published message: ID=%" PRIu32 ", topic=%s, content_type=%s, payload_len=%" PRIu32 "",
+			message_id, (char *)topic, (char *)content_type, payload_len);
 		message_id++;
 		return 0;
 	} else {

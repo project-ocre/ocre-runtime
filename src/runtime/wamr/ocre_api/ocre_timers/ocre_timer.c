@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <ocre/platform/log.h>
 
@@ -180,7 +181,7 @@ int ocre_timer_get_remaining(wasm_exec_env_t exec_env, ocre_timer_t id)
 		return -EINVAL;
 	}
 
-	ocre_timer_internal *timer = &timers[id - 1];
+	const ocre_timer_internal *timer = &timers[id - 1];
 	if (!timer->in_use || timer->owner != module) {
 		LOG_ERR("Timer ID %d not in use or not owned by module %p", id, (void *)module);
 		return -EINVAL;
@@ -242,7 +243,7 @@ static void unified_timer_callback(void *user_data)
 		return;
 	}
 
-	LOG_DBG("Timer callback for timer %d", timer->id);
+	LOG_DBG("Timer callback for timer %" PRIu32, timer->id);
 
 	// For non-periodic timers, mark as not running
 	if (!timer->periodic) {
@@ -258,13 +259,14 @@ static void unified_timer_callback(void *user_data)
 	event.data.timer_event.timer_id = timer->id;
 	event.owner = timer->owner;
 
-	LOG_DBG("Creating timer event: type=%d, id=%d, for owner %p", event.type, timer->id, (void *)timer->owner);
+	LOG_DBG("Creating timer event: type=%d, id=%" PRIu32 ", for owner %p", event.type, timer->id,
+		(void *)timer->owner);
 
 	core_spinlock_key_t key = core_spinlock_lock(&ocre_event_queue_lock);
 	if (core_eventq_put(&ocre_event_queue, &event) != 0) {
-		LOG_ERR("Failed to queue timer event for timer %d", timer->id);
+		LOG_ERR("Failed to queue timer event for timer %" PRIu32, timer->id);
 	} else {
-		LOG_DBG("Queued timer event for timer %d", timer->id);
+		LOG_DBG("Queued timer event for timer %" PRIu32, timer->id);
 	}
 	core_spinlock_unlock(&ocre_event_queue_lock, key);
 }
