@@ -7,7 +7,7 @@
 #include "image/rm.h"
 #include "image/pull.h"
 
-static int print_usage(struct ocre_context *ctx, char *argv0, int argc, char **argv)
+static int print_usage(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	fprintf(stderr, "Usage: %s image <COMMAND>\n", argv0);
 
@@ -25,7 +25,7 @@ static const struct ocre_command commands[] = {
 	{"rm", cmd_image_rm},
 };
 
-int cmd_image(struct ocre_context *ctx, char *argv0, int argc, char **argv)
+int cmd_image(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	if (argc < 2) {
 		return print_usage(ctx, argv0, argc, argv);

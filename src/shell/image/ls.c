@@ -53,7 +53,7 @@ static int list_images(const char *path)
 {
 	int ret = 0;
 	DIR *d;
-	struct dirent *dir;
+	const struct dirent *dir;
 
 	d = opendir(path);
 	if (!d) {
@@ -86,7 +86,7 @@ static int list_images(const char *path)
 	return ret;
 }
 
-int cmd_image_ls(struct ocre_context *ctx, char *argv0, int argc, char **argv)
+int cmd_image_ls(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	switch (argc) {
 		case 1: {

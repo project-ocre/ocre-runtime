@@ -328,7 +328,7 @@ int ocre_context_list_containers(struct ocre_context *context, struct ocre_conta
  *
  * @return A pointer to the working directory string, or NULL on failure
  */
-const char *ocre_context_get_working_directory(struct ocre_context *context);
+const char *ocre_context_get_working_directory(const struct ocre_context *context);
 
 /**
  * @brief Check if a container or image ID is valid

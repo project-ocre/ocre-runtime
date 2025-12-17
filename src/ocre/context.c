@@ -38,7 +38,7 @@ static int delete_container_workdirs(const char *working_directory)
 {
 	int ret = -1;
 	DIR *d = NULL;
-	struct dirent *dir = NULL;
+	const struct dirent *dir = NULL;
 
 	char *containers_path = malloc(strlen(working_directory) + strlen("/containers") + 1);
 	if (!containers_path) {
@@ -510,7 +510,7 @@ int ocre_context_get_num_containers(struct ocre_context *context)
 	return count;
 }
 
-const char *ocre_context_get_working_directory(struct ocre_context *context)
+const char *ocre_context_get_working_directory(const struct ocre_context *context)
 {
 	/* We never change this, no need to lock */
 

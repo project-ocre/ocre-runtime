@@ -20,13 +20,13 @@
 #include "container/wait.h"
 #include "container/create.h"
 
-static int print_version(struct ocre_context *ctx, char *argv0, int argc, char **argv)
+static int print_version(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	fprintf(stdout, "Ocre version 1.0\n");
 	return 0;
 }
 
-static int print_usage(struct ocre_context *ctx, char *argv0, int argc, char **argv)
+static int print_usage(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	fprintf(stderr, "Usage: %s [-v] <COMMAND>\n", argv0);
 
@@ -65,10 +65,10 @@ static const struct ocre_command commands[] = {
 	{"create", cmd_container_create_run},
 	{"run", cmd_container_create_run},
 	{"start", cmd_container_start},
-	// {"stop", cmd_container_stop},
+	{"stop", cmd_container_stop},
 	{"kill", cmd_container_kill},
-	// {"pause", cmd_container_pause},
-	// {"unpause", cmd_container_unpause},
+	{"pause", cmd_container_pause},
+	{"unpause", cmd_container_unpause},
 	{"rm", cmd_container_rm},
 	/* image shortcuts */
 	{"images", cmd_image_ls},

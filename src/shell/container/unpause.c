@@ -12,7 +12,7 @@ static int usage(const char *argv0)
 	return -1;
 }
 
-int cmd_container_unpause(struct ocre_context *ctx, char *argv0, int argc, char **argv)
+int cmd_container_unpause(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	if (argc == 2) {
 		struct ocre_container *container = ocre_context_get_container_by_id(ctx, argv[1]);

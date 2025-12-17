@@ -8,7 +8,7 @@
 
 #include "../command.h"
 
-static int usage(const char *argv0, char *cmd)
+static int usage(const char *argv0, const char *cmd)
 {
 	fprintf(stderr, "Usage: %s container %s [options] IMAGE [ARG...]\n", argv0, cmd);
 	if (!strcmp(cmd, "create")) {
@@ -29,7 +29,7 @@ static int usage(const char *argv0, char *cmd)
 	return -1;
 }
 
-int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, char **argv)
+int cmd_container_create_run(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	int ret = -1;
 
@@ -39,8 +39,8 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 	}
 
 	bool detached = false;
-	char *runtime = NULL;
-	char *container_id = NULL;
+	const char *runtime = NULL;
+	const char *container_id = NULL;
 	const char **capabilities = NULL;
 	const char **environment = NULL;
 	const char **mounts = NULL;
@@ -128,17 +128,36 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 					goto cleanup;
 				}
 
-				mounts = realloc(mounts, sizeof(char *) * (mounts_count + 1));
+				const char **new_mounts = realloc(mounts, sizeof(char *) * (mounts_count + 1));
+				if (!new_mounts) {
+					goto cleanup;
+				}
+
+				mounts = new_mounts;
+
 				mounts[mounts_count++] = optarg;
 				continue;
 			}
 			case 'k': {
-				capabilities = realloc(capabilities, sizeof(char *) * (capabilities_count + 1));
+				const char **new_capabilities =
+					realloc(capabilities, sizeof(char *) * (capabilities_count + 1));
+				if (!new_capabilities) {
+					goto cleanup;
+				}
+
+				capabilities = new_capabilities;
+
 				capabilities[capabilities_count++] = optarg;
 				continue;
 			}
 			case 'e': {
-				environment = realloc(environment, sizeof(char *) * (environment_count + 1));
+				const char **new_environment = realloc(environment, sizeof(char *) * (environment_count + 1));
+				if (!new_environment) {
+					goto cleanup;
+				}
+
+				environment = new_environment;
+
 				environment[environment_count++] = optarg;
 				continue;
 			}
@@ -164,7 +183,7 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 
 	if (optind >= argc) {
 		fprintf(stderr, "'%s container %s' requires at least one non option argument\n\n", argv0, argv[0]);
-		return usage(argv0, argv[0]);
+		usage(argv0, argv[0]);
 		goto cleanup;
 	}
 

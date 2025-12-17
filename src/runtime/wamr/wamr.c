@@ -313,7 +313,7 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 			goto error;
 		}
 
-		char *src_colon = strchr(*mount, ':');
+		const char *src_colon = strchr(*mount, ':');
 		if (!src_colon) {
 			LOG_ERR("Invalid mount format: %s", *mount);
 			goto error;
@@ -380,14 +380,6 @@ error_instance:
 error_module:
 	wasm_runtime_unload(context->module);
 
-error_buffer:
-	ocre_unload_file(context->buffer, context->size);
-	context->buffer = NULL;
-
-error_argv:
-	free(context->argv[0]);
-	free(context->argv);
-
 error:
 	for (char **dir_map = dir_map_list; dir_map && *dir_map; dir_map++) {
 		free(*dir_map);
@@ -419,19 +411,6 @@ error:
 	return NULL;
 }
 
-static int instance_stop(void *runtime_context)
-{
-	struct wamr_context *context = runtime_context;
-
-	if (!context) {
-		return -1;
-	}
-
-	// TODO
-
-	return -1;
-}
-
 static int instance_kill(void *runtime_context)
 {
 	struct wamr_context *context = runtime_context;
@@ -443,32 +422,6 @@ static int instance_kill(void *runtime_context)
 	wasm_runtime_terminate(context->module_inst);
 
 	return 0;
-}
-
-static int instance_pause(void *runtime_context)
-{
-	struct wamr_context *context = runtime_context;
-
-	if (!context) {
-		return -1;
-	}
-
-	// TODO
-
-	return -1;
-}
-
-static int instance_unpause(void *runtime_context)
-{
-	struct wamr_context *context = runtime_context;
-
-	if (!context) {
-		return -1;
-	}
-
-	// TODO
-
-	return -1;
 }
 
 static int instance_destroy(void *runtime_context)
@@ -510,7 +463,4 @@ const struct ocre_runtime_vtable wamr_vtable = {
 	.destroy = instance_destroy,
 	.thread_execute = instance_thread_execute,
 	.kill = instance_kill,
-	// .stop = instance_stop,
-	// .pause = instance_pause,
-	// .unpause = instance_unpause,
 };

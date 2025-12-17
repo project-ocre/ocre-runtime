@@ -136,7 +136,7 @@ int rm_rf(const char *path)
 
 		/* Read next directory entry */
 
-		struct dirent *entry = readdir(current->dir);
+		const struct dirent *entry = readdir(current->dir);
 		if (!entry) {
 			/* No more entries, mark for removal and continue */
 			current->is_removal_phase = 1;

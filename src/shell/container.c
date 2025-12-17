@@ -15,7 +15,7 @@
 #include "container/unpause.h"
 #include "container/wait.h"
 
-static int print_usage(struct ocre_context *ctx, char *argv0, int argc, char **argv)
+static int print_usage(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	fprintf(stderr, "Usage: %s container <COMMAND>\n", argv0);
 
@@ -38,16 +38,16 @@ static const struct ocre_command commands[] = {
 	{"run", cmd_container_create_run},
 	{"create", cmd_container_create_run},
 	{"start", cmd_container_start},
-	// {"stop", cmd_container_stop},
+	{"stop", cmd_container_stop},
 	{"kill", cmd_container_kill},
-	// {"pause", cmd_container_pause},
-	// {"unpause", cmd_container_unpause},
+	{"pause", cmd_container_pause},
+	{"unpause", cmd_container_unpause},
 	{"wait", cmd_container_wait},
 	{"ps", cmd_container_ps},
 	{"rm", cmd_container_rm},
 };
 
-int cmd_container(struct ocre_context *ctx, char *argv0, int argc, char **argv)
+int cmd_container(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	if (argc < 2) {
 		return print_usage(ctx, argv0, argc, argv);

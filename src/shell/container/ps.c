@@ -74,7 +74,7 @@ finish:
 	return ret;
 }
 
-int cmd_container_ps(struct ocre_context *ctx, char *argv0, int argc, char **argv)
+int cmd_container_ps(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	switch (argc) {
 		case 1: {

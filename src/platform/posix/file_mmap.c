@@ -14,7 +14,7 @@ LOG_MODULE_REGISTER(file_mmap, CONFIG_OCRE_LOG_LEVEL);
 
 void *ocre_load_file(const char *path, size_t *size)
 {
-	int save_errno = 0;
+	int save_errno;
 	void *buffer = NULL;
 
 	if (!path) {
