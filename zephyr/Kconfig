@@ -75,18 +75,6 @@ config OCRE_WAMR_AOT
     help
         Enable execution of ahead of time compiled code.
 
-config OCRE_CONTAINER_DEFAULT_HEAP_SIZE
-  int "Default value for the container heap size"
-  default 4096
-  help
-    The default value used for a container's heap size.
-
-config OCRE_CONTAINER_DEFAULT_STACK_SIZE
-  int "Default value for the container stack size"
-  default 2048
-  help
-    The default value used for a container's stack size.
-
 comment "Container features"
 
 config OCRE_NETWORKING
