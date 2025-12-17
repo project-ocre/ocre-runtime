@@ -6,8 +6,6 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-/* AI generated code: please don't joke */
-
 /* Stack node for directory traversal */
 
 struct dir_stack_node {
