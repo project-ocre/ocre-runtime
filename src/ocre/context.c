@@ -182,7 +182,6 @@ struct ocre_context *ocre_create_context(const char *workdir)
 	context->working_directory = strdup(workdir);
 	if (!context->working_directory) {
 		LOG_ERR("Failed to allocate memory for working directory: errno=%d", errno);
-		free(context);
 		goto error;
 	}
 
@@ -302,7 +301,7 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 
 	/* Check if the provided image ID is valid */
 
-	if (image && !ocre_is_valid_id(image)) {
+	if (!image || !ocre_is_valid_id(image)) {
 		LOG_ERR("Invalid characters in image ID '%s'. Valid are [a-z0-9_-.] (lowercase alphanumeric) and "
 			"cannot start with '.'",
 			image);
@@ -472,13 +471,13 @@ int ocre_context_remove_container(struct ocre_context *context, struct ocre_cont
 		}
 	}
 
-finish:
-	rc = pthread_mutex_unlock(&context->mutex);
-	if (rc) {
+finish: {
+	int ret = pthread_mutex_unlock(&context->mutex);
+	if (ret) {
 		LOG_ERR("Failed to unlock context mutex: rc=%d", rc);
 		return -1;
 	}
-
+}
 	return rc;
 }
 
