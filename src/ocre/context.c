@@ -291,6 +291,24 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 	char random_id[RANDOM_ID_LEN];
 	int rc;
 
+	/* Check if the provided container ID is valid */
+
+	if (container_id && !ocre_is_valid_id(container_id)) {
+		LOG_ERR("Invalid characters in container ID '%s'. Valid are [a-z0-9_-.] (lowercase alphanumeric) and "
+			"cannot start with '.'",
+			container_id);
+		goto error;
+	}
+
+	/* Check if the provided image ID is valid */
+
+	if (image && !ocre_is_valid_id(image)) {
+		LOG_ERR("Invalid characters in image ID '%s'. Valid are [a-z0-9_-.] (lowercase alphanumeric) and "
+			"cannot start with '.'",
+			image);
+		goto error;
+	}
+
 	rc = pthread_mutex_lock(&context->mutex);
 	if (rc) {
 		LOG_ERR("Failed to lock context mutex: rc=%d", rc);
@@ -409,7 +427,7 @@ success:
 
 int ocre_context_remove_container(struct ocre_context *context, struct ocre_container *container)
 {
-    int rc = -1;
+	int rc = -1;
 	struct container_node *node = NULL;
 
 	if (!context || !container) {

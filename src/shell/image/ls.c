@@ -114,6 +114,16 @@ int cmd_image_ls(struct ocre_context *ctx, char *argv0, int argc, char **argv)
 		case 2: {
 			const char *working_directory = ocre_context_get_working_directory(ctx);
 
+			/* Check if the provided image ID is valid */
+
+			if (argv[1] && !ocre_is_valid_id(argv[1])) {
+				fprintf(stderr,
+					"Invalid characters in image ID '%s'. Valid are [a-z0-9_-.] (lowercase "
+					"alphanumeric) and cannot start with '.'\n",
+					argv[1]);
+				return -1;
+			}
+
 			char *image_path = malloc(strlen(working_directory) + strlen("/images") + strlen(argv[1]) + 2);
 			if (!image_path) {
 				fprintf(stderr, "Failed to allocate memory for image path\n");

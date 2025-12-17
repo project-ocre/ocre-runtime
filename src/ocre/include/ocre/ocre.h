@@ -331,6 +331,19 @@ int ocre_context_list_containers(struct ocre_context *context, struct ocre_conta
 const char *ocre_context_get_working_directory(struct ocre_context *context);
 
 /**
+ * @brief Check if a container or image ID is valid
+ * @memberof ocre_context
+ *
+ * Checks if a container or image ID is valid. A valid container or image ID must not be NULL, empty, or start with a
+ * dot '.'. It can only contain alphanumeric characters, dots, underscores, and hyphens.
+ *
+ * @param id A pointer to the container or image ID to check
+ *
+ * @return Zero if invalid, 1 if valid
+ */
+int ocre_is_valid_id(const char *id);
+
+/**
  * @brief Start a container
  * @memberof ocre_container
  *

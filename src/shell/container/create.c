@@ -69,6 +69,16 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 					goto cleanup;
 				}
 
+				/* Check if the provided container ID is valid */
+
+				if (optarg && !ocre_is_valid_id(optarg)) {
+					fprintf(stderr,
+						"Invalid characters in container ID '%s'. Valid are [a-z0-9_-.] "
+						"(lowercase alphanumeric) and cannot start with '.'\n",
+						optarg);
+					goto cleanup;
+				}
+
 				container_id = optarg;
 				continue;
 			}
@@ -151,6 +161,16 @@ int cmd_container_create_run(struct ocre_context *ctx, char *argv0, int argc, ch
 	if (optind >= argc) {
 		fprintf(stderr, "'%s container %s' requires at least one non option argument\n\n", argv0, argv[0]);
 		return usage(argv0, argv[0]);
+		goto cleanup;
+	}
+
+	/* Check if the provided image ID is valid */
+
+	if (argv[optind] && !ocre_is_valid_id(argv[optind])) {
+		fprintf(stderr,
+			"Invalid characters in image ID '%s'. Valid are [a-z0-9_-.] (lowercase alphanumeric) and "
+			"cannot start with '.'",
+			argv[optind]);
 		goto cleanup;
 	}
 

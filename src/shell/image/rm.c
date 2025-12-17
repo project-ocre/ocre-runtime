@@ -16,6 +16,16 @@ static int usage(const char *argv0)
 int cmd_image_rm(struct ocre_context *ctx, char *argv0, int argc, char **argv)
 {
 	if (argc == 2) {
+		/* Check if the provided image ID is valid */
+
+		if (argv[1] && !ocre_is_valid_id(argv[1])) {
+			fprintf(stderr,
+				"Invalid characters in image ID '%s'. Valid are [a-z0-9_-.] (lowercase "
+				"alphanumeric) and cannot start with '.'\n",
+				argv[1]);
+			return -1;
+		}
+
 		const char *working_directory = ocre_context_get_working_directory(ctx);
 
 		char *image_path = malloc(strlen(working_directory) + strlen("/images") + strlen(argv[1]) + 2);
