@@ -22,6 +22,7 @@ jobs:
       matrix:
         board:
           - pico_plus2/rp2350b/m33
+          - native_sim/native/64
         app:
           - mini
           - demo
@@ -59,6 +60,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ocre-zephyr-${{ env.BOARD_NAME }}-${{ matrix.app }}
+          include-hidden-files: true
           path: |
             build/zephyr/zephyr.elf
             build/zephyr/zephyr.exe
