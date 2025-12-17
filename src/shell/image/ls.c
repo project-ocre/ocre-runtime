@@ -86,6 +86,7 @@ static int list_images(const char *path)
 	return ret;
 }
 
+/* cppcheck-suppress constParameterPointer */
 int cmd_image_ls(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	switch (argc) {

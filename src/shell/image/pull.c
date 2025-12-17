@@ -17,6 +17,7 @@ static int usage(const char *argv0)
 	return -1;
 }
 
+/* cppcheck-suppress constParameterPointer */
 int cmd_image_pull(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	char *local_name = NULL;

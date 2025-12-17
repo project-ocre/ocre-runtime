@@ -13,6 +13,7 @@ static int usage(const char *argv0)
 	return -1;
 }
 
+/* cppcheck-suppress constParameterPointer */
 int cmd_image_rm(struct ocre_context *ctx, const char *argv0, int argc, char **argv)
 {
 	if (argc == 2) {
