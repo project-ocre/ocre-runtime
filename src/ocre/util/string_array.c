@@ -19,29 +19,6 @@ size_t string_array_size(const char **array)
 	return size;
 }
 
-char **string_array_dup(char **src)
-{
-	size_t size = string_array_size((const char **)src);
-
-	if (!size) {
-		return NULL;
-	}
-
-	char **dst = malloc(size * sizeof(char *));
-	if (!dst) {
-		return NULL;
-	}
-
-	memset(dst, 0, size * sizeof(char *));
-
-	size_t i;
-	for (i = 0; i < size; i++) {
-		dst[i] = src[i];
-	}
-
-	return dst;
-}
-
 void string_array_free(char **array)
 {
 	if (!array) {
@@ -86,20 +63,6 @@ error:
 	string_array_free(dst);
 
 	return NULL;
-}
-
-size_t string_array_copy(char **dest, char **src)
-{
-	if (!dest || !src) {
-		return 0;
-	}
-
-	size_t count = 0;
-	do {
-		dest[count] = src[count];
-	} while (src[count]);
-
-	return count;
 }
 
 const char *string_array_lookup(const char **array, const char *key)
