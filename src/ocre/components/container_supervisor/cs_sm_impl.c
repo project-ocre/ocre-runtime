@@ -354,7 +354,8 @@ ocre_container_status_t CS_create_container(ocre_container_t *container)
 	}
 
 	if (container->container_runtime_status != CONTAINER_STATUS_UNKNOWN &&
-	    container->container_runtime_status != CONTAINER_STATUS_DESTROYED) {
+	    container->container_runtime_status != CONTAINER_STATUS_DESTROYED &&
+	    container->container_runtime_status != CONTAINER_STATUS_RESERVED) {
 		LOG_ERR("Cannot create container again container with ID: %d, already exists", curr_container_ID);
 		return CONTAINER_STATUS_ERROR;
 	}
