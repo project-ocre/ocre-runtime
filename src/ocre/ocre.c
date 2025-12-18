@@ -203,59 +203,86 @@ static int ocre_destroy_context_locked(struct ocre_context *context)
 struct ocre_context *ocre_create_context(const char *workdir)
 {
 	int rc;
+	struct context_node *add = NULL;
+	struct context_node *elt;
+	struct ocre_context *context = NULL;
 
 	if (!workdir) {
 		workdir = CONFIG_OCRE_DEFAULT_WORKING_DIRECTORY;
 		LOG_INF("Using default working directory: %s", workdir);
 	}
 
-	// TODO check if working directory is already taken
-
-	struct context_node *node = malloc(sizeof(struct context_node));
-	if (!node) {
-		LOG_ERR("Failed to allocate memory for context node: errno=%d", errno);
+	rc = pthread_mutex_lock(&contexts_mutex);
+	if (rc) {
+		LOG_ERR("Failed to lock mutex: rc=%d", rc);
 		return NULL;
 	}
 
-	memset(node, 0, sizeof(struct context_node));
+	LL_FOREACH(contexts, elt)
+	{
+		if (!strcmp(elt->working_directory, workdir)) {
+			LOG_INF("Context already exists for working directory: %s", workdir);
+			goto error;
+		}
+	}
 
-	node->working_directory = strdup(workdir);
-	if (!node->working_directory) {
+	add = malloc(sizeof(struct context_node));
+	if (!add) {
+		LOG_ERR("Failed to allocate memory for context node: errno=%d", errno);
+		goto error;
+	}
+
+	memset(add, 0, sizeof(struct context_node));
+
+	add->working_directory = strdup(workdir);
+	if (!add->working_directory) {
 		LOG_ERR("Failed to allocate memory for working directory: errno=%d", errno);
 		goto error;
 	}
 
 	/* Initialize working directory */
 
-	rc = populate_context_workdir(node->working_directory);
+	rc = populate_context_workdir(add->working_directory);
 	if (rc) {
 		LOG_ERR("Failed to populate Ocre working directory: rc=%d", rc);
 		goto error;
 	}
 
 #if CONFIG_OCRE_FILESYSTEM
-	delete_container_workdirs(node->working_directory);
+	delete_container_workdirs(add->working_directory);
 #endif
 
-    node->context = ocre_context_create(node->working_directory);
-    if (!node->context) {
-        LOG_ERR("Failed to create Ocre context");
-        goto error;
-    }
+	context = ocre_context_create(add->working_directory);
+	if (!context) {
+		LOG_ERR("Failed to create Ocre context");
+		goto error;
+	}
 
-	return node->context;
+	add->context = context;
+
+	LL_APPEND(contexts, add);
+
+	goto finish;
 
 error:
-	free(node->working_directory);
+	if (add) {
+		free(add->working_directory);
+	}
 
-	free(node);
+	free(add);
 
-	return NULL;
+finish:
+	rc = pthread_mutex_unlock(&contexts_mutex);
+	if (rc) {
+		LOG_ERR("Failed to unlock mutex: rc=%d", rc);
+	}
+
+	return context;
 };
 
 int ocre_destroy_context(struct ocre_context *context)
 {
-    int rc = -1;
+	int rc = -1;
 
 	if (!context) {
 		LOG_ERR("Invalid context");
@@ -366,10 +393,10 @@ const struct ocre_runtime_vtable *ocre_get_runtime(const char *name)
 
 void ocre_deinitialize(void)
 {
-    struct context_node *c_node;
-    struct runtime_node *r_elt, *r_tmp;
+	struct context_node *c_node;
+	struct runtime_node *r_elt, *r_tmp;
 
-   	LL_FOREACH(contexts, c_node)
+	LL_FOREACH(contexts, c_node)
 	{
 		if (ocre_destroy_context_locked(c_node->context)) {
 			LOG_ERR("Failed to destroy context %p", c_node->context);

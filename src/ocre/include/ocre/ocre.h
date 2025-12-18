@@ -221,7 +221,7 @@ int ocre_initialize(const struct ocre_runtime_vtable *const vtable[]);
  * Creates a new Ocre Context with the specified working directory.
  *
  * Creating multiple Ocre Contexts is allowed, but each context must have its own working directory. Using the same
- * working directory for multiple contexts is considered an error and results in undefined behavior.
+ * working directory for multiple contexts will result in an error.
  *
  * @param workdir The working directory for the new context. Absolute path, NULL for default.
  *
