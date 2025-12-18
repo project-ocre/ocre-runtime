@@ -68,7 +68,7 @@ int ocre_gpio_init(void);
  * @param config GPIO pin configuration
  * @return 0 on success, negative error code on failure
  */
-int ocre_gpio_configure(const ocre_gpio_config_t *config);
+int ocre_gpio_configure(wasm_exec_env_t exec_env, const ocre_gpio_config_t *config);
 
 /**
  * Set GPIO pin state.
@@ -133,7 +133,7 @@ void ocre_gpio_set_dispatcher(wasm_exec_env_t exec_env);
  * @param direction GPIO direction (OCRE_GPIO_DIR_INPUT or OCRE_GPIO_DIR_OUTPUT)
  * @return int 0 on success, negative error code on failure
  */
-int ocre_gpio_configure_by_name(const char *name, ocre_gpio_direction_t direction);
+int ocre_gpio_configure_by_name(wasm_exec_env_t exec_env, const char *name, ocre_gpio_direction_t direction);
 
 /**
  * @brief Set a GPIO pin state by alias name

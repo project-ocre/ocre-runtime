@@ -14,6 +14,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/spinlock.h>
 
+#include <wasm_export.h>
+
+#include "../ocre_common.h"
+#include "ocre_gpio.h"
+
 LOG_MODULE_REGISTER(ocre_gpio, CONFIG_OCRE_LOG_LEVEL);
 
 typedef struct {
@@ -135,7 +140,7 @@ int ocre_gpio_init(void)
 	return 0;
 }
 
-int ocre_gpio_configure(const ocre_gpio_config_t *config)
+int ocre_gpio_configure(wasm_exec_env_t exec_env, const ocre_gpio_config_t *config)
 {
 	if (!gpio_system_initialized || !config || config->pin >= CONFIG_OCRE_GPIO_PINS_PER_PORT ||
 	    config->port_idx >= CONFIG_OCRE_GPIO_MAX_PORTS || !port_ready[config->port_idx]) {
@@ -154,11 +159,13 @@ int ocre_gpio_configure(const ocre_gpio_config_t *config)
 		LOG_ERR("Failed to configure GPIO pin %d on port %d: %d", pin, port_idx, ret);
 		return ret;
 	}
-	wasm_module_inst_t module_inst = ocre_get_current_module();
+
+	wasm_module_inst_t module_inst = wasm_runtime_get_module_inst(exec_env);
 	if (!module_inst) {
 		LOG_ERR("No current module instance for GPIO configuration");
 		return -EINVAL;
 	}
+
 	int global_pin = port_idx * CONFIG_OCRE_GPIO_PINS_PER_PORT + pin;
 	if (global_pin >= CONFIG_OCRE_GPIO_MAX_PINS) {
 		LOG_ERR("Global pin %d exceeds max %d", global_pin, CONFIG_OCRE_GPIO_MAX_PINS);
@@ -323,7 +330,7 @@ int ocre_gpio_wasm_configure(wasm_exec_env_t exec_env, int port, int pin, int di
 		return -EINVAL;
 	}
 	ocre_gpio_config_t config = {.pin = pin, .port_idx = port, .direction = direction};
-	return ocre_gpio_configure(&config);
+	return ocre_gpio_configure(exec_env, &config);
 }
 
 int ocre_gpio_wasm_set(wasm_exec_env_t exec_env, int port, int pin, int state)
@@ -559,7 +566,7 @@ static int resolve_gpio_alias(const char *name, int *port_idx, gpio_pin_t *pin)
 	return 0;
 }
 
-int ocre_gpio_configure_by_name(const char *name, ocre_gpio_direction_t direction)
+int ocre_gpio_configure_by_name(wasm_exec_env_t exec_env, const char *name, ocre_gpio_direction_t direction)
 {
 	if (!name) {
 		LOG_ERR("Invalid name parameter");
@@ -575,7 +582,7 @@ int ocre_gpio_configure_by_name(const char *name, ocre_gpio_direction_t directio
 
 	ocre_gpio_config_t config = {.pin = pin, .port_idx = port_idx, .direction = direction};
 
-	return ocre_gpio_configure(&config);
+	return ocre_gpio_configure(exec_env, &config);
 }
 
 int ocre_gpio_set_by_name(const char *name, ocre_gpio_pin_state_t state)
@@ -646,7 +653,7 @@ int ocre_gpio_wasm_configure_by_name(wasm_exec_env_t exec_env, const char *name,
 	}
 
 	LOG_INF("Configuring GPIO by name: %s, direction=%d", name, direction);
-	return ocre_gpio_configure_by_name(name, direction);
+	return ocre_gpio_configure_by_name(exec_env, name, direction);
 }
 
 int ocre_gpio_wasm_set_by_name(wasm_exec_env_t exec_env, const char *name, int state)

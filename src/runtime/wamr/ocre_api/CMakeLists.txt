@@ -12,7 +12,7 @@ target_sources(OcreRuntimeAPI
     core/core_timer.c
     core/core_mutex.c
     core/core_memory.c
-
+    ocre_gpio/ocre_gpio.c
 )
 
 target_link_libraries(OcreRuntimeAPI
