@@ -93,7 +93,7 @@ extern const struct ocre_config ocre_build_configuration;
  * @headerfile ocre.h <ocre/ocre.h>
  * @brief Ocre Context
  *
- * The context is created by ocre_context_create() and destroyed by ocre_context_destroy(). It is used to interact with
+ * The context is created by ocre_create_context() and destroyed by ocre_destroy_context(). It is used to interact with
  * Ocre Library and passed around as pointers.
  *
  * The Ocre Context is a manager for a set of containers on their own runtime engines.
@@ -236,16 +236,14 @@ struct ocre_context *ocre_create_context(const char *workdir);
  *
  * @param context A pointer to the Ocre Context to destroy.
  *
- * Any errors will be ignored.
+ * @return 0 on success, non-zero on failure
  */
-void ocre_context_destroy(struct ocre_context *context);
+int ocre_destroy_context(struct ocre_context *context);
 
 /**
  * @brief Deinitializes the Ocre Library
  *
- * Deinitializes the Ocre Library. Care must be taken to ensure that all contexts have been destroyed before calling
- * this function. Deinitialization of the library while contexts are still instantiated is considered an error and
- * results in undefined behavior.
+ * Deinitializes the Ocre Library, destroying all contexts and containers.
  *
  * Any errors will be ignored.
  */

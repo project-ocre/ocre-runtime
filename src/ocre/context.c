@@ -23,7 +23,7 @@ LOG_MODULE_REGISTER(context, CONFIG_OCRE_LOG_LEVEL);
 
 struct ocre_context {
 	pthread_mutex_t mutex;
-	char *working_directory;
+	const char *working_directory;
 	struct container_node *containers;
 };
 
@@ -33,143 +33,45 @@ struct container_node {
 	struct container_node *next; /* needed for singly- or doubly-linked lists */
 };
 
-#if CONFIG_OCRE_FILESYSTEM
-static int delete_container_workdirs(const char *working_directory)
+static int ocre_context_remove_container_locked(struct ocre_context *context, struct ocre_container *container)
 {
-	int ret = -1;
-	DIR *d = NULL;
-	const struct dirent *dir = NULL;
+	int rc;
+	struct container_node *node = NULL;
+	struct container_node *elt = NULL;
 
-	char *containers_path = malloc(strlen(working_directory) + strlen("/containers") + 1);
-	if (!containers_path) {
-		LOG_ERR("Failed to allocate memory for container workdir path");
-		return -1;
-	}
+	LL_FOREACH_SAFE(context->containers, node, elt)
+	{
+		if (node->container == container) {
+			rc = ocre_container_destroy(container);
+			if (rc) {
+				LOG_ERR("Failed to destroy container: rc=%d", rc);
+				return -1;
+			}
 
-	sprintf(containers_path, "%s/containers", working_directory);
-
-	d = opendir(containers_path);
-	if (!d) {
-		fprintf(stderr, "Failed to open directory '%s'\n", containers_path);
-		goto finish;
-	}
-
-	while ((dir = readdir(d)) != NULL) {
-
-		if (!strcmp(dir->d_name, ".") || !strcmp(dir->d_name, "..")) {
-			continue;
-		}
-
-		char *container_workdir_path = malloc(strlen(containers_path) + strlen(dir->d_name) + 2);
-		if (!container_workdir_path) {
-			fprintf(stderr, "Failed to allocate memory for container workdir path\n");
-			goto finish;
-		}
-
-		strcpy(container_workdir_path, containers_path);
-		strcat(container_workdir_path, "/");
-		strcat(container_workdir_path, dir->d_name);
-
-		if (rm_rf(container_workdir_path)) {
-			fprintf(stderr, "Failed to remove container workdir '%s'\n", container_workdir_path);
-			free(container_workdir_path);
-			goto finish;
-		}
-
-		free(container_workdir_path);
-	}
-
-	ret = 0;
-
-finish:
-	if (d) {
-		closedir(d);
-	}
-
-	free(containers_path);
-
-	return ret;
-}
+#if CONFIG_OCRE_FILESYSTEM
+			if (node->working_directory) {
+				rc = rm_rf(node->working_directory);
+				if (rc) {
+					LOG_ERR("Failed to remove container working directory '%s': rc=%d",
+						node->working_directory, rc);
+					return -1;
+				}
+			}
 #endif
 
-static int create_dir_if_not_exists(const char *path)
-{
-	int rc;
-	struct stat st;
+			LL_DELETE(context->containers, node);
 
-	rc = stat(path, &st);
-	if (rc && errno == ENOENT) {
-		LOG_INF("Directory '%s' does not exist, creating...", path);
-		rc = mkdir(path, 0755);
-		if (rc) {
-			LOG_ERR("Failed to create directory '%s': errno=%d", path, errno);
-			return -1;
+			free(node->working_directory);
+			free(node);
+
+			return 0;
 		}
-	} else if (!rc && !S_ISDIR(st.st_mode)) {
-		LOG_ERR("Path '%s' is not a directory", path);
-		return -1;
-	} else if (!rc && S_ISDIR(st.st_mode)) {
-		LOG_INF("Directory '%s' already exists", path);
 	}
-
-	return 0;
 }
 
-static int populate_ocre_workdir(const char *working_directory)
-{
-	int rc = -1;
-	char *containers_path = NULL;
-	char *images_path = NULL;
-
-	rc = create_dir_if_not_exists(working_directory);
-	if (rc) {
-		LOG_ERR("Failed to create Ocre working directory '%s': errno=%d", working_directory, errno);
-		return -1;
-	}
-
-	containers_path = malloc(strlen(working_directory) + strlen("/containers") + 1);
-	if (!containers_path) {
-		LOG_ERR("Failed to allocate memory for container workdir path");
-		goto finish;
-	}
-
-	sprintf(containers_path, "%s/containers", working_directory);
-
-	rc = create_dir_if_not_exists(containers_path);
-	if (rc) {
-		LOG_ERR("Failed to create Ocre containers directory '%s': errno=%d", containers_path, errno);
-		goto finish;
-	}
-
-	images_path = malloc(strlen(working_directory) + strlen("/images") + 1);
-	if (!images_path) {
-		LOG_ERR("Failed to allocate memory for container workdir path");
-		goto finish;
-	}
-
-	sprintf(images_path, "%s/images", working_directory);
-
-	rc = create_dir_if_not_exists(images_path);
-	if (rc) {
-		LOG_ERR("Failed to create Ocre images directory '%s': errno=%d", images_path, errno);
-		goto finish;
-	}
-
-finish:
-	free(containers_path);
-	free(images_path);
-
-	return rc;
-}
-
-struct ocre_context *ocre_create_context(const char *workdir)
+struct ocre_context *ocre_context_create(const char *workdir)
 {
 	int rc;
-
-	if (!workdir) {
-		workdir = CONFIG_OCRE_DEFAULT_WORKING_DIRECTORY;
-		LOG_INF("Using default working directory: %s", workdir);
-	}
 
 	struct ocre_context *context = malloc(sizeof(struct ocre_context));
 	if (!context) {
@@ -179,29 +81,15 @@ struct ocre_context *ocre_create_context(const char *workdir)
 
 	memset(context, 0, sizeof(struct ocre_context));
 
-	context->working_directory = strdup(workdir);
-	if (!context->working_directory) {
-		LOG_ERR("Failed to allocate memory for working directory: errno=%d", errno);
-		goto error;
-	}
-
-	/* Initialize working directory */
-
-	rc = populate_ocre_workdir(context->working_directory);
-	if (rc) {
-		LOG_ERR("Failed to populate Ocre working directory: rc=%d", rc);
-		goto error;
-	}
-
-#if CONFIG_OCRE_FILESYSTEM
-	delete_container_workdirs(context->working_directory);
-#endif
-
 	rc = pthread_mutex_init(&context->mutex, NULL);
 	if (rc) {
 		LOG_ERR("Failed to initialize context mutex: rc=%d", rc);
 		goto error;
 	}
+
+	/* Set working directory */
+
+	context->working_directory = workdir;
 
 	/* Initialize containers list */
 
@@ -210,8 +98,6 @@ struct ocre_context *ocre_create_context(const char *workdir)
 	return context;
 
 error:
-	free(context->working_directory);
-
 	free(context);
 
 	return NULL;
@@ -237,14 +123,9 @@ struct ocre_container *ocre_context_get_container_by_id_locked(const struct ocre
 	return NULL;
 }
 
-void ocre_context_destroy(struct ocre_context *context)
+int ocre_context_destroy(struct ocre_context *context)
 {
 	struct container_node *node;
-
-	if (!context) {
-		LOG_ERR("Invalid context");
-		return;
-	}
 
 	/* Send kill event to all containers */
 
@@ -264,18 +145,18 @@ void ocre_context_destroy(struct ocre_context *context)
 
 	LL_FOREACH(context->containers, node)
 	{
-		ocre_context_remove_container(context, node->container);
+		ocre_context_remove_container_locked(context, node->container);
 	}
 
-	int rc;
-	rc = pthread_mutex_destroy(&context->mutex);
+	int rc = pthread_mutex_destroy(&context->mutex);
 	if (rc) {
 		LOG_ERR("Failed to destroy context mutex: rc=%d", rc);
+		return -1;
 	}
 
-	free(context->working_directory);
-
 	free(context);
+
+	return 0;
 };
 
 struct ocre_container *ocre_context_create_container(struct ocre_context *context, const char *image,
@@ -427,7 +308,6 @@ success:
 int ocre_context_remove_container(struct ocre_context *context, struct ocre_container *container)
 {
 	int rc = -1;
-	struct container_node *node = NULL;
 
 	if (!context || !container) {
 		LOG_ERR("Invalid arguments");
@@ -440,44 +320,17 @@ int ocre_context_remove_container(struct ocre_context *context, struct ocre_cont
 		return -1;
 	}
 
-	LL_FOREACH(context->containers, node)
-	{
-		if (node->container == container) {
-			rc = ocre_container_destroy(container);
-			if (rc) {
-				LOG_ERR("Failed to destroy container: rc=%d", rc);
-				goto finish;
-			}
-
-#if CONFIG_OCRE_FILESYSTEM
-			if (node->working_directory) {
-				rc = rm_rf(node->working_directory);
-				if (rc) {
-					LOG_ERR("Failed to remove container working directory '%s': rc=%d",
-						node->working_directory, rc);
-					goto finish;
-				}
-			}
-#endif
-
-			LL_DELETE(context->containers, node);
-
-			free(node->working_directory);
-			free(node);
-
-			rc = 0;
-
-			goto finish;
-		}
+	rc = ocre_context_remove_container_locked(context, container);
+	if (rc) {
+		LOG_ERR("Failed to remove container: rc=%d", rc);
 	}
 
-finish: {
 	int ret = pthread_mutex_unlock(&context->mutex);
 	if (ret) {
 		LOG_ERR("Failed to unlock context mutex: rc=%d", rc);
 		return -1;
 	}
-}
+
 	return rc;
 }
 
