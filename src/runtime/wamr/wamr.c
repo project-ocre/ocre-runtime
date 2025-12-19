@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -37,7 +38,7 @@ struct wamr_context {
 	bool uses_ocre_api;
 };
 
-static int instance_execute(void *runtime_context)
+static int instance_execute(void *runtime_context, pthread_cond_t *cond)
 {
 	struct wamr_context *context = runtime_context;
 	wasm_module_inst_t module_inst = context->module_inst;
@@ -45,6 +46,17 @@ static int instance_execute(void *runtime_context)
 	/* Clear any previous exceptions */
 
 	wasm_runtime_clear_exception(module_inst);
+
+	/* Notify the starting waiter that we are ready
+	 * We should notify only after we are ready to process the kill call.
+	 * In WAMR, this is managed by the exception message, so we are good if we just cleared the exception.
+	 */
+
+	int rc = pthread_cond_signal(cond);
+	if (rc) {
+		LOG_WRN("Failed to signal start conditional variable: rc=%d", rc);
+		return -1;
+	}
 
 	/* Execute main function */
 
@@ -69,16 +81,18 @@ static int instance_execute(void *runtime_context)
 
 	LOG_INF("Context %p completed successfully", context);
 
-	return wasm_runtime_get_wasi_exit_code(context->module_inst);
+	int exit_code = wasm_runtime_get_wasi_exit_code(context->module_inst);
+
+	return exit_code;
 }
 
-static int instance_thread_execute(void *arg)
+static int instance_thread_execute(void *arg, pthread_cond_t *cond)
 {
 	struct wamr_context *context = arg;
 
 	wasm_runtime_init_thread_env();
 
-	int ret = instance_execute(context);
+	int ret = instance_execute(context, cond);
 
 	wasm_runtime_destroy_thread_env();
 

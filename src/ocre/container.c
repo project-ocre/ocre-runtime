@@ -22,7 +22,8 @@ struct ocre_container {
 	bool detached;
 	ocre_container_status_t status;
 	pthread_mutex_t mutex;
-	pthread_cond_t cond;
+	pthread_cond_t cond_start;
+	pthread_cond_t cond_stop;
 	void *runtime_context;
 	pthread_t thread;
 	pthread_attr_t attr;
@@ -33,8 +34,9 @@ struct ocre_container {
 };
 
 struct container_thread_params {
-	int (*func)(void *);
+	int (*func)(void *, pthread_cond_t *);
 	struct ocre_container *container;
+	pthread_cond_t *cond;
 };
 
 static void *container_thread(void *arg)
@@ -42,15 +44,14 @@ static void *container_thread(void *arg)
 	int rc;
 	struct container_thread_params *params = arg;
 	struct ocre_container *container = params->container;
-	int (*func)(void *) = params->func;
-
-	free(params);
 
 	/* Run the container */
 
-	int result = func(container->runtime_context);
+	int result = params->func(container->runtime_context, params->cond);
 
 	/* Exited */
+
+	free(params);
 
 	rc = pthread_mutex_lock(&container->mutex);
 	if (rc) {
@@ -58,7 +59,7 @@ static void *container_thread(void *arg)
 		return NULL;
 	}
 
-	/* Here is the **only** place where we should set the status to exited */
+	/* Here is the **only** place where we should set the status to EXITED */
 
 	container->status = OCRE_CONTAINER_STATUS_EXITED;
 	container->exit_code = result;
@@ -67,7 +68,7 @@ static void *container_thread(void *arg)
 
 	/* Notify any waiting threads */
 
-	rc = pthread_cond_broadcast(&container->cond);
+	rc = pthread_cond_broadcast(&container->cond_stop);
 	if (rc) {
 		LOG_WRN("Failed to broadcast conditional variable: rc=%d", rc);
 	}
@@ -225,9 +226,15 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 		goto error_free;
 	}
 
-	rc = pthread_cond_init(&container->cond, NULL);
+	rc = pthread_cond_init(&container->cond_stop, NULL);
 	if (rc) {
-		LOG_ERR("Failed to initialize conditional variable: rc=%d", rc);
+		LOG_ERR("Failed to initialize stop conditional variable: rc=%d", rc);
+		goto error_mutex;
+	}
+
+	rc = pthread_cond_init(&container->cond_start, NULL);
+	if (rc) {
+		LOG_ERR("Failed to initialize start conditional variable: rc=%d", rc);
 		goto error_mutex;
 	}
 
@@ -248,9 +255,14 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 	return container;
 
 error_cond:
-	rc = pthread_cond_destroy(&container->cond);
+	rc = pthread_cond_destroy(&container->cond_start);
 	if (rc) {
-		LOG_ERR("Failed to deinitialize conditional variable: rc=%d", rc);
+		LOG_ERR("Failed to deinitialize start conditional variable: rc=%d", rc);
+	}
+
+	rc = pthread_cond_destroy(&container->cond_stop);
+	if (rc) {
+		LOG_ERR("Failed to deinitialize stop conditional variable: rc=%d", rc);
 	}
 
 error_mutex:
@@ -292,9 +304,14 @@ int ocre_container_destroy(struct ocre_container *container)
 		LOG_ERR("Failed to deinitialize mutex: rc=%d", rc);
 	}
 
-	rc = pthread_cond_destroy(&container->cond);
+	rc = pthread_cond_destroy(&container->cond_start);
 	if (rc) {
-		LOG_ERR("Failed to deinitialize conditional variable: rc=%d", rc);
+		LOG_ERR("Failed to deinitialize start conditional variable: rc=%d", rc);
+	}
+
+	rc = pthread_cond_destroy(&container->cond_stop);
+	if (rc) {
+		LOG_ERR("Failed to deinitialize stop conditional variable: rc=%d", rc);
 	}
 
 	string_array_free(container->argv);
@@ -353,12 +370,21 @@ int ocre_container_start(struct ocre_container *container)
 	memset(params, 0, sizeof(struct container_thread_params));
 	params->container = container;
 	params->func = container->runtime->thread_execute;
+	params->cond = &container->cond_start;
 	container->status = OCRE_CONTAINER_STATUS_RUNNING;
 
 	rc = pthread_create(&container->thread, &container->attr, container_thread, params);
 	if (rc) {
 		LOG_ERR("Failed to create thread: rc=%d", rc);
 		goto error_params;
+	}
+
+	LOG_INF("Waiting for container '%s' to start", container->id);
+
+	rc = pthread_cond_wait(&container->cond_start, &container->mutex);
+	if (rc) {
+		LOG_ERR("Failed to wait on start conditional variable: rc=%d", rc);
+		goto error_status;
 	}
 
 	LOG_INF("Started container '%s' on runtime '%s'", container->id, container->runtime->runtime_name);
@@ -370,7 +396,8 @@ int ocre_container_start(struct ocre_container *container)
 	}
 
 	if (!container->detached) {
-		/* this will block until the container thread exits */
+		/* This will block until the container thread exits */
+
 		if (ocre_container_wait(container, NULL)) {
 			LOG_ERR("Failed to wait for container '%s'", container->id);
 			return -1;
@@ -479,9 +506,9 @@ int ocre_container_kill(struct ocre_container *container)
 		goto unlock_mutex;
 	}
 
-	LOG_INF("Sending kill signal to container '%s'", container->id);
-
 	ret = container->runtime->kill(container->runtime_context);
+
+	LOG_INF("Sent kill signal to container '%s'", container->id);
 
 unlock_mutex:
 	rc = pthread_mutex_unlock(&container->mutex);
@@ -605,9 +632,9 @@ int ocre_container_wait(struct ocre_container *container, int *status)
 
 	if (container->status == OCRE_CONTAINER_STATUS_RUNNING) {
 		LOG_INF("Container '%s' is running", container->id);
-		rc = pthread_cond_wait(&container->cond, &container->mutex);
+		rc = pthread_cond_wait(&container->cond_stop, &container->mutex);
 		if (rc) {
-			LOG_ERR("Failed to wait on conditional variable: rc=%d", rc);
+			LOG_ERR("Failed to wait on stop conditional variable: rc=%d", rc);
 			goto unlock_mutex;
 		}
 	}

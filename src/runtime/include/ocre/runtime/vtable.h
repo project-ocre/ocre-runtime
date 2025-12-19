@@ -2,6 +2,7 @@
 #define OCRE_RUNTIME_VTABLE_H
 
 #include <stddef.h>
+#include <pthread.h>
 
 /**
  * @brief Runtime Engine Virtual Table
@@ -85,12 +86,13 @@ struct ocre_runtime_vtable {
 	 * This function is called inside a thread when the container is started. It should execute the container's main
 	 * function, block and eventually return the exit code.
 	 *
-	 * @param arg Pointer to the argument passed to the thread
-	 * @return Pointer to the thread context on success, NULL on failure
+	 * @param runtime_context Pointer to the runtime context returned by create
+	 * @param cond Pointer to the conditional variable to signal when the instance is ready to be killed
+	 *
+	 * @return status code of the execution: 0 on success, non-zero on failure
 	 */
 
-	// TODO: ARG????
-	int (*thread_execute)(void *arg);
+	int (*thread_execute)(void *runtime_context, pthread_cond_t *cond);
 
 	/**
 	 * @brief Stop a runtime instance
