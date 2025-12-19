@@ -305,6 +305,10 @@ int ocre_destroy_context(struct ocre_context *context)
 	}
 
 	rc = ocre_destroy_context_locked(context);
+	if (rc) {
+		LOG_ERR("Failed to destroy context: rc=%d", rc);
+		return -1;
+	}
 
 	rc = pthread_mutex_unlock(&contexts_mutex);
 	if (rc) {
