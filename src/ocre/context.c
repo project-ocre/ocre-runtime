@@ -74,6 +74,8 @@ static int ocre_context_remove_container_locked(struct ocre_context *context, st
 			return 0;
 		}
 	}
+	
+	return -1;
 }
 
 struct ocre_context *ocre_context_create(const char *workdir)
