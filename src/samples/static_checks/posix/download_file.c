@@ -7,7 +7,7 @@
 
 int ocre_download_file(const char *url, const char *filepath)
 {
-    /* Not implemented */
+	/* Not implemented */
 
-    return -1;
+	return -1;
 }

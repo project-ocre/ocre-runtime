@@ -376,9 +376,9 @@ int ocre_context_get_num_containers(struct ocre_context *context)
 
 const char *ocre_context_get_working_directory(const struct ocre_context *context)
 {
-    if (!context) {
-        return NULL;
-    }
+	if (!context) {
+		return NULL;
+	}
 
 	/* We never change this, no need to lock */
 

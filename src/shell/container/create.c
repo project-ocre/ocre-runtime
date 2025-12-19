@@ -158,7 +158,8 @@ int cmd_container_create_run(struct ocre_context *ctx, const char *argv0, int ar
 				continue;
 			}
 			case 'e': {
-				const char **new_environment = realloc(environment, sizeof(char *) * (environment_count + 1));
+				const char **new_environment =
+					realloc(environment, sizeof(char *) * (environment_count + 1));
 				if (!new_environment) {
 					goto cleanup;
 				}
