@@ -41,17 +41,17 @@ static int print_usage(struct ocre_context *ctx, const char *argv0, int argc, ch
 }
 
 static const struct ocre_command commands[] = {
-	{"help", print_usage},
-	{"run", cmd_container_create_run},
-	{"create", cmd_container_create_run},
-	{"start", cmd_container_start},
-	{"stop", cmd_container_stop},
-	{"kill", cmd_container_kill},
-	{"pause", cmd_container_pause},
-	{"unpause", cmd_container_unpause},
-	{"wait", cmd_container_wait},
-	{"ps", cmd_container_ps},
-	{"rm", cmd_container_rm},
+	{"help", print_usage},		      //
+	{"run", cmd_container_create_run},    //
+	{"create", cmd_container_create_run}, //
+	{"start", cmd_container_start},	      //
+	{"stop", cmd_container_stop},	      //
+	{"kill", cmd_container_kill},	      //
+	{"pause", cmd_container_pause},	      //
+	{"unpause", cmd_container_unpause},   //
+	{"wait", cmd_container_wait},	      //
+	{"ps", cmd_container_ps},	      //
+	{"rm", cmd_container_rm},	      //
 };
 
 int cmd_container(struct ocre_context *ctx, const char *argv0, int argc, char **argv)

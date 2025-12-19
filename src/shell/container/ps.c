@@ -13,7 +13,13 @@
 
 #include "../command.h"
 
-static const char *container_statuses[] = {"UNKNOWN", "CREATED", "RUNNING", "PAUSED ", "EXITED ", "STOPPED", "ERROR  "};
+static const char *container_statuses[] = {"UNKNOWN", //
+					   "CREATED", //
+					   "RUNNING", //
+					   "PAUSED ", //
+					   "EXITED ", //
+					   "STOPPED", //
+					   "ERROR  "};
 
 static int usage(const char *argv0)
 {
