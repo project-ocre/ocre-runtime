@@ -11,7 +11,11 @@
 #include <ocre/ocre.h>
 
 const struct ocre_container_args args = {
-	.capabilities = (const char *[]){"ocre:api", NULL},
+	.capabilities =
+		(const char *[]){
+			"ocre:api",
+			NULL,
+		},
 };
 
 int main(int argc, char *argv[])
