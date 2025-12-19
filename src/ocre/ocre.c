@@ -415,12 +415,12 @@ const struct ocre_runtime_vtable *ocre_get_runtime(const char *name)
 
 void ocre_deinitialize(void)
 {
-	struct context_node *c_node;
+	struct context_node *c_node, *c_tmp;
 	struct runtime_node *r_elt, *r_tmp;
 
 	/* Destroy all contexts */
 
-	LL_FOREACH(contexts, c_node)
+	LL_FOREACH_SAFE(contexts, c_node, c_tmp)
 	{
 		if (ocre_destroy_context_locked(c_node->context)) {
 			LOG_ERR("Failed to destroy context %p", c_node->context);

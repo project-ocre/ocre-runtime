@@ -125,7 +125,7 @@ struct ocre_container *ocre_context_get_container_by_id_locked(const struct ocre
 
 int ocre_context_destroy(struct ocre_context *context)
 {
-	struct container_node *node;
+	struct container_node *node, *tmp;
 
 	/* Send kill event to all containers */
 
@@ -143,7 +143,7 @@ int ocre_context_destroy(struct ocre_context *context)
 
 	/* Remove all containers */
 
-	LL_FOREACH(context->containers, node)
+	LL_FOREACH_SAFE(context->containers, node, tmp)
 	{
 		ocre_context_remove_container_locked(context, node->container);
 	}
