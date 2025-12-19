@@ -1,3 +1,8 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Determine the ISA of the target and set appropriately
 if (DEFINED CONFIG_ISA_THUMB2)
     set(TARGET_ISA THUMB)

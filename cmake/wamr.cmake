@@ -1,3 +1,8 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
 set (WAMR_BUILD_INTERP 1)
 set (WAMR_BUILD_FAST_INTERP 0)
 set (WAMR_BUILD_AOT 1)

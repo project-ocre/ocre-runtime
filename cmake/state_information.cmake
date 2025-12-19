@@ -1,3 +1,8 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
 cmake_minimum_required(VERSION 3.20.0)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/images)
