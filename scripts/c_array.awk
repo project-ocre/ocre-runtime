@@ -1,3 +1,9 @@
+#!/bin/bash
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
 BEGIN {
     printf "/* Auto-generated file. DO NOT EDIT! */\n\n"
     printf "#include <stddef.h>\n\n"
