@@ -82,6 +82,13 @@ config OCRE_LOG_INF
   help
     Enable Ocre debug logging
 
+config OCRE_PRINT_BANNER
+  bool "Print Ocre runtime banner at startup"
+  default y
+  help
+    Enable printing of the Ocre runtime banner with version and system information
+    at application startup.
+
 if OCRE
 
 module = OCRE
@@ -93,7 +100,7 @@ endif
 config OCRE_SENSORS
     bool "Enable OCRE Sensors support"
     default n
-    depends on SENSOR 
+    depends on SENSOR
     help
       Enable support for OCRE sensors
 
@@ -121,13 +128,13 @@ config OCRE_CONTAINER_DEFAULT_STACK_SIZE
   default 2048
   help
     The default value used for a container's stack size.
-    
+
 config MAX_CONTAINERS
     int "Maximum concurrent containers"
     default 10
     help
     The default value for maximum number of container's.
-    
+
 config MAX_TIMERS
     int "Maximum number of timers"
     default 5
@@ -159,8 +166,8 @@ config OCRE_GPIO
     help
       Enable the OCRE GPIO driver that provides a portable API layer
       for GPIO operations across different hardware platforms.
-  
-  
+
+
 config OCRE_TIMER
     bool "OCRE Timer Driver"
     default y
@@ -192,7 +199,7 @@ config OCRE_CONTAINER_MESSAGING
     default n
     help
       Enable support for OCRE Container Messaging
-  
+
 config MESSAGING_MAX_SUBSCRIPTIONS
     int "Number of maximum subscriptions for Container Messaging"
     default 10

@@ -105,11 +105,11 @@ if [[ "$TARGET" == "z" ]]; then
 
     if [[ ${#INPUT_FILES[@]} -gt 0 ]]; then
         echo "Input files provided: ${INPUT_FILES[*]}"
-        rm flash.bin
+        rm -f flash.bin
         west build -p -b $ZEPHYR_BOARD ./application -d build -- \
             -DMODULE_EXT_ROOT=`pwd`/application -DOCRE_INPUT_FILE="${INPUT_FILES[0]}" -DTARGET_PLATFORM_NAME=Zephyr $CONF_EXTRA || exit 1
     else
-        rm flash.bin
+        rm -f flash.bin
         west build -p -b $ZEPHYR_BOARD ./application -d build -- \
             -DMODULE_EXT_ROOT=`pwd`/application -DTARGET_PLATFORM_NAME=Zephyr $CONF_EXTRA || exit 1
     fi
