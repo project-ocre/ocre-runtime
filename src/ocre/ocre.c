@@ -198,6 +198,8 @@ static int ocre_destroy_context_locked(struct ocre_context *context)
 			return 0;
 		}
 	}
+
+	return -1;
 }
 
 struct ocre_context *ocre_create_context(const char *workdir)
@@ -341,14 +343,23 @@ int ocre_initialize(const struct ocre_runtime_vtable *const vtable[])
 
 	if (vtable) {
 		for (int i = 0; vtable[i] != NULL; i++) {
+			struct runtime_node *elt;
+			LL_FOREACH(runtimes, elt)
+			{
+				if (!strcmp(elt->runtime->runtime_name, vtable[i]->runtime_name)) {
+					LOG_ERR("Runtime '%s' already registered", vtable[i]->runtime_name);
+					goto error;
+				}
+			}
+
 			struct runtime_node *add = malloc(sizeof(struct runtime_node));
 			if (!add) {
 				LOG_ERR("Failed to allocate memory for runtime node");
-				return -1;
+				goto error;
 			}
 
 			memset(add, 0, sizeof(struct runtime_node));
-			add->runtime = (const struct ocre_runtime_vtable *)&vtable[i];
+			add->runtime = vtable[i];
 
 			LL_APPEND(runtimes, add);
 
@@ -356,14 +367,15 @@ int ocre_initialize(const struct ocre_runtime_vtable *const vtable[])
 		}
 	}
 
-	/* Initialize runtimes in the list */
+	/* Initialize all runtimes in the list */
 
-	struct runtime_node *elt;
+	struct runtime_node *elt, *tmp;
 
 	LL_FOREACH(runtimes, elt)
 	{
 		if (elt->runtime->init && elt->runtime->init()) {
 			LOG_INF("Failed to initialize '%s'", elt->runtime->runtime_name);
+			ocre_deinitialize();
 			return -1;
 		}
 
@@ -371,6 +383,16 @@ int ocre_initialize(const struct ocre_runtime_vtable *const vtable[])
 	}
 
 	return 0;
+
+error:
+	LL_FOREACH_SAFE(runtimes, elt, tmp)
+	{
+		LL_DELETE(runtimes, elt);
+
+		free(elt);
+	}
+
+	return -1;
 }
 
 const struct ocre_runtime_vtable *ocre_get_runtime(const char *name)
@@ -396,12 +418,16 @@ void ocre_deinitialize(void)
 	struct context_node *c_node;
 	struct runtime_node *r_elt, *r_tmp;
 
+	/* Destroy all contexts */
+
 	LL_FOREACH(contexts, c_node)
 	{
 		if (ocre_destroy_context_locked(c_node->context)) {
 			LOG_ERR("Failed to destroy context %p", c_node->context);
 		}
 	}
+
+	/* Deinitialize all runtimes */
 
 	LL_FOREACH_SAFE(runtimes, r_elt, r_tmp)
 	{
