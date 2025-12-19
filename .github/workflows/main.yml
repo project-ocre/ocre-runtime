@@ -37,6 +37,15 @@ jobs:
       contents: read
       packages: write
 
+  format-checks:
+    name: Formatting checks
+    needs:
+      - linux-devcontainer
+    uses: ./.github/workflows/formatting-checks.yml
+    secrets: inherit
+    with:
+      devcontainer-tag: ${{ needs.linux-devcontainer.outputs.devcontainer-tag }}
+
   linux:
       name: Linux
       needs:
