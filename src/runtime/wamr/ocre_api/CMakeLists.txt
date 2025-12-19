@@ -17,8 +17,14 @@ target_sources(OcreRuntimeAPI
     core/core_timer.c
     core/core_mutex.c
     core/core_memory.c
-    ocre_gpio/ocre_gpio.c
 )
+
+if (CONFIG_OCRE_GPIO)
+    target_sources(OcreRuntimeAPI
+        PRIVATE
+        ocre_gpio/ocre_gpio.c
+    )
+endif()
 
 target_link_libraries(OcreRuntimeAPI
     PUBLIC
