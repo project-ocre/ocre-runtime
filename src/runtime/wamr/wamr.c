@@ -173,6 +173,7 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 {
 	struct wamr_context *context = NULL;
 	char **dir_map_list = NULL;
+	char **new_dir_map_list = NULL;
 	size_t dir_map_list_len = 0;
 
 	if (!img_path) {
@@ -278,7 +279,7 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 #endif
 #if CONFIG_OCRE_FILESYSTEM
 		else if (!strcmp(*cap, "filesystem") && workdir) {
-			dir_map_list = malloc(sizeof(char *));
+			dir_map_list = malloc((dir_map_list_len + 2) * sizeof(char *));
 			if (!dir_map_list) {
 				LOG_ERR("Failed to allocate memory for dir_map_list");
 				goto error;
@@ -286,16 +287,18 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 
 			memset(dir_map_list, 0, sizeof(char *));
 
-			dir_map_list[0] = malloc(strlen("/::") + strlen(workdir) + 1);
-			if (!dir_map_list[0]) {
+			dir_map_list[dir_map_list_len] = malloc(strlen("/::") + strlen(workdir) + 1);
+			if (!dir_map_list[dir_map_list_len]) {
 				LOG_ERR("Failed to allocate memory for dir_map_list[0]");
 				free(dir_map_list);
 				goto error;
 			}
 
-			sprintf(dir_map_list[0], "/::%s", workdir);
+			sprintf(dir_map_list[dir_map_list_len], "/::%s", workdir);
 
 			dir_map_list_len++;
+
+			dir_map_list[dir_map_list_len] = NULL;
 
 			LOG_INF("Filesystem capability enabled");
 		}
@@ -306,6 +309,14 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 
 	for (const char **mount = mounts; mount && *mount; mount++) {
 		/* Need to insert the extra ':' */
+
+		new_dir_map_list = realloc(dir_map_list, (dir_map_list_len + 2) * sizeof(char *));
+		if (!new_dir_map_list) {
+			LOG_ERR("Failed to allocate memory for dir_map_list");
+			goto error;
+		}
+
+		dir_map_list = new_dir_map_list;
 
 		dir_map_list[dir_map_list_len] = malloc(strlen(*mount) + 2);
 		if (!dir_map_list[dir_map_list_len]) {
@@ -332,6 +343,9 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 		LOG_INF("Enabled mount: %s", dir_map_list[dir_map_list_len]);
 
 		dir_map_list_len++;
+
+		/* Add the NULL */
+		dir_map_list[dir_map_list_len] = NULL;
 	}
 
 	wasm_runtime_set_wasi_args(context->module, NULL, 0, (const char **)dir_map_list, dir_map_list_len, envp, envn,
@@ -371,6 +385,12 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 			LOG_WRN("Capability '%s' not supported by runtime", *cap);
 		}
 	}
+
+	for (char **dir_map = dir_map_list; dir_map && *dir_map; dir_map++) {
+		free(*dir_map);
+	}
+
+	free(dir_map_list);
 
 	return context;
 
