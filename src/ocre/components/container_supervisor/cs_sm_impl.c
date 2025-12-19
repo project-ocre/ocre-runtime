@@ -295,6 +295,9 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 #ifdef CONFIG_OCRE_TIMER
 	ocre_timer_init();
 #endif
+#ifdef CONFIG_OCRE_GPIO
+	ocre_gpio_init();
+#endif
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
 	ocre_messaging_init();
 #endif
