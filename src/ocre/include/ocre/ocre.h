@@ -306,7 +306,7 @@ int ocre_context_remove_container(struct ocre_context *context, struct ocre_cont
  *
  * @return The number of containers in the context
  */
-int ocre_context_get_num_containers(struct ocre_context *context);
+int ocre_context_get_container_count(struct ocre_context *context);
 
 /**
  * @brief List containers in the context
@@ -320,7 +320,7 @@ int ocre_context_get_num_containers(struct ocre_context *context);
  *
  * @return The number of containers listed, negative on failure
  */
-int ocre_context_list_containers(struct ocre_context *context, struct ocre_container **containers, int max_size);
+int ocre_context_get_containers(struct ocre_context *context, struct ocre_container **containers, int max_size);
 
 /**
  * @brief Get the working directory of the context

@@ -346,7 +346,7 @@ int ocre_context_remove_container(struct ocre_context *context, struct ocre_cont
 	return rc;
 }
 
-int ocre_context_get_num_containers(struct ocre_context *context)
+int ocre_context_get_container_count(struct ocre_context *context)
 {
 	int rc;
 	int count = 0;
@@ -385,7 +385,7 @@ const char *ocre_context_get_working_directory(const struct ocre_context *contex
 	return context->working_directory;
 }
 
-int ocre_context_list_containers(struct ocre_context *context, struct ocre_container **containers, int max_size)
+int ocre_context_get_containers(struct ocre_context *context, struct ocre_container **containers, int max_size)
 {
 	int rc;
 	int count = 0;

@@ -51,7 +51,7 @@ static int list_container(struct ocre_container *container)
 static int list_containers(struct ocre_context *ctx)
 {
 	int ret = -1;
-	int num_containers = ocre_context_get_num_containers(ctx);
+	int num_containers = ocre_context_get_container_count(ctx);
 	if (num_containers < 0) {
 		fprintf(stderr, "Failed to get number of containers\n");
 		return -1;
@@ -67,7 +67,7 @@ static int list_containers(struct ocre_context *ctx)
 		return -1;
 	}
 
-	num_containers = ocre_context_list_containers(ctx, containers, num_containers);
+	num_containers = ocre_context_get_containers(ctx, containers, num_containers);
 	if (num_containers < 0) {
 		fprintf(stderr, "Failed to list containers\n");
 		goto finish;
