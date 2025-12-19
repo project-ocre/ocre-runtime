@@ -28,8 +28,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    with:
-      ref: ${{ github.sha }}
 
   zephyr-devcontainer:
     name: Zephyr devcontainer
@@ -38,8 +36,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    with:
-      ref: ${{ github.sha }}
 
   linux:
       name: Linux
@@ -49,7 +45,6 @@ jobs:
       secrets: inherit
       with:
         devcontainer-tag: ${{ needs.linux-devcontainer.outputs.devcontainer-tag }}
-        ref: ${{ github.sha }}
 
   zephyr:
       name: Zephyr
@@ -59,4 +54,3 @@ jobs:
       secrets: inherit
       with:
         devcontainer-tag: ${{ needs.zephyr-devcontainer.outputs.devcontainer-tag }}
-        ref: ${{ github.sha }}

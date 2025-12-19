@@ -13,9 +13,6 @@ on:
         default: latest
         required: false
         type: string
-      ref:
-        type: string
-        required: true
 
 jobs:
   build-zephyr:
