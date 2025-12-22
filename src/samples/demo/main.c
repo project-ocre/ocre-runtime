@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	sleep(8);
+	sleep(4);
 
 	rc = ocre_container_kill(subscriber);
 	if (rc) {
