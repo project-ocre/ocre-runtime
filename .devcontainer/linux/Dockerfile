@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     clang \
     clang-format \
     clang-tools \
+    libclang-rt-dev \
     llvm \
     net-tools \
     jq \
