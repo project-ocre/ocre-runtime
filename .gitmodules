@@ -5,3 +5,6 @@
 [submodule "ocre-sdk"]
 	path = ocre-sdk
 	url = https://github.com/project-ocre/ocre-sdk.git
+[submodule "tests/Unity"]
+	path = tests/Unity
+	url = https://github.com/ThrowTheSwitch/Unity.git
