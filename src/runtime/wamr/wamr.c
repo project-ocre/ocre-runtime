@@ -44,6 +44,8 @@ struct wamr_context {
 	char **envp;
 	bool uses_ocre_api;
 	bool uses_shared_heap;
+	char **dir_map_list;
+	size_t dir_map_list_len;
 };
 
 static int instance_execute(void *runtime_context, pthread_cond_t *cond)
@@ -218,9 +220,9 @@ static void *instance_create(const char *img_path, const char *workdir, const ch
 			     const char **envp, const char **mounts)
 {
 	struct wamr_context *context = NULL;
-	char **dir_map_list = NULL;
+	// char **dir_map_list = NULL;
 	char **new_dir_map_list = NULL;
-	size_t dir_map_list_len = 0;
+	// size_t dir_map_list_len = 0;
 
 	if (!img_path) {
 		LOG_ERR("Invalid arguments");
@@ -328,26 +330,26 @@ static void *instance_create(const char *img_path, const char *workdir, const ch
 #endif
 #if CONFIG_OCRE_FILESYSTEM
 		else if (!strcmp(*cap, "filesystem") && workdir) {
-			dir_map_list = malloc((dir_map_list_len + 2) * sizeof(char *));
-			if (!dir_map_list) {
+			context->dir_map_list = malloc((context->dir_map_list_len + 2) * sizeof(char *));
+			if (!context->dir_map_list) {
 				LOG_ERR("Failed to allocate memory for dir_map_list");
 				goto error;
 			}
 
-			memset(dir_map_list, 0, sizeof(char *));
+			memset(context->dir_map_list, 0, sizeof(char *));
 
-			dir_map_list[dir_map_list_len] = malloc(strlen("/::") + strlen(workdir) + 1);
-			if (!dir_map_list[dir_map_list_len]) {
+			context->dir_map_list[context->dir_map_list_len] = malloc(strlen("/::") + strlen(workdir) + 1);
+			if (!context->dir_map_list[context->dir_map_list_len]) {
 				LOG_ERR("Failed to allocate memory for dir_map_list[0]");
-				free(dir_map_list);
+				free(context->dir_map_list);
 				goto error;
 			}
 
-			sprintf(dir_map_list[dir_map_list_len], "/::%s", workdir);
+			sprintf(context->dir_map_list[context->dir_map_list_len], "/::%s", workdir);
 
-			dir_map_list_len++;
+			context->dir_map_list_len++;
 
-			dir_map_list[dir_map_list_len] = NULL;
+			context->dir_map_list[context->dir_map_list_len] = NULL;
 
 			LOG_INF("Filesystem capability enabled");
 		}
@@ -359,17 +361,17 @@ static void *instance_create(const char *img_path, const char *workdir, const ch
 	for (const char **mount = mounts; mount && *mount; mount++) {
 		/* Need to insert the extra ':' */
 
-		new_dir_map_list = realloc(dir_map_list, (dir_map_list_len + 2) * sizeof(char *));
+		new_dir_map_list = realloc(context->dir_map_list, (context->dir_map_list_len + 2) * sizeof(char *));
 		if (!new_dir_map_list) {
 			LOG_ERR("Failed to allocate memory for dir_map_list");
 			goto error;
 		}
 
-		dir_map_list = new_dir_map_list;
+		context->dir_map_list = new_dir_map_list;
 
-		dir_map_list[dir_map_list_len] = malloc(strlen(*mount) + 2);
-		if (!dir_map_list[dir_map_list_len]) {
-			LOG_ERR("Failed to allocate memory for dir_map_list[%zu]", dir_map_list_len);
+		context->dir_map_list[context->dir_map_list_len] = malloc(strlen(*mount) + 2);
+		if (!context->dir_map_list[context->dir_map_list_len]) {
+			LOG_ERR("Failed to allocate memory for dir_map_list[%zu]", context->dir_map_list_len);
 			goto error;
 		}
 
@@ -379,9 +381,9 @@ static void *instance_create(const char *img_path, const char *workdir, const ch
 			goto error;
 		}
 
-		strcpy(dir_map_list[dir_map_list_len], *mount);
+		strcpy(context->dir_map_list[context->dir_map_list_len], *mount);
 
-		char *dst_colon = strchr(dir_map_list[dir_map_list_len], ':');
+		char *dst_colon = strchr(context->dir_map_list[context->dir_map_list_len], ':');
 		if (!dst_colon) {
 			LOG_ERR("Invalid mount format: %s", *mount);
 			goto error;
@@ -389,23 +391,17 @@ static void *instance_create(const char *img_path, const char *workdir, const ch
 
 		sprintf(dst_colon + 1, ":%s", src_colon + 1);
 
-		LOG_INF("Enabled mount: %s", dir_map_list[dir_map_list_len]);
+		LOG_INF("Enabled mount: %s", context->dir_map_list[context->dir_map_list_len]);
 
-		dir_map_list_len++;
+		context->dir_map_list_len++;
 
 		/* Add the NULL */
 
-		dir_map_list[dir_map_list_len] = NULL;
+		context->dir_map_list[context->dir_map_list_len] = NULL;
 	}
 
-	wasm_runtime_set_wasi_args(context->module, NULL, 0, (const char **)dir_map_list, dir_map_list_len, envp, envn,
-				   context->argv, argc + 1);
-
-	for (char **dir_map = dir_map_list; dir_map && *dir_map; dir_map++) {
-		free(*dir_map);
-	}
-
-	free(dir_map_list);
+	wasm_runtime_set_wasi_args(context->module, NULL, 0, (const char **)context->dir_map_list,
+				   context->dir_map_list_len, envp, envn, context->argv, argc + 1);
 
 	return context;
 
@@ -413,12 +409,6 @@ error_module:
 	wasm_runtime_unload(context->module);
 
 error:
-	for (char **dir_map = dir_map_list; dir_map && *dir_map; dir_map++) {
-		free(*dir_map);
-	}
-
-	free(dir_map_list);
-
 	if (context) {
 		if (context->module) {
 			wasm_runtime_unload(context->module);
@@ -428,6 +418,14 @@ error:
 			ocre_unload_file(context->buffer, context->size);
 			context->buffer = NULL;
 		}
+
+		for (char **dir_map = context->dir_map_list; dir_map && *dir_map; dir_map++) {
+			free(*dir_map);
+		}
+
+		free(context->dir_map_list);
+
+		context->dir_map_list = NULL;
 
 		/* Only free what we allocated */
 
@@ -470,6 +468,12 @@ static int instance_destroy(void *runtime_context)
 		LOG_ERR("Failed to unload file");
 	}
 	context->buffer = NULL;
+
+	for (char **dir_map = context->dir_map_list; dir_map && *dir_map; dir_map++) {
+		free(*dir_map);
+	}
+
+	free(context->dir_map_list);
 
 	free(context->argv[0]);
 	free(context->argv);
