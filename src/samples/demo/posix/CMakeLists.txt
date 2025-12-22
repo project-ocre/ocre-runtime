@@ -19,3 +19,10 @@ target_link_libraries(ocre_demo
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads)
 target_link_libraries(ocre_demo PRIVATE Threads::Threads)
+
+add_custom_target(run-demo
+    COMMAND pwd
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/ocre_demo
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../..
+    DEPENDS ocre_demo
+)
