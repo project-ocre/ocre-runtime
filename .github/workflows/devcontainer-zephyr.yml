@@ -65,8 +65,6 @@ jobs:
         with:
           context: .
           file: .devcontainer/zephyr/Dockerfile
+          target: ocre-ci
           push: true
           tags: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ needs.necessary.outputs.devcontainer-tag }}
-          build-args: |
-            USER_UID=1001
-            USER_GID=127

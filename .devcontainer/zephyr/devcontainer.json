@@ -1,8 +1,14 @@
 {
   "build": {
     "dockerfile": "Dockerfile",
-    "context": "../.."
+    "context": "../..",
+    "args": {
+      "USERNAME": "${localEnv:USER}",
+      "USER_UID": "${localEnv:REMOTE_UID:1000}",
+      "USER_GID": "${localEnv:REMOTE_GID:1000}"
+    }
   },
-  "remoteUser": "ocre-dev",
-  "postCreateCommand": "sudo chown ocre-dev /workspaces"
+  "remoteUser": "${localEnv:USER}",
+  "postCreateCommand": "sudo chown ${localEnv:USER} .."
+
 }

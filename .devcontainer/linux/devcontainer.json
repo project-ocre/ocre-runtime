@@ -1,6 +1,11 @@
 {
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "args": {
+      "USERNAME": "${localEnv:USER}",
+      "USER_UID": "${localEnv:REMOTE_UID:1000}",
+      "USER_GID": "${localEnv:REMOTE_GID:1000}"
+    }
   },
-  "remoteUser": "ocre-dev"
+  "remoteUser": "${localEnv:USER}"
 }
