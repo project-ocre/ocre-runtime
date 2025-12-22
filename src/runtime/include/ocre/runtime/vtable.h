@@ -74,8 +74,8 @@ struct ocre_runtime_vtable {
 	 *
 	 * @return Pointer to the runtime context on success, NULL on failure
 	 */
-	void *(*create)(const char *img_path, const char *workdir, const char **capabilities,
-			const char **argv, const char **envp, const char **mounts);
+	void *(*create)(const char *img_path, const char *workdir, const char **capabilities, const char **argv,
+			const char **envp, const char **mounts);
 
 	/**
 	 * @brief Destroy a runtime instance
