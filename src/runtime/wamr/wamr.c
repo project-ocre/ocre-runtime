@@ -43,36 +43,55 @@ struct wamr_context {
 	char **argv;
 	char **envp;
 	bool uses_ocre_api;
+	bool uses_shared_heap;
 };
 
 static int instance_execute(void *runtime_context, pthread_cond_t *cond)
 {
 	struct wamr_context *context = runtime_context;
-	wasm_module_inst_t module_inst = context->module_inst;
+
+	context->module_inst =
+		wasm_runtime_instantiate(context->module, 8192, 8192, context->error_buf, sizeof(context->error_buf));
+	if (!context->module_inst) {
+		LOG_ERR("Failed to instantiate module: %s, for context %p", context->error_buf, context);
+		return -1;
+	}
+
+	if (context->uses_ocre_api) {
+		ocre_module_context_t *mod = ocre_register_module(context->module_inst);
+		wasm_runtime_set_custom_data(context->module_inst, mod);
+	}
+
+	if (context->uses_shared_heap) {
+		if (!wasm_runtime_attach_shared_heap(context->module_inst, _shared_heap)) {
+			LOG_ERR("Failed to attach shared heap");
+		}
+		LOG_INF("Shared heap capability enabled");
+	}
 
 	/* Clear any previous exceptions */
 
-	wasm_runtime_clear_exception(module_inst);
+	wasm_runtime_clear_exception(context->module_inst);
 
 	/* Notify the starting waiter that we are ready
 	 * We should notify only after we are ready to process the kill call.
-	 * In WAMR, this is managed by the exception message, so we are good if we just cleared the exception.
+	 * In WAMR, this is managed by the exception message, so we are good if we just cleared the
+	 * exception.
 	 */
 
 	int rc = pthread_cond_signal(cond);
 	if (rc) {
 		LOG_WRN("Failed to signal start conditional variable: rc=%d", rc);
-		return -1;
 	}
 
 	/* Execute main function */
 
 	const char *exception = NULL;
-	if (!wasm_application_execute_main(module_inst, 1, context->argv)) {
+	if (!wasm_application_execute_main(context->module_inst, 1, context->argv)) {
 		LOG_WRN("Main function returned error in context %p exception: %s", context,
 			exception ? exception : "None");
 
-		exception = wasm_runtime_get_exception(module_inst);
+		exception = wasm_runtime_get_exception(context->module_inst);
 		if (exception) {
 			LOG_ERR("Container %p exception: %s", context, exception);
 		}
@@ -83,12 +102,18 @@ static int instance_execute(void *runtime_context, pthread_cond_t *cond)
 
 		LOG_INF("Cleaning up module resources");
 
-		ocre_cleanup_module_resources(module_inst);
+		ocre_cleanup_module_resources(context->module_inst);
+
+		ocre_unregister_module(context->module_inst);
 	}
 
 	LOG_INF("Context %p completed successfully", context);
 
 	int exit_code = wasm_runtime_get_wasi_exit_code(context->module_inst);
+
+	wasm_runtime_deinstantiate(context->module_inst);
+
+	context->module_inst = NULL;
 
 	return exit_code;
 }
@@ -189,8 +214,8 @@ static int runtime_deinit(void)
 	return 0;
 }
 
-static void *instance_create(const char *img_path, const char *workdir, size_t stack_size, size_t heap_size,
-			     const char **capabilities, const char **argv, const char **envp, const char **mounts)
+static void *instance_create(const char *img_path, const char *workdir, const char **capabilities, const char **argv,
+			     const char **envp, const char **mounts)
 {
 	struct wamr_context *context = NULL;
 	char **dir_map_list = NULL;
@@ -279,7 +304,10 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 	/* Process capabilities */
 
 	for (const char **cap = capabilities; cap && *cap; cap++) {
-		if (0) {
+		if (!strcmp(*cap, "ocre:shared_heap")) {
+			context->uses_shared_heap = true;
+		} else if (!strcmp(*cap, "ocre:api")) {
+			context->uses_ocre_api = true;
 		}
 #if CONFIG_OCRE_NETWORKING
 		else if (!strcmp(*cap, "networking")) {
@@ -366,46 +394,12 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 		dir_map_list_len++;
 
 		/* Add the NULL */
+
 		dir_map_list[dir_map_list_len] = NULL;
 	}
 
 	wasm_runtime_set_wasi_args(context->module, NULL, 0, (const char **)dir_map_list, dir_map_list_len, envp, envn,
 				   context->argv, argc + 1);
-
-	context->module_inst = wasm_runtime_instantiate(context->module, stack_size, heap_size, context->error_buf,
-							sizeof(context->error_buf));
-	if (!context->module_inst) {
-		LOG_ERR("Failed to instantiate module: %s, for context %p", context->error_buf, context);
-		goto error_module;
-	}
-
-	for (const char **cap = capabilities; cap && *cap; cap++) {
-		if (0) {
-		}
-#if CONFIG_OCRE_NETWORKING
-		else if (!strcmp(*cap, "networking")) {
-			/* already set up */
-		}
-#endif
-#if CONFIG_OCRE_FILESYSTEM
-		else if (!strcmp(*cap, "filesystem")) {
-			/* already set up */
-		}
-#endif
-		else if (!strcmp(*cap, "ocre:api")) {
-			context->uses_ocre_api = true;
-			ocre_module_context_t *mod = ocre_register_module(context->module_inst);
-			wasm_runtime_set_custom_data(context->module_inst, mod);
-		} else if (!strcmp(*cap, "ocre:shared_heap")) {
-			if (!wasm_runtime_attach_shared_heap(context->module_inst, _shared_heap)) {
-				LOG_ERR("Failed to attach shared heap");
-				goto error_instance;
-			}
-			LOG_INF("Shared heap capability enabled");
-		} else {
-			LOG_WRN("Capability '%s' not supported by runtime", *cap);
-		}
-	}
 
 	for (char **dir_map = dir_map_list; dir_map && *dir_map; dir_map++) {
 		free(*dir_map);
@@ -414,9 +408,6 @@ static void *instance_create(const char *img_path, const char *workdir, size_t s
 	free(dir_map_list);
 
 	return context;
-
-error_instance:
-	wasm_runtime_deinstantiate(context->module_inst);
 
 error_module:
 	wasm_runtime_unload(context->module);
@@ -472,14 +463,6 @@ static int instance_destroy(void *runtime_context)
 	if (!context) {
 		return -1;
 	}
-
-	if (context->uses_ocre_api) {
-		ocre_unregister_module(context->module_inst);
-	}
-
-	wasm_runtime_deinstantiate(context->module_inst);
-
-	context->module_inst = NULL;
 
 	wasm_runtime_unload(context->module);
 

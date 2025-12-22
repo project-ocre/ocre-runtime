@@ -246,7 +246,7 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 	}
 
 	container->runtime_context =
-		container->runtime->create(img_path, workdir, 8192, 8192, capabilities, (const char **)container->argv,
+		container->runtime->create(img_path, workdir, capabilities, (const char **)container->argv,
 					   (const char **)container->envp, mounts);
 	if (!container->runtime_context) {
 		LOG_ERR("Failed to create container");
@@ -358,13 +358,6 @@ int ocre_container_start(struct ocre_container *container)
 		LOG_ERR("Failed to initialize pthread attribute: rc=%d", rc);
 		goto error_mutex;
 	}
-
-	// rc = pthread_attr_setstacksize(&container->attr, PTHREAD_STACK_MIN);
-	// rc = pthread_attr_setstacksize(&container->attr, 8192);
-	// if (rc) {
-	//     LOG_ERR("Failed to set stack size: rc=%d", rc);
-	//     goto error_attr;
-	// }
 
 	struct container_thread_params *params;
 	params = malloc(sizeof(struct container_thread_params));
