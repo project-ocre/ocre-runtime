@@ -17,9 +17,10 @@ on:
 jobs:
   format-checks:
     name: Formatting checks
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-linux:${{ inputs.devcontainer-tag }}
+      options: --user 1000:1000
     steps:
       - name: checkout
         uses: actions/checkout@v5

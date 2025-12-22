@@ -17,9 +17,10 @@ on:
 jobs:
   build-linux:
     name: Linux build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-linux:${{ inputs.devcontainer-tag }}
+      options: --user 1000:1000
     steps:
       - name: Checkout
         uses: actions/checkout@v4

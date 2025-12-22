@@ -14,7 +14,7 @@ on:
 jobs:
   necessary:
     name: Necessary?
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     outputs:
       build: ${{ steps.changed-files.outputs.all_changed_and_modified_files != '' }}
       devcontainer-tag: ${{ steps.devcontainer-tag.outputs.tag }}
@@ -44,7 +44,7 @@ jobs:
     if: ${{ needs.necessary.outputs.build == 'true' }}
     needs:
       - necessary
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
 
     steps:
       - name: Checkout the code
