@@ -473,6 +473,11 @@ int ocre_container_stop(struct ocre_container *container)
 		goto unlock_mutex;
 	}
 
+	if (!container->runtime->stop) {
+		LOG_ERR("Container '%s' does not support stop", container->id);
+		goto unlock_mutex;
+	}
+
 	LOG_INF("Sending stop signal to container '%s'", container->id);
 
 	ret = container->runtime->stop(container->runtime_context);
