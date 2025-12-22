@@ -26,6 +26,47 @@ jobs:
         with:
           submodules: true
 
+      - name: Configure (system tests)
+        run: mkdir build && cd build && cmake ../tests/system/posix
+
+      - name: Build (system tests)
+        working-directory: build
+        run: make
+
+      - name: Run (system tests)
+        working-directory: build
+        run: make run-systests
+
+      - name: Delete build directory
+        run: rm -rf build
+
+      - name: Configure (leak checks)
+        run: mkdir build && cd build && cmake ../tests/leaks
+
+      - name: Build and run (leak checks)
+        working-directory: build
+        run: make
+
+      - name: Delete build directory
+        run: rm -rf build
+
+      - name: Configure (source coverage)
+        run: mkdir build && cd build && cmake ../tests/coverage
+
+      - name: Build and run (source coverage)
+        working-directory: build
+        run: make
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocre-coverage
+          include-hidden-files: true
+          path: build/report
+
+      - name: Delete build directory
+        run: rm -rf build
+
       - name: Configure
         run: mkdir build && cd build && cmake ..
 
