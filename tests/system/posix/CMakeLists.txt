@@ -24,7 +24,7 @@ project(OcreSystemTestPosix)
 add_subdirectory(../../.. ocre)
 
 add_library(Unity STATIC
-    ../../Unity/src/Unity.c
+    ../../Unity/src/unity.c
 )
 
 target_include_directories(Unity PUBLIC
