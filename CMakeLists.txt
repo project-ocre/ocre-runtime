@@ -5,26 +5,15 @@
 
 cmake_minimum_required(VERSION 3.20.0)
 
-project(ocre LANGUAGES C ASM)
-
-set(CMAKE_BUILD_TYPE Debug)
+project(ocre LANGUAGES C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 17)
 
 set(WAMR_BUILD_PLATFORM linux)
 
 include (src/samples/demo/demo_containers.cmake)
-
-# TODO move these to testing
-list(APPEND OCRE_SDK_PRELOADED_IMAGES
-    "return0.wasm"
-    "return1.wasm"
-    "sleep_5_return_0.wasm"
-)
 
 # core
 add_subdirectory(src/ocre)
@@ -44,5 +33,5 @@ add_subdirectory(src/shell)
 add_subdirectory(src/samples/mini/posix)
 add_subdirectory(src/samples/demo/posix)
 
-# this sample is useful only for static code analysis on POSIX
+# this sample is useful for static code analysis on POSIX
 add_subdirectory(src/samples/static_checks/posix)
