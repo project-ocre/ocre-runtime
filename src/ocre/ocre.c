@@ -450,11 +450,6 @@ void ocre_deinitialize(void)
 
 		free(r_elt);
 	}
-
-	int rc = pthread_mutex_destroy(&contexts_mutex);
-	if (rc) {
-		LOG_ERR("Failed to destroy context mutex: rc=%d", rc);
-	}
 }
 
 int ocre_is_valid_id(const char *id)
