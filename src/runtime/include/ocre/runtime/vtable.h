@@ -10,6 +10,7 @@
 
 #include <stddef.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 /**
  * @brief Runtime Engine Virtual Table
@@ -95,13 +96,13 @@ struct ocre_runtime_vtable {
 	 * the container's main function, block and eventually return the exit code.
 	 *
 	 * @param runtime_context Pointer to the runtime context returned by create
-	 * @param cond Pointer to the conditional variable to signal when the instance is ready to
+	 * @param sem Pointer to the semaphore to post to when the instance is ready to
 	 * be killed
 	 *
 	 * @return status code of the execution: 0 on success, non-zero on failure
 	 */
 
-	int (*thread_execute)(void *runtime_context, pthread_cond_t *cond);
+	int (*thread_execute)(void *runtime_context, sem_t *sem);
 
 	/**
 	 * @brief Stop a runtime instance

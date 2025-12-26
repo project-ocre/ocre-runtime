@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
-
+#include <semaphore.h>
 #include <ocre/ocre.h>
 #include <ocre/platform/log.h>
 #include <ocre/runtime/vtable.h>
@@ -29,7 +29,7 @@ struct ocre_container {
 	bool detached;
 	ocre_container_status_t status;
 	pthread_mutex_t mutex;
-	pthread_cond_t cond_start;
+	sem_t sem_start;
 	pthread_cond_t cond_stop;
 	void *runtime_context;
 	pthread_t thread;
@@ -41,9 +41,9 @@ struct ocre_container {
 };
 
 struct container_thread_params {
-	int (*func)(void *, pthread_cond_t *);
+	int (*func)(void *, sem_t *);
 	struct ocre_container *container;
-	pthread_cond_t *cond;
+	sem_t *sem;
 };
 
 static void *container_thread(void *arg)
@@ -54,7 +54,7 @@ static void *container_thread(void *arg)
 
 	/* Run the container */
 
-	int result = params->func(container->runtime_context, params->cond);
+	int result = params->func(container->runtime_context, params->sem);
 
 	/* Exited */
 
@@ -239,9 +239,9 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 		goto error_mutex;
 	}
 
-	rc = pthread_cond_init(&container->cond_start, NULL);
+	rc = sem_init(&container->sem_start, 0, 0);
 	if (rc) {
-		LOG_ERR("Failed to initialize start conditional variable: rc=%d", rc);
+		LOG_ERR("Failed to initialize start semaphore: rc=%d, errno=%d", rc, errno);
 		goto error_mutex;
 	}
 
@@ -262,9 +262,9 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 	return container;
 
 error_cond:
-	rc = pthread_cond_destroy(&container->cond_start);
+	rc = sem_destroy(&container->sem_start);
 	if (rc) {
-		LOG_ERR("Failed to deinitialize start conditional variable: rc=%d", rc);
+		LOG_ERR("Failed to deinitialize start semaphore: rc=%d", rc);
 	}
 
 	rc = pthread_cond_destroy(&container->cond_stop);
@@ -311,9 +311,9 @@ int ocre_container_destroy(struct ocre_container *container)
 		LOG_ERR("Failed to deinitialize mutex: rc=%d", rc);
 	}
 
-	rc = pthread_cond_destroy(&container->cond_start);
+	rc = sem_destroy(&container->sem_start);
 	if (rc) {
-		LOG_ERR("Failed to deinitialize start conditional variable: rc=%d", rc);
+		LOG_ERR("Failed to deinitialize start semaphore: rc=%d", rc);
 	}
 
 	rc = pthread_cond_destroy(&container->cond_stop);
@@ -370,7 +370,7 @@ int ocre_container_start(struct ocre_container *container)
 	memset(params, 0, sizeof(struct container_thread_params));
 	params->container = container;
 	params->func = container->runtime->thread_execute;
-	params->cond = &container->cond_start;
+	params->sem = &container->sem_start;
 	container->status = OCRE_CONTAINER_STATUS_RUNNING;
 
 	rc = pthread_create(&container->thread, &container->attr, container_thread, params);
@@ -381,19 +381,19 @@ int ocre_container_start(struct ocre_container *container)
 
 	LOG_INF("Waiting for container '%s' to start", container->id);
 
-	rc = pthread_cond_wait(&container->cond_start, &container->mutex);
-	if (rc) {
-		LOG_ERR("Failed to wait on start conditional variable: rc=%d", rc);
-		goto error_status;
-	}
-
-	LOG_INF("Started container '%s' on runtime '%s'", container->id, container->runtime->runtime_name);
-
 	rc = pthread_mutex_unlock(&container->mutex);
 	if (rc) {
 		LOG_ERR("Failed to unlock mutex: rc=%d", rc);
 		goto error_status;
 	}
+
+	rc = sem_wait(&container->sem_start);
+	if (rc) {
+		LOG_ERR("Failed to wait on start semaphore: rc=%d", rc);
+		goto error_status;
+	}
+
+	LOG_INF("Started container '%s' on runtime '%s'", container->id, container->runtime->runtime_name);
 
 	if (!container->detached) {
 		/* This will block until the container thread exits */

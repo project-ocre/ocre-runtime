@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -48,7 +49,7 @@ struct wamr_context {
 	size_t dir_map_list_len;
 };
 
-static int instance_execute(void *runtime_context, pthread_cond_t *cond)
+static int instance_execute(void *runtime_context, sem_t *sem)
 {
 	struct wamr_context *context = runtime_context;
 
@@ -81,9 +82,9 @@ static int instance_execute(void *runtime_context, pthread_cond_t *cond)
 	 * exception.
 	 */
 
-	int rc = pthread_cond_signal(cond);
+	int rc = sem_post(sem);
 	if (rc) {
-		LOG_WRN("Failed to signal start conditional variable: rc=%d", rc);
+		LOG_WRN("Failed to signal start semaphore: rc=%d", rc);
 	}
 
 	/* Execute main function */
@@ -120,13 +121,13 @@ static int instance_execute(void *runtime_context, pthread_cond_t *cond)
 	return exit_code;
 }
 
-static int instance_thread_execute(void *arg, pthread_cond_t *cond)
+static int instance_thread_execute(void *arg, sem_t *sem)
 {
 	struct wamr_context *context = arg;
 
 	wasm_runtime_init_thread_env();
 
-	int ret = instance_execute(context, cond);
+	int ret = instance_execute(context, sem);
 
 	wasm_runtime_destroy_thread_env();
 
