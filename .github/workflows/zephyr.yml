@@ -38,17 +38,17 @@ jobs:
 
       - name: West init
         run: |
-          . /home/ocre-dev/.venv/bin/activate
+          . /opt/zephyr-venv/bin/activate
           west init -l .
 
       - name: West update
         run: |
-          . /home/ocre-dev/.venv/bin/activate
+          . /opt/zephyr-venv/bin/activate
           west update
 
       - name: West build
         run: |
-          . /home/ocre-dev/.venv/bin/activate
+          . /opt/zephyr-venv/bin/activate
           west build -p always -b ${{ matrix.board }} src/samples/${{ matrix.app }}/zephyr
 
       - name: Set sane board name
