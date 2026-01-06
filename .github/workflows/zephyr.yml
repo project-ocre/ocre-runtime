@@ -37,6 +37,9 @@ jobs:
           path: ocre-runtime
           submodules: true
 
+      - name: Clean .west directory
+        run: rm -rf ../.west
+
       - name: West init
         run: |
           . /opt/zephyr-venv/bin/activate
