@@ -47,6 +47,9 @@ jobs:
           . /opt/zephyr-venv/bin/activate
           west update
 
+      - name: Clean build directory
+        run: rm -rf build
+
       - name: West build
         run: |
           . /opt/zephyr-venv/bin/activate
