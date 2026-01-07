@@ -56,6 +56,8 @@ settings.json
 
 src/ocre/commit_id.h
 
+**/.DS_Store
+
 # hidden files
 .*
 !.git
