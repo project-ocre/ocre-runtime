@@ -104,18 +104,6 @@ int ocre_gpio_init(void) {
 #elif defined(CONFIG_BOARD_W5500_EVB_PICO2)
     INIT_GPIO_PORT_NAMED(0, DT_NODELABEL(gpio0), "GPIO0");
 
-#elif defined(CONFIG_BOARD_MIMXRT1064_EVK)
-    // No gpio0 for some reason? Will be annoying for some APIs
-    INIT_GPIO_PORT_NAMED(0,  DT_NODELABEL(gpio1), "GPIO1");
-    INIT_GPIO_PORT_NAMED(1,  DT_NODELABEL(gpio2), "GPIO2");
-    INIT_GPIO_PORT_NAMED(2,  DT_NODELABEL(gpio3), "GPIO3");
-    INIT_GPIO_PORT_NAMED(3,  DT_NODELABEL(gpio4), "GPIO4");
-    INIT_GPIO_PORT_NAMED(4,  DT_NODELABEL(gpio5), "GPIO5");
-    INIT_GPIO_PORT_NAMED(5,  DT_NODELABEL(gpio6), "GPIO6");
-    INIT_GPIO_PORT_NAMED(6,  DT_NODELABEL(gpio7), "GPIO7");
-    INIT_GPIO_PORT_NAMED(7,  DT_NODELABEL(gpio8), "GPIO8");
-    INIT_GPIO_PORT_NAMED(8,  DT_NODELABEL(gpio9), "GPIO9");
-
 #else
     // Generic fallback
 #if DT_NODE_EXISTS(DT_NODELABEL(gpio0))
