@@ -17,7 +17,7 @@ on:
 jobs:
   format-checks:
     name: Formatting checks
-    runs-on: self-hosted
+    runs-on: ["self-hosted", "build-server"]
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-linux:${{ inputs.devcontainer-tag }}
       options: --user 1000:1000

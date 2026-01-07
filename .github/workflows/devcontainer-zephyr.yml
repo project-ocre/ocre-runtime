@@ -14,7 +14,7 @@ on:
 jobs:
   necessary:
     name: Necessary?
-    runs-on: self-hosted
+    runs-on: ["self-hosted", "build-server"]
     outputs:
       build: ${{ steps.changed-files.outputs.all_changed_and_modified_files != '' }}
       devcontainer-tag: ${{ steps.devcontainer-tag.outputs.tag }}
@@ -44,7 +44,7 @@ jobs:
     if: ${{ needs.necessary.outputs.build == 'true' }}
     needs:
       - necessary
-    runs-on: self-hosted
+    runs-on: ["self-hosted", "build-server"]
 
     steps:
       - name: Checkout the code

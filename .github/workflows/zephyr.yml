@@ -17,7 +17,7 @@ on:
 jobs:
   build-zephyr:
     name: Zephyr build
-    runs-on: self-hosted
+    runs-on: ["self-hosted", "build-server"]
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
       options: --user 1000:1000
