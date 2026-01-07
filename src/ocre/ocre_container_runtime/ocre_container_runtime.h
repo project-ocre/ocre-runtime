@@ -56,7 +56,6 @@ typedef enum {
  */
 typedef enum {
 	CONTAINER_STATUS_UNKNOWN,      ///< Status is unknown.
-	CONTAINER_STATUS_RESERVED,     ///< Container slot has been reserved.
 	CONTAINER_STATUS_CREATED,      ///< Container has been created.
 	CONTAINER_STATUS_RUNNING,      ///< Container is currently running.
 	CONTAINER_STATUS_STOPPED,      ///< Container has been stopped.
