@@ -131,23 +131,8 @@ static void container_thread_entry(void *args) {
     // Set TLS for the container's WASM module
     current_module_tls = &module_inst;
 #endif
-
-    // Run the WASM main function with exception handling
-    bool success = false;
-    const char *exception = NULL;
-    
-    // Clear any previous exceptions
-    wasm_runtime_clear_exception(module_inst);
-    
-    // Execute main function
-    success = wasm_application_execute_main(module_inst, 0, NULL);
-    
-    // Check for exceptions
-    exception = wasm_runtime_get_exception(module_inst);
-    if (exception) {
-        LOG_ERR("Container %d exception: %s", container->container_ID, exception);
-        success = false;
-    }
+    // Run the WASM main function
+    bool success = wasm_application_execute_main(module_inst, 0, NULL);
     // Update container status
     if (container->container_runtime_status != CONTAINER_STATUS_STOPPED)
         container->container_runtime_status = success ? CONTAINER_STATUS_STOPPED : CONTAINER_STATUS_ERROR;
@@ -176,12 +161,7 @@ static void container_thread_entry(void *args) {
     }
     core_mutex_unlock(&container->lock);
 
-    if (success) {
-        LOG_INF("Container %d completed successfully", container->container_ID);
-    } else {
-        LOG_ERR("Container %d failed: %s", container->container_ID, 
-                exception ? exception : "unknown error");
-    }
+    LOG_INF("Container thread %d exited cleanly", container->container_ID);
 
     // Clean up WASM runtime thread environment
     wasm_runtime_destroy_thread_env();
