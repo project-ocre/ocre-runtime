@@ -16,10 +16,10 @@
  *        member of the smf_ctx structure.
  */
 struct internal_ctx {
-	bool new_state : 1;
-	bool terminate : 1;
-	bool is_exit : 1;
-	bool handled : 1;
+	bool new_state: 1;
+	bool terminate: 1;
+	bool is_exit: 1;
+	bool handled: 1;
 };
 
 #ifdef CONFIG_SMF_ANCESTOR_SUPPORT
@@ -34,7 +34,8 @@ static bool share_parent(const struct smf_state *test_state, const struct smf_st
 	return false;
 }
 
-static const struct smf_state *get_child_of(const struct smf_state *states, const struct smf_state *parent)
+static const struct smf_state *get_child_of(const struct smf_state *states,
+					    const struct smf_state *parent)
 {
 	const struct smf_state *tmp = states;
 
@@ -63,9 +64,11 @@ static const struct smf_state *get_last_of(const struct smf_state *states)
  * @param dest transition destination
  * @return LCA state, or NULL if states have no LCA.
  */
-static const struct smf_state *get_lca_of(const struct smf_state *source, const struct smf_state *dest)
+static const struct smf_state *get_lca_of(const struct smf_state *source,
+					  const struct smf_state *dest)
 {
-	for (const struct smf_state *ancestor = source->parent; ancestor != NULL; ancestor = ancestor->parent) {
+	for (const struct smf_state *ancestor = source->parent; ancestor != NULL;
+	     ancestor = ancestor->parent) {
 		if (ancestor == dest) {
 			return ancestor->parent;
 		} else if (share_parent(dest, ancestor)) {
@@ -84,7 +87,8 @@ static const struct smf_state *get_lca_of(const struct smf_state *source, const 
  * @param topmost State we are entering from. Its entry action is not executed
  * @return true if the state machine should terminate, else false
  */
-static bool smf_execute_all_entry_actions(struct smf_ctx *const ctx, const struct smf_state *new_state,
+static bool smf_execute_all_entry_actions(struct smf_ctx *const ctx,
+					  const struct smf_state *new_state,
 					  const struct smf_state *topmost)
 {
 	struct internal_ctx *const internal = (void *)&ctx->internal;
@@ -95,7 +99,8 @@ static bool smf_execute_all_entry_actions(struct smf_ctx *const ctx, const struc
 	}
 
 	for (const struct smf_state *to_execute = get_child_of(new_state, topmost);
-	     to_execute != NULL && to_execute != new_state; to_execute = get_child_of(new_state, to_execute)) {
+	     to_execute != NULL && to_execute != new_state;
+	     to_execute = get_child_of(new_state, to_execute)) {
 		/* Keep track of the executing entry action in case it calls
 		 * smf_set_state()
 		 */
@@ -187,8 +192,8 @@ static bool smf_execute_all_exit_actions(struct smf_ctx *const ctx, const struct
 {
 	struct internal_ctx *const internal = (void *)&ctx->internal;
 
-	for (const struct smf_state *to_execute = ctx->current; to_execute != NULL && to_execute != topmost;
-	     to_execute = to_execute->parent) {
+	for (const struct smf_state *to_execute = ctx->current;
+	     to_execute != NULL && to_execute != topmost; to_execute = to_execute->parent) {
 		if (to_execute->exit) {
 			to_execute->exit(ctx);
 

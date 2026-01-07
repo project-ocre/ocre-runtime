@@ -15,12 +15,12 @@
 #define MSG_QUEUE_DEPTH 10
 
 #define COMPONENT_SEND_SIMPLE(c, e)                                                                                    \
-	struct ocre_message _msg = {.event = e};                                                                       \
-	ocre_component_send(c, &_msg)
+    struct ocre_message _msg = {.event = e};                                                                           \
+    ocre_component_send(c, &_msg)
 
 struct ocre_component {
-	struct ocre_message msg; /*!< Message struct for reading messages into */
-	core_mq_t msgq;		 /*!< Message queue to read from */
+    struct ocre_message msg; /*!< Message struct for reading messages into */
+    core_mq_t msgq;             /*!< Message queue to read from */
 };
 
 void ocre_component_init(struct ocre_component *component);

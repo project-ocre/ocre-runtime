@@ -11,22 +11,22 @@ LOG_MODULE_DECLARE(platform_mq_component, OCRE_LOG_LEVEL);
 
 int core_mq_init(core_mq_t *mq, const char *name, size_t msg_size, uint32_t max_msgs)
 {
-	mq->msgq_buffer = k_malloc(msg_size * max_msgs);
-	k_msgq_init(&mq->msgq, mq->msgq_buffer, msg_size, max_msgs);
-	return 0;
+    mq->msgq_buffer = k_malloc(msg_size * max_msgs);
+    k_msgq_init(&mq->msgq, mq->msgq_buffer, msg_size, max_msgs);
+    return 0;
 }
 
 int core_mq_send(core_mq_t *mq, const void *data, size_t msg_len)
 {
-	int ret = k_msgq_put(&mq->msgq, data, MQ_DEFAULT_TIMEOUT);
+    int ret = k_msgq_put(&mq->msgq, data, MQ_DEFAULT_TIMEOUT);
 
-	if (ret != 0) {
-		LOG_HEXDUMP_DBG(data, msg_len, "message");
-	}
-	return ret;
+    if (ret != 0) {
+        LOG_HEXDUMP_DBG(data, msg_len, "message");
+    }
+    return ret;
 }
 
 int core_mq_recv(core_mq_t *mq, void *data)
 {
-	return k_msgq_get(&mq->msgq, data, K_FOREVER);
+    return k_msgq_get(&mq->msgq, data, K_FOREVER);
 }

@@ -8,12 +8,10 @@
 #include "ocre_core_external.h"
 #include <zephyr/kernel.h>
 
-void core_sleep_ms(int milliseconds)
-{
-	k_msleep(milliseconds);
+void core_sleep_ms(int milliseconds) {
+    k_msleep(milliseconds);
 }
 
-void core_yield(void)
-{
-	k_yield();
+void core_yield(void) {
+    k_yield();
 }

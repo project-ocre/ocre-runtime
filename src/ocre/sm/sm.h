@@ -13,28 +13,28 @@
 #define MAX_TIMERS 3
 
 #define SM_RETURN_IF_EVENT_HANDLED(o)                                                                                  \
-	if (((struct sm_ctx *)o)->event.handled)                                                                       \
-	return SMF_EVENT_HANDLED
+    if (((struct sm_ctx *)o)->event.handled)                                                                           \
+    return SMF_EVENT_HANDLED
 #define SM_MARK_EVENT_HANDLED(o) ((struct sm_ctx *)o)->event.handled = true
-#define SM_GET_EVENT(o)		 ((struct sm_ctx *)o)->event.msg
-#define SM_GET_CUSTOM_CTX(o)	 ((struct sm_ctx *)o)->custom_ctx
+#define SM_GET_EVENT(o)          ((struct sm_ctx *)o)->event.msg
+#define SM_GET_CUSTOM_CTX(o)     ((struct sm_ctx *)o)->custom_ctx
 
 #define EVENT_LOG_MSG(fmt, event) LOG_DBG(fmt, event)
 
 struct sm_ctx {
-	struct smf_ctx ctx;
-	struct {
-		bool handled;
-		void *msg;
-	} event;
-	void *custom_ctx;
+    struct smf_ctx ctx;
+    struct {
+        bool handled;
+        void *msg;
+    } event;
+    void *custom_ctx;
 };
 
 typedef struct state_machine {
-	core_mq_t *msgq;
-	core_timer_t timers[MAX_TIMERS];
-	struct sm_ctx ctx;	     /*!< State machine context */
-	const struct smf_state *hsm; /*!< State machine states */
+    core_mq_t *msgq;
+    core_timer_t timers[MAX_TIMERS];
+    struct sm_ctx ctx;         /*!< State machine context */
+    const struct smf_state *hsm; /*!< State machine states */
 } state_machine_t;
 
 int sm_transition(state_machine_t *sm, int target_state);

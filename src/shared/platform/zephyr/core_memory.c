@@ -9,12 +9,10 @@
 
 #include <zephyr/kernel.h>
 
-void *core_malloc(size_t size)
-{
-	return k_malloc(size);
+void *core_malloc(size_t size) {
+    return k_malloc(size);
 }
 
-void core_free(void *ptr)
-{
-	k_free(ptr);
+void core_free(void *ptr) {
+    k_free(ptr);
 }

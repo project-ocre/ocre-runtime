@@ -11,15 +11,14 @@ AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-BitFieldColonSpacing: Both
-BreakBeforeBraces: Linux
+BitFieldColonSpacing: After
+BreakBeforeBraces: Attach
 ColumnLimit: 120
 ConstructorInitializerIndentWidth: 8
 ContinuationIndentWidth: 8
-IndentCaseLabels: true # Linux is false
-IndentWidth: 8
-LineEnding: LF
+IndentCaseLabels: true
+IndentWidth: 4
+InsertBraces: true
 SpaceBeforeParens: ControlStatementsExceptControlMacros
-SortIncludes: false
-UseTab: Always
-TabWidth: 8
+SortIncludes: Never
+#UseTab: ForContinuationAndIndentation

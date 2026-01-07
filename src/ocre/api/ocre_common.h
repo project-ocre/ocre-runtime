@@ -16,39 +16,40 @@
 
 #define OCRE_EVENT_THREAD_STACK_SIZE 2048
 #define OCRE_EVENT_THREAD_PRIORITY   5
-#define OCRE_WASM_STACK_SIZE	     16384
-#define EVENT_THREAD_POOL_SIZE	     0
+#define OCRE_WASM_STACK_SIZE         16384
+#define EVENT_THREAD_POOL_SIZE 0
 
 extern bool common_initialized;
 extern bool ocre_event_queue_initialized;
 extern __thread wasm_module_inst_t *current_module_tls;
-extern char *ocre_event_queue_buffer_ptr; // Defined in ocre_common.c
+extern char *ocre_event_queue_buffer_ptr;       // Defined in ocre_common.c
 
 /* External declarations for unified event queue */
-extern core_eventq_t ocre_event_queue;	      // Defined in ocre_common.c
-extern core_spinlock_t ocre_event_queue_lock; // Defined in ocre_common.c
+extern core_eventq_t ocre_event_queue;          // Defined in ocre_common.c
+extern core_spinlock_t ocre_event_queue_lock;   // Defined in ocre_common.c
+
 
 /**
  * @brief Enumeration of OCRE resource types.
  */
 typedef enum {
-	OCRE_RESOURCE_TYPE_TIMER,     ///< Timer resource
-	OCRE_RESOURCE_TYPE_GPIO,      ///< GPIO resource
-	OCRE_RESOURCE_TYPE_SENSOR,    ///< Sensor resource
-	OCRE_RESOURCE_TYPE_MESSAGING, ///< Messaging resource
-	OCRE_RESOURCE_TYPE_COUNT      ///< Total number of resource types
+    OCRE_RESOURCE_TYPE_TIMER,     ///< Timer resource
+    OCRE_RESOURCE_TYPE_GPIO,      ///< GPIO resource
+    OCRE_RESOURCE_TYPE_SENSOR,    ///< Sensor resource 
+    OCRE_RESOURCE_TYPE_MESSAGING, ///< Messaging resource
+    OCRE_RESOURCE_TYPE_COUNT      ///< Total number of resource types
 } ocre_resource_type_t;
 
 /**
  * @brief Structure representing the context of an OCRE module.
  */
 typedef struct {
-	wasm_module_inst_t inst;				    ///< WASM module instance
-	wasm_exec_env_t exec_env;				    ///< WASM execution environment
-	bool in_use;						    ///< Flag indicating if the module is in use
-	uint32_t last_activity;					    ///< Timestamp of the last activity
-	uint32_t resource_count[OCRE_RESOURCE_TYPE_COUNT];	    ///< Count of resources per type
-	wasm_function_inst_t dispatchers[OCRE_RESOURCE_TYPE_COUNT]; ///< Event dispatchers per resource type
+    wasm_module_inst_t inst;                                    ///< WASM module instance
+    wasm_exec_env_t exec_env;                                   ///< WASM execution environment
+    bool in_use;                                                ///< Flag indicating if the module is in use
+    uint32_t last_activity;                                     ///< Timestamp of the last activity
+    uint32_t resource_count[OCRE_RESOURCE_TYPE_COUNT];          ///< Count of resources per type
+    wasm_function_inst_t dispatchers[OCRE_RESOURCE_TYPE_COUNT]; ///< Event dispatchers per resource type
 } ocre_module_context_t;
 
 /**
@@ -62,38 +63,38 @@ typedef void (*ocre_cleanup_handler_t)(wasm_module_inst_t module_inst);
  * @brief Structure representing an OCRE event for dispatching.
  */
 typedef struct {
-	union {
-		struct {
-			uint32_t timer_id; ///< Timer ID
-		} timer_event;		   ///< Timer event data
-		struct {
-			uint32_t pin_id; ///< GPIO pin ID
-			uint32_t port;	 ///< GPIO port
-			uint32_t state;	 ///< GPIO state
-		} gpio_event;		 ///< GPIO event data
-		struct {
-			uint32_t sensor_id; ///< Sensor ID
-			uint32_t channel;   ///< Sensor channel
-			uint32_t value;	    ///< Sensor value
-		} sensor_event;		    ///< Sensor event data
-		struct {
-			uint32_t message_id;	      ///< Message ID
-			char *topic;		      ///< Message topic
-			uint32_t topic_offset;	      ///< Message topic offset
-			char *content_type;	      ///< Message content type
-			uint32_t content_type_offset; ///< Message content type offset
-			void *payload;		      ///< Message payload
-			uint32_t payload_offset;      ///< Message payload offset
-			uint32_t payload_len;	      ///< Payload length
-		} messaging_event;		      ///< Messaging event data
-						      /*
-							  =============================
-							  Place to add more event data
-							  =============================
-						      */
-	} data;					      ///< Union of event data
-	wasm_module_inst_t owner;		      ///< Owner module instance
-	ocre_resource_type_t type;		      ///< Type of the event
+    union {
+        struct {
+            uint32_t timer_id;        ///< Timer ID
+        } timer_event;                ///< Timer event data
+        struct {
+            uint32_t pin_id;          ///< GPIO pin ID
+            uint32_t port;           ///< GPIO port 
+            uint32_t state;           ///< GPIO state
+        } gpio_event;                 ///< GPIO event data
+        struct {
+            uint32_t sensor_id;       ///< Sensor ID
+            uint32_t channel;         ///< Sensor channel
+            uint32_t value;           ///< Sensor value
+        } sensor_event;               ///< Sensor event data
+        struct {
+            uint32_t message_id;                ///< Message ID
+            char *topic;                        ///< Message topic
+            uint32_t topic_offset;              ///< Message topic offset
+            char *content_type;                 ///< Message content type
+            uint32_t content_type_offset;       ///< Message content type offset
+            void *payload;                      ///< Message payload
+            uint32_t payload_offset;            ///< Message payload offset
+            uint32_t payload_len;               ///< Payload length
+        } messaging_event;            ///< Messaging event data
+        /*
+            =============================
+            Place to add more event data  
+            =============================
+        */
+    } data;                           ///< Union of event data
+    wasm_module_inst_t owner;           ///< Owner module instance
+    ocre_resource_type_t type;        ///< Type of the event
 } ocre_event_t;
 
 /**
@@ -199,7 +200,7 @@ wasm_module_inst_t ocre_get_current_module(void);
  * @return 0 on success, negative error code on failure.
  */
 int ocre_get_event(wasm_exec_env_t exec_env, uint32_t type_offset, uint32_t id_offset, uint32_t port_offset,
-		   uint32_t state_offset, uint32_t extra_offset, uint32_t payload_len_offset);
+                   uint32_t state_offset, uint32_t extra_offset, uint32_t payload_len_offset);
 
 void ocre_common_shutdown(void);
 

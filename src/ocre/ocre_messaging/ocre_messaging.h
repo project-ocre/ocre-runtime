@@ -18,11 +18,11 @@
  * @brief Structure representing an OCRE message.
  */
 typedef struct {
-	uint32_t mid;	      ///< Message ID
-	void *topic;	      ///< Topic of the message (pointer to string)
-	void *content_type;   ///< Content type (e.g., MIME type, pointer to string)
-	void *payload;	      ///< Message payload
-	uint32_t payload_len; ///< Length of the payload
+    uint32_t mid;         ///< Message ID
+    void *topic;          ///< Topic of the message (pointer to string)
+    void *content_type;   ///< Content type (e.g., MIME type, pointer to string)
+    void *payload;        ///< Message payload
+    uint32_t payload_len; ///< Length of the payload
 } ocre_msg_t;
 
 /**
@@ -73,6 +73,6 @@ void ocre_messaging_cleanup_container(wasm_module_inst_t module_inst);
  * @return OCRE_SUCCESS on success, negative error code on failure.
  */
 int ocre_messaging_free_module_event_data(wasm_exec_env_t exec_env, uint32_t topic_offset, uint32_t content_offset,
-					  uint32_t payload_offset);
+                                           uint32_t payload_offset);
 
 #endif /* OCRE_MESSAGING_H */
