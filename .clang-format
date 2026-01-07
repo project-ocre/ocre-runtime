@@ -4,7 +4,7 @@
 
 ---
 BasedOnStyle: LLVM
-AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+AlignConsecutiveMacros: AcrossComments
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
