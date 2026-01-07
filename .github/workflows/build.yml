@@ -140,9 +140,6 @@ jobs:
       - name: Flash b_u585i_iot02a
         if: runner.environment == 'self-hosted'
         run: |
-          STM32_Programmer_CLI -c port=swd -el \
-          "/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr" \
-          -e all -s
           STM32_Programmer_CLI -c port=swd -e all -w zephyr.bin 0x08000000 -v -rst
 
   build-and-run-linux-sample:
