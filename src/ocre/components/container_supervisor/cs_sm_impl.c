@@ -73,14 +73,6 @@ static size_t ocre_get_available_memory(void) {
 }
 #endif
 
-#ifdef CONFIG_OCRE_SHARED_HEAP
-// Shared heap for memory-mapped access
-wasm_shared_heap_t _shared_heap = NULL;
-#ifdef CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL
-uint8 preallocated_buf[CONFIG_OCRE_SHARED_HEAP_BUF_SIZE];
-#endif
-#endif
-
 static bool validate_container_memory(ocre_container_t *container) {
 #ifdef CONFIG_OCRE_MEMORY_CHECK_ENABLED
     size_t requested_heap = container->ocre_container_data.heap_size;
@@ -274,30 +266,6 @@ ocre_container_runtime_status_t CS_runtime_init(ocre_cs_ctx *ctx, ocre_container
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
     ocre_messaging_init();
 #endif
-#ifdef CONFIG_OCRE_SHARED_HEAP
-    SharedHeapInitArgs heap_init_args;
-    memset(&heap_init_args, 0, sizeof(heap_init_args));
-    
-#ifdef CONFIG_OCRE_SHARED_HEAP_BUF_PHYSICAL
-    // Physical mode - map hardware register address
-    heap_init_args.pre_allocated_addr = (void *)CONFIG_OCRE_SHARED_HEAP_BUF_ADDRESS;
-    LOG_INF("Creating physical memory mapping at 0x%08X (hardware registers)", 
-            CONFIG_OCRE_SHARED_HEAP_BUF_ADDRESS);
-#elif CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL
-    // Virtual mode - allocate from RAM
-    heap_init_args.pre_allocated_addr = preallocated_buf;
-    LOG_INF("Creating virtual shared heap in RAM, size=%d bytes", 
-            CONFIG_OCRE_SHARED_HEAP_BUF_SIZE);
-#endif
-    heap_init_args.size = CONFIG_OCRE_SHARED_HEAP_BUF_SIZE;
-    _shared_heap = wasm_runtime_create_shared_heap(&heap_init_args);
-
-    if (!_shared_heap) {
-        LOG_ERR("Create preallocated shared heap failed");
-        return RUNTIME_STATUS_ERROR;
-    }
-#endif
-
     storage_heap_init();
     return RUNTIME_STATUS_INITIALIZED;
 }
@@ -384,15 +352,6 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
                 "0.0.0.0/0",
         };
         wasm_runtime_set_wasi_addr_pool(curr_container_arguments->module, addr_pool, ADDRESS_POOL_SIZE);
-        /**
-         * Configure which domain names a WebAssembly module is allowed to resolve via DNS lookups
-         * ns_lookup_pool: An array of domain name patterns (e.g., "example.com", "*.example.com", or "*" for any domain)
-         */
-
-        const char *ns_lookup_pool[] = {
-            "*"
-        };
-        wasm_runtime_set_wasi_ns_lookup_pool(curr_container_arguments->module, ns_lookup_pool, sizeof(ns_lookup_pool) / sizeof(ns_lookup_pool[0]));
     #endif
 
     #ifdef CONFIG_OCRE_CONTAINER_FILESYSTEM
@@ -428,35 +387,8 @@ ocre_container_status_t CS_run_container(ocre_container_t *container) {
         defined(CONFIG_OCRE_CONTAINER_MESSAGING)
         ocre_register_module(curr_container_arguments->module_inst);
 #endif
-#ifdef CONFIG_OCRE_SHARED_HEAP
-        LOG_INF("Attaching shared heap to container %d", curr_container_ID);
-        /* attach module instance to the shared heap */
-        if (!wasm_runtime_attach_shared_heap(curr_container_arguments->module_inst, _shared_heap)) {
-            LOG_ERR("Attach shared heap failed.");
-            return CONTAINER_STATUS_ERROR;
-        }
-
-#ifdef CONFIG_OCRE_SHARED_HEAP_BUF_PHYSICAL
-        // For physical mode, get the base address from the shared heap itself
-        // The WASM address space already knows about the physical mapping
-        uint32 shared_heap_base_addr = wasm_runtime_addr_native_to_app(
-            curr_container_arguments->module_inst,
-            (void*)CONFIG_OCRE_SHARED_HEAP_BUF_ADDRESS);
-        LOG_INF("Physical shared heap base address in app: 0x%x", shared_heap_base_addr);
-#elif CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL
-        // For virtual mode, convert the allocated buffer address
-        uint32 shared_heap_base_addr = wasm_runtime_addr_native_to_app(
-            curr_container_arguments->module_inst, 
-            preallocated_buf);
-        LOG_INF("Virtual shared heap base address in app: 0x%x", shared_heap_base_addr);
-#endif
-        
-        if (shared_heap_base_addr == 0) {
-            LOG_ERR("Failed to get shared heap WASM address!");
-            return CONTAINER_STATUS_ERROR;
-        }
-#endif
     }
+
     core_mutex_lock(&container_mutex);
     int thread_idx = get_available_thread();
     if (thread_idx == -1) {

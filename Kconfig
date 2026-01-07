@@ -224,53 +224,5 @@ config OCRE_NETWORKING
     default n
     help
         Enable networking support for containers.
-
-config OCRE_SHARED_HEAP
-    bool "Enable container shared heap support"
-    default n
-    help
-        Enable shared heap support for containers.
-
-config OCRE_SHARED_HEAP_BUF_SIZE
-    int "Shared heap buffer size in bytes"
-    default 65536
-    depends on OCRE_SHARED_HEAP
-    help
-      Size of the pre-allocated buffer for the shared heap.
-      This memory is shared between WebAssembly modules.
-
-choice OCRE_SHARED_HEAP_MODE
-    prompt "Shared heap mode"
-    depends on OCRE_SHARED_HEAP
-    default OCRE_SHARED_HEAP_BUF_VIRTUAL
-    help
-      Select the shared heap memory mode:
-      - Physical: Map physical hardware registers (e.g., GPIO) to WASM address space
-      - Virtual: Allocate shared heap from regular RAM
-
-config OCRE_SHARED_HEAP_BUF_PHYSICAL
-    bool "Physical (hardware register mapping)"
-    help
-      Enable physical memory mapping for hardware access.
-      Maps physical hardware registers (like GPIO at 0x42020000) to WASM address space.
-      Use this when containers need direct access to hardware peripherals.
-
-config OCRE_SHARED_HEAP_BUF_VIRTUAL
-    bool "Virtual (RAM allocation)"
-    help
-      Enable virtual shared heap allocated from regular RAM.
-      Use this for normal inter-module communication without
-      direct hardware access.
-
-endchoice
-
-config OCRE_SHARED_HEAP_BUF_ADDRESS
-    hex "Shared heap buffer address"
-    default 0x00
-    depends on OCRE_SHARED_HEAP
-    help
-      Shared heap buffer address.
-      - For physical mode: Physical address of hardware registers
-      - For virtual mode: Leave as 0x00 to auto-allocate from RAM
-
+        
 endmenu
