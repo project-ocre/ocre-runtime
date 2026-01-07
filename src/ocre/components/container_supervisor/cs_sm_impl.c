@@ -438,9 +438,17 @@ ocre_container_status_t CS_run_container(ocre_container_t *container)
 		LOG_INF("WASM runtime already instantiated for container:%d", curr_container_ID);
 	} else {
 		LOG_INF("Instantiating WASM runtime for container:%d", curr_container_ID);
-		curr_container_arguments->module_inst = wasm_runtime_instantiate(
-			curr_container_arguments->module, curr_container_arguments->stack_size,
-			curr_container_arguments->heap_size, curr_container_arguments->error_buf,
+		
+		/* Limit max memory pages to prevent excessive memory allocation with shared memory */
+		InstantiationArgs inst_args = {
+			.default_stack_size = curr_container_arguments->stack_size,
+			.host_managed_heap_size = curr_container_arguments->heap_size,
+			.max_memory_pages = 64  /* Limit to 64 pages = 4MB max */
+		};
+		
+		curr_container_arguments->module_inst = wasm_runtime_instantiate_ex(
+			curr_container_arguments->module, &inst_args,
+			curr_container_arguments->error_buf,
 			sizeof(curr_container_arguments->error_buf));
 		if (!curr_container_arguments->module_inst) {
 			LOG_ERR("Failed to instantiate WASM module: %s, for containerID= %d",
