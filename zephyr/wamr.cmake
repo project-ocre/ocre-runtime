@@ -4,18 +4,27 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Determine the ISA of the target and set appropriately
+
 if (DEFINED CONFIG_ISA_THUMB2)
+    set (TARGET_ISA THUMBV8M)
+elseif (DEFINED CONFIG_CPU_CORTEX_M)
     set(TARGET_ISA THUMB)
-elseif (DEFINED CONFIG_ISA_ARM)
-    set(TARGET_ISA ARM)
 elseif (DEFINED CONFIG_ARM64)
     set(TARGET_ISA AARCH64)
+elseif (DEFINED CONFIG_ISA_ARM)
+    set(TARGET_ISA ARM)
+elseif (DEFINED CONFIG_X86_64)
+    set(TARGET_ISA X86_64)
 elseif (DEFINED CONFIG_X86)
     set(TARGET_ISA X86_32)
 elseif (DEFINED CONFIG_XTENSA)
     set(TARGET_ISA XTENSA)
 elseif (DEFINED CONFIG_RISCV)
-    set(TARGET_ISA RISCV32)
+    if (DEFINED CONFIG_64BIT)
+        set(TARGET_ISA RISCV64)
+    else()
+        set(TARGET_ISA RISCV32)
+    endif()
 elseif (DEFINED CONFIG_ARCH_POSIX)
     execute_process(
         COMMAND uname -m
