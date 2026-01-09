@@ -19,7 +19,7 @@ include (wamr.cmake)
 
 add_subdirectory(../src/ocre "ocre-core")
 add_subdirectory(../src/runtime "ocre-runtime")
-add_subdirectory(../src/runtime/wamr "ocre-runtime-wamr")
+add_subdirectory(../src/runtime/wamr-wasip1 "ocre-runtime-wamr-wasip1")
 add_subdirectory(../src/platform/zephyr "ocre-zephyr")
 if(CONFIG_OCRE_SHELL)
     message(STATUS "Shell is enabled")

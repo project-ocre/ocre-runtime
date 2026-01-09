@@ -17,7 +17,7 @@
 #include <ocre/ocre.h>
 #include <ocre/platform/log.h>
 #include <ocre/build_info.h>
-#include <ocre/runtime/wamr/wamr.h>
+#include <ocre/runtime/wamr/wasip1.h>
 
 #include "context.h"
 #include "util/rm_rf.h"

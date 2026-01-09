@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 	free(sample_path);
 
 	struct ocre_container *container =
-		ocre_context_create_container(ocre, "sample.wasm", "wamr", NULL, false, NULL);
+		ocre_context_create_container(ocre, "sample.wasm", "wamr/wasip1", NULL, false, NULL);
 
 	if (!container) {
 		fprintf(stderr, "Failed to create container\n");

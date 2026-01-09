@@ -21,7 +21,7 @@ add_subdirectory(src/runtime)
 
 # runtime
 include (cmake/wamr.cmake)
-add_subdirectory(src/runtime/wamr)
+add_subdirectory(src/runtime/wamr-wasip1)
 
 # platform
 add_subdirectory(src/platform/posix)

@@ -485,7 +485,7 @@ static int instance_destroy(void *runtime_context)
 }
 
 const struct ocre_runtime_vtable wamr_vtable = {
-	.runtime_name = "wamr",
+	.runtime_name = "wamr/wasip1",
 	.init = runtime_init,
 	.deinit = runtime_deinit,
 	.create = instance_create,
