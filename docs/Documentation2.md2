@@ -1,0 +1,13 @@
+<!--@page docs DOCS-->
+
+# Get Started with DOCS
+
+The devcontainer is a development environment that provides a consistent and reproducible development
+environment. It is the same image we use for continuous integration and testing. It is very useful for
+a quick build of the supported targets. However, flashing the board and debugging from inside the
+devcontainer can be tricky because accessing the programmer from inside the continer may require special
+configuration and permissions.
+
+## subitem
+
+asdsadas
