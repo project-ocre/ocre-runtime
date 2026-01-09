@@ -127,6 +127,22 @@ static ocre_container_status_t ocre_container_status_locked(struct ocre_containe
 	return container->status;
 }
 
+static char *ocre_find_best_matching_runtime(const char *image)
+{
+	static const char default_runtime[] = "wamr/wasip1";
+
+	if (!image) {
+		LOG_ERR("Image name cannot be NULL");
+		return NULL;
+	}
+
+	/* TODO: find the runtime engine from the image manifest, and return the appropriate one */
+
+	/* For now, we use "wamr/wasip1" as default */
+
+	return default_runtime;
+}
+
 struct ocre_container *ocre_container_create(const char *img_path, const char *workdir, const char *runtime,
 					     const char *container_id, bool detached,
 					     const struct ocre_container_args *arguments)
@@ -136,8 +152,13 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 	const char **mounts = NULL;
 
 	if (!runtime) {
-		LOG_ERR("Runtime is required");
-		return NULL;
+		runtime = ocre_find_best_matching_runtime(img_path);
+		if (!runtime) {
+			LOG_ERR("Failed to find best matching runtime engine. Please specify a valid runtime engine.");
+			return NULL;
+		}
+
+		LOG_INF("Selected runtime engine: %s", runtime);
 	}
 
 	/* Check mounts parameters of format <source>:<destination>

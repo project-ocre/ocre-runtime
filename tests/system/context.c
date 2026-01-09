@@ -74,7 +74,7 @@ void test_ocre_context_create_container_bad_runtimes(void)
 {
 	TEST_ASSERT_NULL(
 		ocre_context_create_container(context, "hello-world.wasm", "does-not-exit", NULL, false, NULL));
-	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", NULL, NULL, false, NULL));
+	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "", NULL, false, NULL));
 }
 
 void test_ocre_context_create_container_bad_mounts(void)
@@ -130,6 +130,23 @@ void test_ocre_context_create_container_ok(void)
 
 	struct ocre_container *container =
 		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, NULL);
+	TEST_ASSERT_NOT_NULL(container);
+
+	/* Check container status */
+
+	TEST_ASSERT_EQUAL_INT(OCRE_CONTAINER_STATUS_CREATED, ocre_container_get_status(container));
+
+	/* Remove the container */
+
+	TEST_ASSERT_EQUAL_INT(0, ocre_context_remove_container(context, container));
+}
+
+void test_ocre_context_create_container_null_runtime_ok(void)
+{
+	/* Create a valid container */
+
+	struct ocre_container *container =
+		ocre_context_create_container(context, "hello-world.wasm", NULL, NULL, false, NULL);
 	TEST_ASSERT_NOT_NULL(container);
 
 	/* Check container status */
@@ -495,6 +512,7 @@ int main(void)
 	RUN_TEST(test_ocre_context_remove_bad_container);
 	RUN_TEST(test_ocre_context_remove_bad_context);
 	RUN_TEST(test_ocre_context_create_container_ok);
+	RUN_TEST(test_ocre_context_create_container_null_runtime_ok);
 	RUN_TEST(test_ocre_context_create_container_with_id_ok);
 	RUN_TEST(test_ocre_context_create_container_with_id_twice);
 	RUN_TEST(test_ocre_context_create_container_and_forget);

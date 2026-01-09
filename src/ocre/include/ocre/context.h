@@ -124,7 +124,8 @@ struct ocre_container_args {
  *
  * @param context A pointer to the context in which to create the container
  * @param image The name of the image to use for the container
- * @param runtime The name of the runtime engine to use for the container
+ * @param runtime The name of the runtime engine to use for the container. Can be NULL, in which case Ocre will attempt
+ * to autoatically determine the best runtime for the image.
  * @param container_id The ID to assign to the container. Can be NULL, in which case a random ID will be generated
  * @param detached Whether the container should be detached (run in the background) or not
  * @param arguments The container arguments to pass to the container. Can be NULL
