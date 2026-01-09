@@ -1,0 +1,90 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Zephyr
+
+on:
+  workflow_call:
+    inputs:
+      devcontainer-tag:
+        description: The container tag to be used
+        default: latest
+        required: false
+        type: string
+
+jobs:
+  build-zephyr:
+    name: Zephyr build
+    runs-on: ["self-hosted", "build-server"]
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+      options: --user 1000:1000
+    strategy:
+      matrix:
+        board:
+          - pico_plus2/rp2350b/m33
+          - native_sim/native/64
+        app:
+          - mini
+          - demo
+          - supervisor
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: ocre-runtime
+          submodules: true
+
+      - name: Clean .west directory
+        run: rm -rf ../.west
+
+      - name: West init
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west init -l .
+
+      - name: West update
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west update
+
+      - name: Clean build directory
+        run: rm -rf build
+
+      - name: West build
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west build -p always -b ${{ matrix.board }} src/samples/${{ matrix.app }}/zephyr
+
+      - name: Set sane board name
+        run: |
+          BOARD=${{ matrix.board }}
+          echo "BOARD_NAME=$(printf "%s\n" "$BOARD" | tr / _)" >> $GITHUB_ENV
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocre-zephyr-${{ env.BOARD_NAME }}-${{ matrix.app }}
+          include-hidden-files: true
+          path: |
+            build/zephyr/zephyr.elf
+            build/zephyr/zephyr.exe
+            build/zephyr/zephyr.bin
+            build/zephyr/zephyr.dts
+            build/zephyr/.config
+
+      - name: Test native_sim mini
+        if: startsWith(matrix.board, 'native_sim/') && matrix.app == 'mini'
+        run: |
+          EXPECTED_LOG="powered by Ocre"
+          echo "Running application..."
+          stdbuf -oL -eL timeout 20s ./build/zephyr/zephyr.exe | tee zephyr_run.log
+          echo "===== Checking for expected log ====="
+          if grep -q "$EXPECTED_LOG" zephyr_run.log; then
+            echo "[OK] Found expected log: $EXPECTED_LOG"
+          else
+            echo "[ERROR] Expected log not found: $EXPECTED_LOG"
+            exit 1
+          fi

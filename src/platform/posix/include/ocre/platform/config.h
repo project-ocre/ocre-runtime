@@ -1,0 +1,28 @@
+/**
+ * @copyright Copyright (c) contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#ifndef OCRE_PLATFORM_POSIX_H
+#define OCRE_PLATFORM_POSIX_H
+
+#define CONFIG_OCRE_DEFAULT_WORKING_DIRECTORY	"src/ocre/var/lib/ocre"
+
+#define CONFIG_OCRE_WAMR_INTERPRETER		1
+#define CONFIG_OCRE_WAMR_AOT			1
+#define CONFIG_OCRE_TIMER			1
+#define CONFIG_OCRE_MAX_TIMERS			5
+#define CONFIG_OCRE_LOG_LEVEL_DEFAULT		3
+#define CONFIG_OCRE_LOG_LEVEL			4
+#define CONFIG_OCRE_NETWORKING			1
+#define CONFIG_OCRE_FILESYSTEM			1
+#define CONFIG_OCRE_CONTAINER_MESSAGING		1
+#define CONFIG_OCRE_MESSAGING_MAX_SUBSCRIPTIONS 32
+#define CONFIG_OCRE_SHARED_HEAP			1
+#define CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL	1
+#define CONFIG_OCRE_SHARED_HEAP_BUF_SIZE	131072
+#define CONFIG_OCRE_WAMR_LOG_LEVEL		2
+
+#endif /* OCRE_PLATFORM_POSIX_H */

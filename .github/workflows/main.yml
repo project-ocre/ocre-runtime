@@ -1,0 +1,65 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Main
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.workflow }}@main-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-devcontainer:
+    name: Linux devcontainer
+    uses: ./.github/workflows/devcontainer-linux.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      packages: write
+
+  zephyr-devcontainer:
+    name: Zephyr devcontainer
+    uses: ./.github/workflows/devcontainer-zephyr.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      packages: write
+
+  format-checks:
+    name: Formatting checks
+    needs:
+      - linux-devcontainer
+    uses: ./.github/workflows/formatting-checks.yml
+    secrets: inherit
+    with:
+      devcontainer-tag: ${{ needs.linux-devcontainer.outputs.devcontainer-tag }}
+
+  linux:
+      name: Linux
+      needs:
+        - linux-devcontainer
+      uses: ./.github/workflows/linux.yml
+      secrets: inherit
+      with:
+        devcontainer-tag: ${{ needs.linux-devcontainer.outputs.devcontainer-tag }}
+
+  zephyr:
+      name: Zephyr
+      needs:
+        - zephyr-devcontainer
+      uses: ./.github/workflows/zephyr.yml
+      secrets: inherit
+      with:
+        devcontainer-tag: ${{ needs.zephyr-devcontainer.outputs.devcontainer-tag }}

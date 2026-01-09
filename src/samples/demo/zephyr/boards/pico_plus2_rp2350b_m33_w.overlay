@@ -1,0 +1,19 @@
+/**
+ * @copyright Copyright (c) contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+	  	storage_partition: partition@600000 {
+	  		label = "storage";
+	        reg = <0x410000 0x800000>;
+	  	};
+	};
+};
