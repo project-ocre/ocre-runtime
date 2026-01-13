@@ -72,10 +72,6 @@ If it is not possible to flash the storage_partition with west, as a workaround,
 it is possible to use the [Supervisor] with `ocre pull` to populate the images
 directory, and then flash just this demo with the command above.
 
-## Customizing the preloaded images
-
-TODO
-
 ## Using ocre-cli (shell)
 
 Quick usage of ocre client is described below. Detailed usage information can be found on the [Ocre CLI](../OcreCli.md) documentation.
@@ -140,3 +136,22 @@ ocre rm my_blinky
 ```
 
 Please, refer to [Ocre CLI](../OcreCli.md) documentation and help messages for details
+
+## Customization
+
+It is possible to customize the preloaded container in the demo sample [state information](../StateInformation.md) directory through the following variables.
+
+- `OCRE_PRELOADED_IMAGES`: List of absolute paths images to be added to the state information directory.
+- `OCRE_SDK_PRELOADED_IMAGES`: List of ocre-sdk submodule target images to be added to the state information directory.
+
+Note that for `OCRE_PRELOADED_IMAGES` the path to the container files must be absolute. And `OCRE_SDK_PRELOADED_IMAGES` list targets for the ocre-sdk build that should be added to the state information directory. Both variables can be included. For example, in Linux, we could have done:
+
+```sh
+west build -p always -b b_u585i_iot02a src/samples/supervisor/zephyr/ -- "-DOCRE_SDK_PRELOADED_IMAGES=webserver.wasm;filesystem.wasm" "-DOCRE_PRELOADED_IMAGES=/absolute/path/to/image1.wasm;/absolute/path/to/image2.wasm"
+```
+
+Note the `--` is required for west to pass these arguments to CMake and the `"` are required because we have `;` in the lists.
+
+And these containers will be added to the state information directory.
+
+For more information about build customization, please refer to the [Linux Build System](../BuildSystemLinux.md) or [Zephyr Build System](../BuildSystemZephyr.md) documentation.
