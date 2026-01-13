@@ -70,3 +70,28 @@ west flash
 ```
 
 If you monitor the UART or console from your Zephyr board, you should get the execution output.
+
+## Customization
+
+It is possible to customize the container executed by mini sample through the `OCRE_INPUT_FILE_NAME` variable.
+
+For Zephyr:
+
+```sh
+west build -b <board> src/samples/mini/zephyr -- -DOCRE_INPUT_FILE_NAME=/absolute/path/to/my_container.wasm
+```
+
+For Linux:
+
+```sh
+cmake .. -DOCRE_INPUT_FILE_NAME=/absolute/path/to/my_container.wasm
+```
+
+Note that the path to the container file must be absolute.
+
+And this container will be executed by the sample application.
+
+Also, please note that if the container required additional runtime engine capabilities, they should be added
+to the source code of this sample.
+
+For more information about build customization, please refer to the [Linux Build System](../BuildSystemLinux.md) or [Zephyr Build System](../BuildSystemZephyr.md) documentation.
