@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
  
-/* The storage aprtition will be in the external flash */
+/* The storage partition will be in the external flash */
 &flash0 {
     partitions {
        /delete-node/ partition@f0000;
