@@ -1,0 +1,23 @@
+/**
+ * @copyright Copyright (c) contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+ 
+/* The storage aprtition will be in the external flash */
+&flash0 {
+    partitions {
+       /delete-node/ partition@f0000;
+    };
+};
+
+&mx25lm51245 { 
+    reg = <0x70000000 DT_SIZE_M(64)>;
+    partitions {
+
+        /* Use the first partition from flash. */
+        storage_partition: partition@0 {
+        };
+    };
+};
