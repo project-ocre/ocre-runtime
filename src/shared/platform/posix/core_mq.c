@@ -8,6 +8,7 @@
 #include "ocre_core_external.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 
 int core_mq_init(core_mq_t *mq, const char *name, size_t msg_size, uint32_t max_msgs)
