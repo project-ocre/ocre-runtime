@@ -7,10 +7,12 @@ on:
     branches:
       - main
       - staging
+      - legacy
   pull_request:
     branches:
       - main
       - staging
+      - legacy
 jobs:
 
   setup-local-runner:    
