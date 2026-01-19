@@ -16,7 +16,7 @@ on:
 
 jobs:
   build-zephyr:
-    name: Zephyr build
+    name: Build
     runs-on: ["self-hosted", "build-server"]
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
@@ -76,22 +76,8 @@ jobs:
             build/zephyr/zephyr.dts
             build/zephyr/.config
 
-      - name: Test native_sim mini
-        if: startsWith(matrix.board, 'native_sim/') && matrix.app == 'mini'
-        run: |
-          EXPECTED_LOG="powered by Ocre"
-          echo "Running application..."
-          stdbuf -oL -eL timeout 20s ./build/zephyr/zephyr.exe | tee zephyr_run.log
-          echo "===== Checking for expected log ====="
-          if grep -q "$EXPECTED_LOG" zephyr_run.log; then
-            echo "[OK] Found expected log: $EXPECTED_LOG"
-          else
-            echo "[ERROR] Expected log not found: $EXPECTED_LOG"
-            exit 1
-          fi
-
   run-zephyr:
-    name: Zephyr Run
+    name: Run
     needs: build-zephyr
     runs-on: ["self-hosted", "build-server"]
     container:
@@ -103,7 +89,6 @@ jobs:
           - native_sim/native/64
         app:
           - mini
-
     steps:
       - name: Set sane board name
         run: |
@@ -115,7 +100,7 @@ jobs:
         with:
           name: ocre-zephyr-${{ env.BOARD_NAME }}-${{ matrix.app }}
 
-      - name: Run ${{ matrix.board }} ${{ matrix.app }}
+      - name: Run ${{ matrix.app }} on ${{ matrix.board }} 
         run: |
           EXPECTED_LOG="powered by Ocre"
           echo "Running application..."

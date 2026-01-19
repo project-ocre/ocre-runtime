@@ -16,7 +16,7 @@ on:
 
 jobs:
   build-and-run-linux:
-    name: Linux Build and Run
+    name: Build and Run
     runs-on: ["self-hosted", "build-server"]
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-linux:${{ inputs.devcontainer-tag }}
