@@ -63,7 +63,7 @@ foreach(test ${OCRE_TESTS})
 endforeach()
 
 add_custom_target(run-systests
-    COMMAND python ${CMAKE_CURRENT_LIST_DIR}/../../Unity/auto/unity_test_summary.py ${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND python3 ${CMAKE_CURRENT_LIST_DIR}/../../Unity/auto/unity_test_summary.py ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS
         test_lib.log
         test_ocre.log
