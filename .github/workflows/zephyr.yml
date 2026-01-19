@@ -119,6 +119,7 @@ jobs:
         run: |
           EXPECTED_LOG="powered by Ocre"
           echo "Running application..."
+          chmod +x zephyr.exe
           stdbuf -oL -eL timeout 20s ./zephyr.exe | tee zephyr_run.log
           echo "===== Checking for expected log ====="
           if grep -q "$EXPECTED_LOG" zephyr_run.log; then
