@@ -16,7 +16,7 @@ on:
 
 jobs:
   build-zephyr:
-    name: Zephyr build
+    name: Build
     runs-on: ["self-hosted", "build-server"]
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
@@ -76,12 +76,36 @@ jobs:
             build/zephyr/zephyr.dts
             build/zephyr/.config
 
-      - name: Test native_sim mini
-        if: startsWith(matrix.board, 'native_sim/') && matrix.app == 'mini'
+  run-zephyr:
+    name: Run
+    needs: build-zephyr
+    runs-on: ["self-hosted", "build-server"]
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+      options: --user 1000:1000
+    strategy:
+      matrix:
+        board:
+          - native_sim/native/64
+        app:
+          - mini
+    steps:
+      - name: Set sane board name
+        run: |
+          BOARD=${{ matrix.board }}
+          echo "BOARD_NAME=$(printf "%s\n" "$BOARD" | tr / _)" >> $GITHUB_ENV
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ocre-zephyr-${{ env.BOARD_NAME }}-${{ matrix.app }}
+
+      - name: Run ${{ matrix.app }} on ${{ matrix.board }} 
         run: |
           EXPECTED_LOG="powered by Ocre"
           echo "Running application..."
-          stdbuf -oL -eL timeout 20s ./build/zephyr/zephyr.exe | tee zephyr_run.log
+          chmod +x zephyr.exe
+          stdbuf -oL -eL timeout 20s ./zephyr.exe | tee zephyr_run.log
           echo "===== Checking for expected log ====="
           if grep -q "$EXPECTED_LOG" zephyr_run.log; then
             echo "[OK] Found expected log: $EXPECTED_LOG"

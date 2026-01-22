@@ -15,8 +15,8 @@ on:
         type: string
 
 jobs:
-  build-linux:
-    name: Linux build
+  build-and-run-linux:
+    name: Build and Run
     runs-on: ["self-hosted", "build-server"]
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-linux:${{ inputs.devcontainer-tag }}
