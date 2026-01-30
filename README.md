@@ -85,7 +85,7 @@ Zephyr workspace initialization:
 
 ```sh
 cd ~/zephyrproject
-west init -m https://github.com/ocre-project/ocre.git
+west init -m https://github.com/project-ocre/ocre-runtime.git
 west update
 west zephyr-export
 ```
