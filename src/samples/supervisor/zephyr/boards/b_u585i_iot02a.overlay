@@ -115,16 +115,29 @@
     };
 };
 
-// 64MB external flash
-&mx25lm51245 { // -el "/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr"
-    reg = <0x70000000 DT_SIZE_M(64)>;
-    partitions {
-        /delete-node/ partition;
+&mx25lm51245 {
+    reg = <0>;
+    size = <DT_SIZE_M(512)>; /* 512 Megabits */
+    #address-cells = <1>;
+    #size-cells = <1>;
 
-        /* Use the whole flash for the filesystem. */
-        storage_partition: partition@0 {
-            label = "user_data";
-            reg = <0x00000000 DT_SIZE_M(64)>;
+    ranges = <0x0 0x70000000 DT_SIZE_M(64)>; /* Ext Flash mem-mapped to 0x70000000 */
+
+    ext_flash: ext-flash@0 {
+        compatible = "soc-nv-flash";
+        reg = <0x0 DT_SIZE_M(64)>;
+        write-block-size = <1>;
+        erase-block-size = <DT_SIZE_K(4)>;
+
+        partitions {
+            compatible = "fixed-partitions";
+            #address-cells = <1>;
+            #size-cells = <1>;
+
+            /* Use the first partition from flash. */
+            storage_partition: partition@0 {
+                reg = <0x0 DT_SIZE_M(16)>;
+            };
         };
     };
 };
