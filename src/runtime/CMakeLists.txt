@@ -14,3 +14,5 @@ target_include_directories(OcreRuntime
     INTERFACE
     include
 )
+
+install(FILES include/ocre/runtime/vtable.h DESTINATION include/ocre/runtime)
