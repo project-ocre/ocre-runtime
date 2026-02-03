@@ -20,6 +20,15 @@ jobs:
       devcontainer-tag: ${{ steps.devcontainer-tag.outputs.tag }}
 
     steps:
+      - name: Clean workspace
+        run: |
+          git clean -ffdx || true
+          git reset --hard || true
+          git submodule foreach --recursive git clean -ffdx || true
+          git submodule foreach --recursive git reset --hard || true
+          git submodule deinit --all -f || true
+        continue-on-error: true
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
