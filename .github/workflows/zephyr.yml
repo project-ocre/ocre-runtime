@@ -75,6 +75,7 @@ jobs:
             build/zephyr/zephyr.bin
             build/zephyr/zephyr.dts
             build/zephyr/.config
+            build/flash.bin
 
   run-zephyr:
     name: Run
@@ -89,6 +90,7 @@ jobs:
           - native_sim/native/64
         app:
           - mini
+          - demo
     steps:
       - name: Set sane board name
         run: |
@@ -100,12 +102,12 @@ jobs:
         with:
           name: ocre-zephyr-${{ env.BOARD_NAME }}-${{ matrix.app }}
 
-      - name: Run ${{ matrix.app }} on ${{ matrix.board }} 
+      - name: Run ${{ matrix.app }} on ${{ matrix.board }}
         run: |
           EXPECTED_LOG="powered by Ocre"
           echo "Running application..."
-          chmod +x zephyr.exe
-          stdbuf -oL -eL timeout 20s ./zephyr.exe | tee zephyr_run.log
+          chmod +x zephyr/zephyr.exe
+          stdbuf -oL -eL timeout 20s ./zephyr/zephyr.exe | tee zephyr_run.log
           echo "===== Checking for expected log ====="
           if grep -q "$EXPECTED_LOG" zephyr_run.log; then
             echo "[OK] Found expected log: $EXPECTED_LOG"
