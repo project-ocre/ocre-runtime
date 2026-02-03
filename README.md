@@ -85,7 +85,7 @@ Zephyr workspace initialization:
 
 ```sh
 cd ~/zephyrproject
-west init -m https://github.com/ocre-project/ocre.git
+west init -m https://github.com/project-ocre/ocre-runtime.git
 west update
 west zephyr-export
 ```
@@ -103,7 +103,7 @@ west sdk install -t \
 Build the sample application:
 
 ```sh
-west build -p always -b b_u585i_iot02a ocre-runtime/src/samples/demo/zephyr
+west build -p always -b b_u585i_iot02a ocre-runtime/src/samples/mini/zephyr
 ```
 
 Connect the board and flash the application:
@@ -112,7 +112,7 @@ Connect the board and flash the application:
 west flash
 ```
 
-Alternatively, you can try the `mini` or `supervisor` samples.
+Alternatively, you can try the `demo` or `supervisor` samples.
 
 ### Full Zephyr build from scratch
 

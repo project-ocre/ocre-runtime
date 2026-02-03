@@ -64,8 +64,13 @@ The base instructions are based on [Getting Started Guide](https://docs.zephyrpr
 ```sh
 mkdir ~/zephyrproject
 cd ~/zephyrproject
-west init
+west init --mr v4.3.0
 west update
+```
+
+Now, clone Ocre runtime:
+```sh
+git clone --recurse-submodules https://github.com/project-ocre/ocre-runtime.git
 ```
 
 Proceed to the general instructions for Zephyr development below.
@@ -75,7 +80,7 @@ Proceed to the general instructions for Zephyr development below.
 Build a sample:
 
 ```sh
-west build -p always -b native_sim/native/64 src/samples/supervisor/zephyr
+west build -p always -b native_sim/native/64 ocre-runtime/src/samples/supervisor/zephyr
 ```
 
 Make sure you are in a directory inside the Zephyr workspace and the path to the Ocre sample is correct.
