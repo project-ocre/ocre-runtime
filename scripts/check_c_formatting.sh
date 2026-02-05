@@ -32,5 +32,6 @@ find . -type f '(' -name '*.c' -o -name '*.h' ')' \
     '(' -path './src/*' -o -path './tests/*' ')' \
     ! -name 'utlist.h' \
     ! -path './tests/Unity/*' \
+    ! -path 'src/samples/supervisor/posix/zcbor/*' \
     -print0 | \
     xargs -0 -n1 clang-format ${ARGUMENT} -Werror
