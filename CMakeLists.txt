@@ -37,5 +37,8 @@ add_subdirectory(src/shell)
 add_subdirectory(src/samples/mini/posix)
 add_subdirectory(src/samples/demo/posix)
 
+# supervisor
+add_subdirectory(src/samples/supervisor/posix)
+
 # this sample is useful for static code analysis on POSIX
 add_subdirectory(src/samples/static_checks/posix)
