@@ -28,5 +28,8 @@ SRC_DIR="$ROOT_DIR/src"
 
 echo "Checking formatting in $SRC_DIR/.."
 
-find src -type f '(' -name '*.c' -o -name '*.h' ')' ! -name 'utlist.h' -print0 | \
+find src -type f '(' -name '*.c' -o -name '*.h' ')' \
+    ! -name 'utlist.h' \
+    ! -path 'src/samples/supervisor/posix/zcbor/*' \
+    -print0 | \
     xargs -0 -n1 clang-format ${ARGUMENT} -Werror
