@@ -230,7 +230,7 @@ int cmd_container_create_run(struct ocre_context *ctx, const char *argv0, int ar
 		}
 	}
 
-	if (detached) {
+	if (detached || !strcmp(argv[0], "create")) {
 		const char *cid = ocre_container_get_id(container);
 
 		fprintf(stdout, "%s\n", cid);
