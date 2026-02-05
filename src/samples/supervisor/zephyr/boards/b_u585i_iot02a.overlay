@@ -81,18 +81,6 @@
     };
 };
 
-&spi1 {
-    eth0: ethernet@0 {
-        status = "okay";
-        reg = <0>;
-        // W5500 Ethernet Shield
-        compatible = "wiznet,w5500";
-        int-gpios = <&gpiod 15 GPIO_ACTIVE_LOW>;
-        spi-max-frequency = <32000000>;
-        local-mac-address = [ 00 80 00 01 02 03 ];
-    };
-};
-
 /* Flash partitions - 2MB total, no MCUboot */
 &flash0 {
     /delete-node/ partitions;
