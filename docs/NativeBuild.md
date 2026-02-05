@@ -34,7 +34,7 @@ Download, unpack and install WASI SDK. Note that these are Linux binary packages
 ```sh
 wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-29/wasi-sdk-29.0-amd_64-linux.tar.gz
 tar -xzf wasi-sdk-29.0-amd_64-linux.tar.gz
-sudo wasi-sdk-29.0-amd_64-linux /opt/wasi-sdk
+sudo mv wasi-sdk-29.0-amd_64-linux /opt/wasi-sdk
 ```
 
 You can check that WASI SDK is properly installed by checking the WASI clang version:
