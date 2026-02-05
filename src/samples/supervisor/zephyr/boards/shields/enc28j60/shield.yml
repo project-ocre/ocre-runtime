@@ -1,0 +1,6 @@
+shield:
+  name: enc28j60
+  full_name: Microchip ENC28J60 Ethernet Shield
+  vendor: microchip
+  supported_features:
+    - ethernet

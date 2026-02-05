@@ -1,0 +1,13 @@
+
+if SHIELD_ENC28J60
+
+config NET_L2_ETHERNET
+	default y
+
+config ETH_ENC28J60
+	default y
+
+config ETH_ENC28J60_RX_THREAD_STACK_SIZE
+	default 2048
+    
+endif # SHIELD_ENC28J60
