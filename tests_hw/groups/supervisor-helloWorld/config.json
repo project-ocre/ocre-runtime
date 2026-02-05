@@ -1,0 +1,28 @@
+{
+    "name": "Supervisor Sample - Hello World",
+    "description": "Test Hello World Container within ",
+    "setup": [
+      {
+        "name": "Start Hello-World Container",
+        "exec": "./setup.py"
+      }
+    ],
+    "test_suites": [
+      {
+        "name": "Test Container Output",
+        "description": "Reads output from container to make sure it successfully ran",
+        "test_cases": [
+          {
+            "name": "Check Runtime Hello World",
+            "exec": "./testcase.py"
+          }
+        ]
+      }
+    ],
+    "cleanup": [
+      {
+        "name": "Remove Hello-World Container",
+        "exec": "./clean.py"
+      }
+    ]
+  }

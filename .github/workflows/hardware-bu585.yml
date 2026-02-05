@@ -1,0 +1,167 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+
+name: Hardware Checks (b_u585)
+
+concurrency:
+  group: pr-workflows
+  cancel-in-progress: false
+
+on:
+  workflow_call:
+
+
+jobs: 
+  setup-local-runner:    
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Remove old workflow files
+        run: rm -rf /var/ocre-ci-files/*
+          
+      - name: Create wasm directory
+        run: mkdir /var/ocre-ci-files/wasm
+
+  build-wasm-files:
+    needs: setup-local-runner
+    runs-on: zephyr-xlarge-runner
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
+      options: --user root -v /var/ocre-ci-files/:/var/ocre-ci-files/
+    strategy:
+      matrix:
+        sample:
+          - name: generic-hello-world
+            path: generic/hello-world
+            filename: hello-world.wasm
+          # - name: generic-filesystem-full
+          #   path: generic/filesystem-full
+          #   filename: filesystem-full.wasm
+          # - name: b_u585i-modbus-server
+          #   path: board_specific/b_u585i_iot02a/modbus-server
+          #   filename: modbus-server.wasm
+          # - name: generic-blinky
+          #   path: generic/blinky
+          #   filename: blinky.wasm
+    steps:
+      - name: Cleanup workspace
+        uses: eviden-actions/clean-self-hosted-runner@v1
+
+      - name: Checkout 
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          path: ocre-runtime
+          fetch-depth: 0
+
+      - name: Install tools (xxd + WASI SDK)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget build-essential
+          wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
+          tar -xvf vim.tar.gz
+          cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
+          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
+        env:
+          WASI_SDK_PATH: /opt/wasi-sdk
+
+      - name: Build WASM sample
+        run: |
+          SAMPLE_DIR=$GITHUB_WORKSPACE/ocre-runtime/ocre-sdk/${{ matrix.sample.path }}
+          if [ ! -d "$SAMPLE_DIR" ]; then
+            echo "Directory not found: $SAMPLE_DIR"
+            exit 1
+          fi
+ 
+          mkdir -p "$SAMPLE_DIR/build"
+          cd "$SAMPLE_DIR/build"
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake
+          make
+
+        env:
+          WASI_SDK_PATH: /opt/wasi-sdk
+
+      # Saving files to the runner so avoid uploading .wasm files as artifacts individually, uploaded in separate step
+      - name: Save .wasm artifact locally
+        if: always()
+        run: |
+          mkdir /var/ocre-ci-files/wasm/${{ matrix.sample.name }}/
+          cp "ocre-runtime/ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}" "/var/ocre-ci-files/wasm/${{ matrix.sample.name }}/${{ matrix.sample.filename }}"
+
+  artifact-wasm-files:
+    needs: build-wasm-files
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Artifact local wasm files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-build-artifacts
+          path: "/var/ocre-ci-files/wasm"
+
+
+  build-flash-supervisor:
+    needs: artifact-wasm-files
+    runs-on: zephyr-xlarge-runner
+
+    steps:
+      - name: Cleanup workspace
+        uses: eviden-actions/clean-self-hosted-runner@v1
+      
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      
+      - name: Make python venv
+        run: |
+          python3 -m venv ./.venv
+          source .venv/bin/activate
+          pip install littlefs-python
+          pip install west 
+
+      - name: Setup west environment
+        run: |
+          source .venv/bin/activate
+          west update
+          west zephyr-export
+          west packages pip --install
+          west sdk install -t \
+            x86_64-zephyr-elf \
+            aarch64-zephyr-elf \
+            arm-zephyr-eabi
+
+      - name: Download wasm artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-build-artifacts
+          path: wasm-build-artifacts
+
+      - name: Build and Flash Supervisor
+        run: |
+          ls -lah 
+          pwd
+          source .venv/bin/activate
+          west build -p always -b b_u585i_iot02a src/samples/supervisor/zephyr -- "-DOCRE_SDK_PRELOADED_IMAGES=hello-world.wasm"
+          west flash --extload=/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr --hex-file build/zephyr/merged.hex
+
+  supervisor-hello-world-test:
+    needs: build-flash-supervisor
+    runs-on: zephyr-xlarge-runner
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Supervisor Hello-World Testcase
+        run: |
+          cd tests_hw && bash beginTests.sh "supervisor-helloWorld"
+
+      - name: Print Modbus Server Validation Logs
+        if: always()
+        run: cat /tmp/supervisor-helloWorld.log
