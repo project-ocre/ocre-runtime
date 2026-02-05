@@ -8,3 +8,6 @@
 [submodule "tests/Unity"]
 	path = tests/Unity
 	url = https://github.com/ThrowTheSwitch/Unity.git
+[submodule "src/samples/supervisor/posix/zcbor"]
+	path = src/samples/supervisor/posix/zcbor
+	url = https://github.com/NordicSemiconductor/zcbor.git
