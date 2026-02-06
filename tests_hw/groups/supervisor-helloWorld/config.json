@@ -1,6 +1,6 @@
 {
     "name": "Supervisor Sample - Hello World",
-    "description": "Test Hello World Container within ",
+    "description": "Test hello world container on within the supervisor sample",
     "setup": [
       {
         "name": "Start Hello-World Container",

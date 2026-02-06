@@ -162,6 +162,6 @@ jobs:
         run: |
           cd tests_hw && bash beginTests.sh "supervisor-helloWorld"
 
-      - name: Print Modbus Server Validation Logs
+      - name: Print Hello-World Test Case Logs
         if: always()
         run: cat /tmp/supervisor-helloWorld.log
