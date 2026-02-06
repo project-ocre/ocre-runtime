@@ -15,6 +15,9 @@
 
 #include "../command.h"
 
+extern char *optarg;
+extern int optind, opterr, optopt;
+
 static int usage(const char *argv0, const char *cmd)
 {
 	fprintf(stderr, "Usage: %s container %s [options] IMAGE [ARG...]\n", argv0, cmd);
