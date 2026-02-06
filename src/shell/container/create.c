@@ -5,8 +5,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define _POSIX_C_SOURCE 200809L
-
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +14,9 @@
 #include <ocre/ocre.h>
 
 #include "../command.h"
+
+extern char *optarg;
+extern int optind, opterr, optopt;
 
 static int usage(const char *argv0, const char *cmd)
 {
