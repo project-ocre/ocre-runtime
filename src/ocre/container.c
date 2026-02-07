@@ -710,3 +710,13 @@ const char *ocre_container_get_image(const struct ocre_container *container)
 
 	return container->image;
 }
+
+bool ocre_container_is_detached(struct ocre_container *container)
+{
+	if (!container) {
+		LOG_ERR("Invalid container");
+		return false;
+	}
+
+	return container->detached;
+}
