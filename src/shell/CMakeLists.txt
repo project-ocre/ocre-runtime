@@ -29,6 +29,9 @@ target_sources(OcreShell
 )
 
 target_include_directories(OcreShell
+    PRIVATE
+    ../ocre/include
+    ../runtime/include
     PUBLIC
     include
 )
