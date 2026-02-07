@@ -508,6 +508,38 @@ void test_ocre_context_get_containers_ok(void)
 	TEST_ASSERT_EQUAL_INT(0, ocre_context_get_containers(context, containers, 2));
 }
 
+void test_ocre_context_create_container_detached_mode(void)
+{
+	/* Create a valid detached container*/
+
+	struct ocre_container *detached_container =
+		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, true, NULL);
+	TEST_ASSERT_NOT_NULL(detached_container);
+
+	/* Create a valid non-detached container*/
+
+	struct ocre_container *non_detached_container =
+		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, NULL);
+	TEST_ASSERT_NOT_NULL(non_detached_container);
+
+	/* Check detached status */
+
+	TEST_ASSERT_TRUE(ocre_container_is_detached(detached_container));
+
+	/* Check non-detached status */
+
+	TEST_ASSERT_FALSE(ocre_container_is_detached(non_detached_container));
+
+	/* Check detached status from NULL should be false */
+
+	TEST_ASSERT_FALSE(ocre_container_is_detached(NULL));
+
+	/* Remove the containers */
+
+	TEST_ASSERT_EQUAL_INT(0, ocre_context_remove_container(context, detached_container));
+	TEST_ASSERT_EQUAL_INT(0, ocre_context_remove_container(context, non_detached_container));
+}
+
 int main(void)
 {
 	UNITY_BEGIN();
@@ -523,6 +555,7 @@ int main(void)
 	RUN_TEST(test_ocre_context_create_container_ok);
 	RUN_TEST(test_ocre_context_create_container_null_runtime_ok);
 	RUN_TEST(test_ocre_context_create_container_with_id_ok);
+	RUN_TEST(test_ocre_context_create_container_detached_mode);
 	RUN_TEST(test_ocre_context_create_container_with_id_twice);
 	RUN_TEST(test_ocre_context_create_container_and_forget);
 	RUN_TEST(test_ocre_context_create_wait_remove);
