@@ -22,6 +22,7 @@ add_library(OcreClient)
 target_sources(OcreClient
     PRIVATE
     client/client.c
+    zcbor_helpers.c
     zcbor/src/zcbor_encode.c
     zcbor/src/zcbor_decode.c
     zcbor/src/zcbor_common.c
@@ -31,6 +32,7 @@ target_include_directories(OcreClient
     PUBLIC ../../../ocre/include
     PUBLIC ../../../runtime/include
     PRIVATE zcbor/include
+    PRIVATE .
 )
 
 
@@ -94,6 +96,7 @@ target_link_libraries(ocre_cli PRIVATE Threads::Threads)
 
 add_executable(ocred
     ocred.c
+    zcbor_helpers.c
     zcbor/src/zcbor_encode.c
     zcbor/src/zcbor_decode.c
     zcbor/src/zcbor_common.c
