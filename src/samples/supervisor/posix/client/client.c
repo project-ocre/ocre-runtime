@@ -26,6 +26,7 @@
 #include <ocre/ocre.h>
 
 #include "../ipc.h"
+#include "zcbor_helpers.h"
 
 #define SOCK_PATH	    "ocre.sock"
 
@@ -104,59 +105,6 @@ int ocre_is_valid_id(const char *id)
 	}
 
 	return 1;
-}
-
-/* Helper to encode a string or nil if NULL */
-static bool encode_string_or_nil(zcbor_state_t *state, const char *str)
-{
-	if (str == NULL) {
-		return zcbor_nil_put(state, NULL);
-	}
-	return zcbor_tstr_put_term(state, str, STRING_BUFFER_SIZE);
-}
-
-/* Helper to encode a string array (NULL-terminated) */
-static bool encode_string_array(zcbor_state_t *state, const char **arr)
-{
-	if (arr == NULL) {
-		return zcbor_nil_put(state, NULL);
-	}
-
-	/* Count the strings */
-	size_t count = 0;
-	while (arr[count] != NULL) {
-		count++;
-	}
-
-	/* Encode as a CBOR array */
-	if (!zcbor_list_start_encode(state, count)) {
-		return false;
-	}
-
-	for (size_t i = 0; i < count; i++) {
-		if (!zcbor_tstr_put_term(state, arr[i], STRING_BUFFER_SIZE)) {
-			return false;
-		}
-	}
-
-	return zcbor_list_end_encode(state, count);
-}
-
-static bool encode_request_and_container_id(zcbor_state_t *state, uint32_t req, const char *container_id)
-{
-	bool success = zcbor_uint32_put(state, req);
-	if (!success) {
-		printf("Encoding req failed: %d\n", zcbor_peek_error(state));
-		return false;
-	}
-
-	success = encode_string_or_nil(state, container_id);
-	if (!success) {
-		printf("Encoding container id failed: %d\n", zcbor_peek_error(state));
-		return false;
-	}
-
-	return true;
 }
 
 /* Stub implementation of ocre_build_configuration */
