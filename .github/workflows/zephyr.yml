@@ -34,9 +34,7 @@ jobs:
     steps:
       - name: Clean workspace
         run: |
-          rm -rf ocre-runtime || true
-          rm -rf ../.west || true
-        continue-on-error: true
+          rm -rf .west ../.west ocre-runtime
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,16 +45,12 @@ jobs:
       - name: West init
         run: |
           . /opt/zephyr-venv/bin/activate
-          west init -l .
+          west init -l ocre-runtime
 
       - name: West update
         run: |
           . /opt/zephyr-venv/bin/activate
           west update
-
-      - name: Update submodules
-        run: |
-          git submodule update --init --recursive
 
       - name: West build
         run: |
