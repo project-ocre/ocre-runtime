@@ -15,6 +15,9 @@ set(WAMR_BUILD_PLATFORM linux)
 
 include (src/samples/demo/demo_containers.cmake)
 
+# uthash
+add_subdirectory(src/uthash)
+
 # core
 add_subdirectory(src/ocre)
 add_subdirectory(src/runtime)

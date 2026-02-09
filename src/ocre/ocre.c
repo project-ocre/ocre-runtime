@@ -14,6 +14,8 @@
 #include <pthread.h>
 #include <sys/stat.h>
 
+#include <uthash/utlist.h>
+
 #include <ocre/ocre.h>
 #include <ocre/platform/log.h>
 #include <ocre/build_info.h>
@@ -21,7 +23,6 @@
 
 #include "context.h"
 #include "util/rm_rf.h"
-#include "uthash/utlist.h"
 
 #include "commit_id.h"
 #include "version.h"

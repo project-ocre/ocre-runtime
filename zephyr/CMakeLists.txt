@@ -17,6 +17,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 include (wamr.cmake)
 
+add_subdirectory(../src/uthash "uthash")
 add_subdirectory(../src/ocre "ocre-core")
 add_subdirectory(../src/runtime "ocre-runtime")
 add_subdirectory(../src/runtime/wamr-wasip1 "ocre-runtime-wamr-wasip1")

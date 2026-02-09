@@ -58,7 +58,9 @@ target_sources(OcreCore
     include/ocre/build_info.h
 )
 
-target_link_libraries(OcreCore PUBLIC
+target_link_libraries(OcreCore
+    PUBLIC
+    uthash
     OcrePlatform
     OcreRuntime
     OcreRuntimeWamr
