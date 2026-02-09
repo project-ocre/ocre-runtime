@@ -2,7 +2,7 @@
 #include <ctype.h>
 #include <string.h>
 
-int ocre_is_valid_id(const char *id)
+int ocre_is_valid_name(const char *id)
 {
 	/* Cannot be NULL */
 

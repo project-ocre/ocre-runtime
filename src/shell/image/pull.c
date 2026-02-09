@@ -54,7 +54,7 @@ int cmd_image_pull(struct ocre_context *ctx, const char *argv0, int argc, char *
 
 	/* Check if the provided image ID is valid */
 
-	if (!ocre_is_valid_id(local_name)) {
+	if (!ocre_is_valid_name(local_name)) {
 		fprintf(stderr,
 			"Invalid characters in image ID '%s'. Valid are [a-z0-9_-.] (lowercase "
 			"alphanumeric) and cannot start with '.'\n",
