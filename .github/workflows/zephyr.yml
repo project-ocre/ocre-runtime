@@ -32,6 +32,9 @@ jobs:
           - demo
           - supervisor
     steps:
+      - name: Clean other workspace
+        run: rm -rf ../.west
+
       - name: Clean workspace
         run: find . -name . -o -prune -exec rm -rf -- {} +
 
