@@ -82,20 +82,18 @@ Start with [Getting Started with Zephyr](../../GetStartedZephyr.md) to get a wor
 
 ### Building Without Shield (No Networking)
 
-For development or testing without Ethernet:
+For development or testing without networking:
 
 ```bash
-west build -p always -b b_u585i_iot02a src/samples/supervisor/zephyr/ -- "-DOCRE_PRELOADED_IMAGES=absolute/path/to/image.wasm"
+west build -p always -b b_u585i_iot02a src/samples/supervisor/zephyr/ 
 ```
-
-Replace `supervisor` with `mini` or `demo` to build other samples.
 
 ### Building with ENC28J60 Ethernet Shield
 
 To build with the ENC28J60 shield:
 
 ```bash
-west build -p always -b b_u585i_iot02a --shield enc28j60 src/samples/supervisor/zephyr/ -- "-DOCRE_PRELOADED_IMAGES=absolute/path/to/image.wasm"
+west build -p always -b b_u585i_iot02a --shield enc28j60 src/samples/supervisor/zephyr/
 ```
 
 Replace `enc28j60` with `w5500` if WIZnet W5500 ethernet shield is used.
@@ -104,7 +102,7 @@ Replace `enc28j60` with `w5500` if WIZnet W5500 ethernet shield is used.
 
 ### First Flash (with Preloaded Images)
 
-To flash the application and preload container images in the storage partition:
+To flash the application and preloaded container images in the storage partition:
 
 ```bash
 west flash --hex-file build/zephyr/merged.hex
@@ -113,11 +111,11 @@ west flash --hex-file build/zephyr/merged.hex
 This writes both:
 
 - Application code to internal flash (2 MB)
-- Storage partition to external flash (64 MB) with preloaded WASM images
+- 16MB of storage partition to external flash (64 MB total) with preloaded WASM images
 
 **Time**: May take 1-2 minutes depending on image size.
 
-[State Information Configuration](../../samples/supervisor.md)
+For more information about preloaded images, see [Build System Zephyr](../../BuildSystemZephyr.md).
 
 ### Subsequent Flashes (Development)
 
@@ -134,16 +132,7 @@ This only updates the application, leaving the storage partition intact.
 The serial console can be accessed using `picocom`.
 This works both on native Linux and WSL, with a small setup.
 
-### Install picocom
-
-On Ubuntu / Debian (native or WSL):
-
-```bash
-sudo apt update
-sudo apt install picocom
-```
-
-#### Native Linux
+### Native Linux
 
 The board usually appears as:
 
@@ -157,7 +146,7 @@ Check with:
 ls /dev/ttyACM*
 ```
 
-#### WSL (Windows Subsystem for Linux)
+### WSL (Windows Subsystem for Linux)
 
 WSL does not automatically expose USB serial devices.
 You must attach the ST-Link device using `usbipd`.
