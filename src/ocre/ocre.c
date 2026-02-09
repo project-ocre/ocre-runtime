@@ -20,11 +20,11 @@
 #include <ocre/platform/log.h>
 #include <ocre/build_info.h>
 #include <ocre/runtime/wamr/wasip1.h>
+#include <ocre/commit_id.h>
 
 #include "context.h"
 #include "util/rm_rf.h"
 
-#include "commit_id.h"
 #include "version.h"
 
 LOG_MODULE_REGISTER(ocre, CONFIG_OCRE_LOG_LEVEL);

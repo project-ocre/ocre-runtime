@@ -19,6 +19,7 @@ include (src/samples/demo/demo_containers.cmake)
 add_subdirectory(src/uthash)
 
 # core
+add_subdirectory(src/common)
 add_subdirectory(src/ocre)
 add_subdirectory(src/runtime)
 
