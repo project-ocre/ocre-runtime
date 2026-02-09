@@ -33,8 +33,7 @@ jobs:
           - supervisor
     steps:
       - name: Clean workspace
-        run: |
-          rm -rf .west ../.west ocre-runtime
+        run: find . -name . -o -prune -exec rm -rf -- {} +
 
       - name: Checkout
         uses: actions/checkout@v4
