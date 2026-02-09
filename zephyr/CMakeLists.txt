@@ -32,3 +32,5 @@ endif()
 if(CONFIG_OCRE_STORAGE_PARTITION)
     include(storage_partition.cmake)
 endif()
+
+target_link_libraries(OcreCommon PUBLIC zephyr_interface)

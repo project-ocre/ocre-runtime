@@ -44,17 +44,18 @@ add_custom_command(
     COMMAND cmake -E echo
 )
 
-add_library(OcreCommon INTERFACE)
+add_library(OcreCommon)
 
 # if we are not in a git repository, just fail automatically if we are missing commit_id.h
 target_sources(OcreCommon
     PRIVATE
+    common.c
     include/ocre/build_info.h
     include/ocre/commit_id.h
 )
 
 target_include_directories(OcreCommon
-    INTERFACE
+    PUBLIC
     include
     ${CMAKE_CURRENT_BINARY_DIR}/include
 )

@@ -9,7 +9,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <strings.h>
-#include <ctype.h>
 #include <dirent.h>
 #include <pthread.h>
 #include <sys/stat.h>
@@ -451,31 +450,4 @@ void ocre_deinitialize(void)
 
 		free(r_elt);
 	}
-}
-
-int ocre_is_valid_id(const char *id)
-{
-	/* Cannot be NULL */
-
-	if (!id) {
-		return 0;
-	}
-
-	/* Cannot be empty or start with a dot '.' */
-
-	if (id[0] == '\0' || id[0] == '.') {
-		return 0;
-	}
-
-	/* Can only contain alphanumeric characters, dots, underscores, and hyphens */
-
-	for (size_t i = 0; i < strlen(id); i++) {
-		if ((isalnum(id[i]) && islower(id[i])) || id[i] == '.' || id[i] == '_' || id[i] == '-') {
-			continue;
-		}
-
-		return 0;
-	}
-
-	return 1;
 }
