@@ -57,7 +57,7 @@ jobs:
       - name: West build
         run: |
           . /opt/zephyr-venv/bin/activate
-          west build -p always -b ${{ matrix.board }} src/samples/${{ matrix.app }}/zephyr
+          west build -p always -b ${{ matrix.board }} ocre-runtime/src/samples/${{ matrix.app }}/zephyr
 
       - name: Set sane board name
         run: |
