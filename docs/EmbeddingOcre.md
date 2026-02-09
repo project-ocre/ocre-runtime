@@ -93,6 +93,7 @@ Now that we have a build working, and we can successfully build Ocre Runtime lib
 
 ```c
 #include <stdio.h>
+#include <stdbool.h>
 #include <ocre/ocre.h>
 
 int main() {
