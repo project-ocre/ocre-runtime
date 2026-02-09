@@ -127,7 +127,7 @@ static ocre_container_status_t ocre_container_status_locked(struct ocre_containe
 	return container->status;
 }
 
-static char *ocre_find_best_matching_runtime(const char *image)
+static const char *ocre_find_best_matching_runtime(const char *image)
 {
 	static const char default_runtime[] = "wamr/wasip1";
 
