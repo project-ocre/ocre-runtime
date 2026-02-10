@@ -96,7 +96,7 @@ To build with the ENC28J60 shield:
 west build -p always -b b_u585i_iot02a --shield enc28j60 src/samples/supervisor/zephyr/
 ```
 
-Replace `enc28j60` with `w5500` if WIZnet W5500 ethernet shield is used.
+Replace `enc28j60` with `wiznet_w5500` if WIZnet W5500 ethernet shield is used.
 
 ## Flashing
 
