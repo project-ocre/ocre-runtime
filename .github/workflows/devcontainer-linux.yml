@@ -20,14 +20,11 @@ jobs:
       devcontainer-tag: ${{ steps.devcontainer-tag.outputs.tag }}
 
     steps:
+      - name: Clean other workspace
+        run: rm -rf ../.west
+
       - name: Clean workspace
-        run: |
-          git clean -ffdx || true
-          git reset --hard || true
-          git submodule foreach --recursive git clean -ffdx || true
-          git submodule foreach --recursive git reset --hard || true
-          git submodule deinit --all -f || true
-        continue-on-error: true
+        run: find . -name . -o -prune -exec rm -rf -- {} +
 
       - uses: actions/checkout@v4
         with:

@@ -22,6 +22,12 @@ jobs:
       image: ghcr.io/${{ github.repository }}/devcontainer-linux:${{ inputs.devcontainer-tag }}
       options: --user 1000:1000
     steps:
+      - name: Clean other workspace
+        run: rm -rf ../.west
+
+      - name: Clean workspace
+        run: find . -name . -o -prune -exec rm -rf -- {} +
+
       - name: checkout
         uses: actions/checkout@v5
         with:
