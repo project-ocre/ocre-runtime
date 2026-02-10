@@ -12,6 +12,12 @@ concurrency:
 
 on:
   workflow_call:
+    inputs:
+      devcontainer-tag:
+        description: The container tag to be used
+        default: latest
+        required: false
+        type: string
 
 
 jobs: 
@@ -28,14 +34,17 @@ jobs:
     needs: setup-local-runner
     runs-on: zephyr-xlarge-runner
     container:
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26-branch
-      options: --user root -v /var/ocre-ci-files/:/var/ocre-ci-files/
+      image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+      volumes:
+        - /var/ocre-ci-files/:/var/ocre-ci-files/
+      options: --user root
     strategy:
       matrix:
         sample:
           - name: generic-hello-world
             path: generic/hello-world
             filename: hello-world.wasm
+          # Examples for future images to add
           # - name: generic-filesystem-full
           #   path: generic/filesystem-full
           #   filename: filesystem-full.wasm
@@ -47,27 +56,16 @@ jobs:
           #   filename: blinky.wasm
     steps:
       - name: Cleanup workspace
-        uses: eviden-actions/clean-self-hosted-runner@v1
+        run: |
+          rm -rf ocre-runtime || true
+          rm -rf ../.west || true
+        continue-on-error: true
 
-      - name: Checkout 
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           path: ocre-runtime
-          fetch-depth: 0
-
-      - name: Install tools (xxd + WASI SDK)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget build-essential
-          wget https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz -O vim.tar.gz
-          tar -xvf vim.tar.gz
-          cd vim-9.1.1000/src && make -j$(nproc) && sudo cp xxd/xxd /usr/local/bin/xxd
-          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
-          tar -xvf wasi-sdk-25.0-x86_64-linux.tar.gz
-          sudo mv wasi-sdk-25.0-x86_64-linux /opt/wasi-sdk
-        env:
-          WASI_SDK_PATH: /opt/wasi-sdk
+          submodules: recursive
 
       - name: Build WASM sample
         run: |
@@ -89,6 +87,9 @@ jobs:
       - name: Save .wasm artifact locally
         if: always()
         run: |
+          pwd
+          ls /var/
+          ls /var/ocre-ci-files/
           mkdir /var/ocre-ci-files/wasm/${{ matrix.sample.name }}/
           cp "ocre-runtime/ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}" "/var/ocre-ci-files/wasm/${{ matrix.sample.name }}/${{ matrix.sample.filename }}"
 
@@ -107,27 +108,33 @@ jobs:
   build-flash-supervisor:
     needs: artifact-wasm-files
     runs-on: zephyr-xlarge-runner
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+      volumes:
+        - /var/ocre-ci-files/:/var/ocre-ci-files/
+        - /usr/local/STMicroelectronics/:/usr/local/STMicroelectronics/
+        - /github/home/STMicroelectronics/:/github/home/STMicroelectronics/
+        - /dev/bus/usb:/dev/bus/usb
+      options: --user root --device=/dev/ttyACM0
 
     steps:
-      - name: Cleanup workspace
-        uses: eviden-actions/clean-self-hosted-runner@v1
-      
+      - name: Clean workspace
+        run: |
+          rm -rf ocre-runtime || true
+          rm -rf ../.west || true
+        continue-on-error: true
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          path: ocre-runtime
           submodules: recursive
-          fetch-depth: 0
       
-      - name: Make python venv
-        run: |
-          python3 -m venv ./.venv
-          source .venv/bin/activate
-          pip install littlefs-python
-          pip install west 
 
       - name: Setup west environment
         run: |
-          source .venv/bin/activate
+          . /opt/zephyr-venv/bin/activate
+          west init -l .
           west update
           west zephyr-export
           west packages pip --install
@@ -144,9 +151,7 @@ jobs:
 
       - name: Build and Flash Supervisor
         run: |
-          ls -lah 
-          pwd
-          source .venv/bin/activate
+          . /opt/zephyr-venv/bin/activate
           west build -p always -b b_u585i_iot02a src/samples/supervisor/zephyr -- "-DOCRE_SDK_PRELOADED_IMAGES=hello-world.wasm"
           west flash --extload=/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr --hex-file build/zephyr/merged.hex
 
