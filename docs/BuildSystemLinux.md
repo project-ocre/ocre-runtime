@@ -17,7 +17,7 @@ This sections describes the build-time configuration honored by samples and test
 
 There are several components of the Ocre version that gets compiled in the project.
 
-The file `src/ocre/version.h` includes the Ocre Library version string.
+The file `src/common/version.h` includes the Ocre Library version string.
 While the file `commit_id.h` includes the commit ID of the Ocre Library.
 If this file is not present in the source tree, the file is generated during the build process and is stored in the build directory.
 If the file does not exist, and the source tree is not a valid git repository, the build will fail.

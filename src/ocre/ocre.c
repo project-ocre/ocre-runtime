@@ -24,7 +24,7 @@
 #include "context.h"
 #include "util/rm_rf.h"
 
-#include "version.h"
+#include <ocre/version.h>
 
 LOG_MODULE_REGISTER(ocre, CONFIG_OCRE_LOG_LEVEL);
 
