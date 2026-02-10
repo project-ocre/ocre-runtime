@@ -107,14 +107,6 @@ int ocre_is_valid_id(const char *id)
 	return 1;
 }
 
-/* Stub implementation of ocre_build_configuration */
-const struct ocre_config ocre_build_configuration = {
-	.version = "stub",
-	.commit_id = "stub",
-	.build_info = "stub",
-	.build_date = "stub",
-};
-
 /* Context functions from context.h */
 
 struct ocre_container *ocre_context_create_container(struct ocre_context *context, const char *image,
