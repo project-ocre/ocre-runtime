@@ -53,7 +53,7 @@ foreach(test ${OCRE_TESTS})
 
     add_custom_command(
         OUTPUT test_${test}.log
-        COMMAND LLVM_PROFILE_FILE=test_${test}.profraw ./test_${test} > test_${test}.log
+        COMMAND cd ocre && LLVM_PROFILE_FILE=../test_${test}.profraw ../test_${test} > ../test_${test}.log
         COMMAND rm -f test_${test}.testpass test_${test}.testfail
         COMMAND sh -c "[ \"$(tail -1 test_${test}.log)\" = \"OK\" ] && cp test_${test}.log test_${test}.testpass || cp test_${test}.log test_${test}.testfail"
         DEPENDS
