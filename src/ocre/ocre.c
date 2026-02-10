@@ -17,25 +17,12 @@
 
 #include <ocre/ocre.h>
 #include <ocre/platform/log.h>
-#include <ocre/build_info.h>
 #include <ocre/runtime/wamr/wasip1.h>
-#include <ocre/commit_id.h>
 
 #include "context.h"
 #include "util/rm_rf.h"
 
-#include <ocre/version.h>
-
 LOG_MODULE_REGISTER(ocre, CONFIG_OCRE_LOG_LEVEL);
-
-/* Constant build information */
-
-const struct ocre_config ocre_build_configuration = {
-	.build_info = OCRE_BUILD_HOST_INFO,
-	.version = OCRE_VERSION_STRING,
-	.commit_id = GIT_COMMIT_ID,
-	.build_date = OCRE_BUILD_DATE,
-};
 
 /* List of runtimes */
 
