@@ -10,8 +10,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <sys/stat.h>
 #include <errno.h>
+
+#include <ocre/platform/lstat.h>
 
 /* Stack node for directory traversal */
 
@@ -88,7 +89,7 @@ int rm_rf(const char *path)
 	}
 
 	struct stat st;
-	if (stat(path, &st) == -1) {
+	if (ocre_lstat(path, &st) == -1) {
 		return -1; /* errno already set by stat */
 	}
 
@@ -165,7 +166,7 @@ int rm_rf(const char *path)
 
 		/* Get entry information */
 
-		if (stat(entry_path, &st) == -1) {
+		if (ocre_lstat(entry_path, &st) == -1) {
 			result = -1;
 			free(entry_path);
 			continue;
