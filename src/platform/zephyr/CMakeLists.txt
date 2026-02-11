@@ -9,6 +9,7 @@ target_sources(OcrePlatform
     PRIVATE
     memory.c
     ../posix/file_alloc_read.c
+    lstat.c
 )
 
 target_include_directories(OcrePlatform
