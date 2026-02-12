@@ -36,7 +36,7 @@ void test_ocre_create_provided_context(void)
 {
 	/* Creating the other context should work */
 
-	struct ocre_context *other_ctx = ocre_create_context("othercontext");
+	struct ocre_context *other_ctx = ocre_create_context(OCRE_TEST_OTHER_CONTEXT_PATH);
 	TEST_ASSERT_NOT_NULL(other_ctx);
 
 	/* We can also destroy the other context */
@@ -53,7 +53,7 @@ void test_ocre_create_two_contexts(void)
 
 	/* Creating the other context should work */
 
-	struct ocre_context *other_ctx = ocre_create_context("othercontext");
+	struct ocre_context *other_ctx = ocre_create_context(OCRE_TEST_OTHER_CONTEXT_PATH);
 	TEST_ASSERT_NOT_NULL(other_ctx);
 
 	/* We can also destroy the main_ctx */

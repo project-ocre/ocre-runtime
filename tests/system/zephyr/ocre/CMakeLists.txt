@@ -26,6 +26,10 @@ target_sources(app
     ../../ocre.c
 )
 
+set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/../../ocre.c PROPERTIES COMPILE_FLAGS
+    -DOCRE_TEST_OTHER_CONTEXT_PATH=\\"/lfs/other\\"
+)
+
 target_link_libraries(app
     PUBLIC
     OcreCore

@@ -46,6 +46,10 @@ foreach(test ${OCRE_TESTS})
         ../${test}.c
     )
 
+    set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/../ocre.c PROPERTIES COMPILE_FLAGS
+        -DOCRE_TEST_OTHER_CONTEXT_PATH=\\"./othercontext\\"
+    )
+
     target_link_libraries(test_${test}
         OcreCore
         Unity
