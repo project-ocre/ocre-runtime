@@ -267,8 +267,8 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 	}
 
 	container->runtime_context =
-		container->runtime->create(img_path, workdir, capabilities, (const char **)container->argv,
-					   (const char **)container->envp, mounts);
+		container->runtime->create(container_id, img_path, workdir, capabilities,
+					   (const char **)container->argv, (const char **)container->envp, mounts);
 	if (!container->runtime_context) {
 		LOG_ERR("Failed to create container");
 		goto error_cond;
