@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-import time
+
 import serial
+import time
 import sys
 
 """
-This testcase is to be used following the flashing of the supervisor sample to a board with the hello-world container running.
+This testcase is to be used following the flashing of the default mini sample to a board.
 
 The testcase forms a serial connection to the board, sends a break and checks that 
 the string "powered by Ocre" appears in the output of that break command. 
@@ -15,8 +16,7 @@ def main():
     conn = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
     conn.reset_input_buffer()
     time.sleep(5)
-    print("Running hello-world container:")
-    conn.write(b'ocre start hello-world\n')
+    # Refactor to use conn.read_until to remove need for separate timeout
     response = conn.read(2048).decode(errors='ignore')
 
     print("Container Output:")
