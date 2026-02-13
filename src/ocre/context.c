@@ -13,7 +13,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "uthash/utlist.h"
+#include <uthash/utlist.h>
 
 #include <ocre/ocre.h>
 #include <ocre/platform/config.h>
@@ -187,7 +187,7 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 
 	/* Check if the provided container ID is valid */
 
-	if (container_id && !ocre_is_valid_id(container_id)) {
+	if (container_id && !ocre_is_valid_name(container_id)) {
 		LOG_ERR("Invalid characters in container ID '%s'. Valid are [a-z0-9_-.] (lowercase alphanumeric) and "
 			"cannot start with '.'",
 			container_id);
@@ -196,7 +196,7 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 
 	/* Check if the provided image ID is valid */
 
-	if (!image || !ocre_is_valid_id(image)) {
+	if (!image || !ocre_is_valid_name(image)) {
 		LOG_ERR("Invalid characters in image ID '%s'. Valid are [a-z0-9_-.] (lowercase alphanumeric) and "
 			"cannot start with '.'",
 			image);

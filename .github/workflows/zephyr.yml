@@ -32,11 +32,11 @@ jobs:
           - demo
           - supervisor
     steps:
+      - name: Clean other workspace
+        run: rm -rf ../.west
+
       - name: Clean workspace
-        run: |
-          rm -rf ocre-runtime || true
-          rm -rf ../.west || true
-        continue-on-error: true
+        run: find . -name . -o -prune -exec rm -rf -- {} +
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,21 +47,17 @@ jobs:
       - name: West init
         run: |
           . /opt/zephyr-venv/bin/activate
-          west init -l .
+          west init -l ocre-runtime
 
       - name: West update
         run: |
           . /opt/zephyr-venv/bin/activate
           west update
 
-      - name: Update submodules
-        run: |
-          git submodule update --init --recursive
-
       - name: West build
         run: |
           . /opt/zephyr-venv/bin/activate
-          west build -p always -b ${{ matrix.board }} src/samples/${{ matrix.app }}/zephyr
+          west build -p always -b ${{ matrix.board }} ocre-runtime/src/samples/${{ matrix.app }}/zephyr
 
       - name: Set sane board name
         run: |

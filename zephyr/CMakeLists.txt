@@ -17,10 +17,13 @@ set(CMAKE_CXX_STANDARD 17)
 
 include (wamr.cmake)
 
+add_subdirectory(../src/uthash "uthash")
+add_subdirectory(../src/common "ocre-common")
 add_subdirectory(../src/ocre "ocre-core")
 add_subdirectory(../src/runtime "ocre-runtime")
 add_subdirectory(../src/runtime/wamr-wasip1 "ocre-runtime-wamr-wasip1")
 add_subdirectory(../src/platform/zephyr "ocre-zephyr")
+
 if(CONFIG_OCRE_SHELL)
     message(STATUS "Shell is enabled")
     add_subdirectory(../src/shell "ocre-shell")
@@ -29,3 +32,5 @@ endif()
 if(CONFIG_OCRE_STORAGE_PARTITION)
     include(storage_partition.cmake)
 endif()
+
+target_link_libraries(OcreCommon PUBLIC zephyr_interface)

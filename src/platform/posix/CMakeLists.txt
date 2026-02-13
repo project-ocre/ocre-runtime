@@ -11,6 +11,7 @@ target_sources(OcrePlatform
     log.c
     file_mmap.c
     # file_alloc_read.c
+    lstat.c
 )
 
 target_include_directories(OcrePlatform

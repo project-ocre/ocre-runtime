@@ -15,6 +15,9 @@
 
 #include "../command.h"
 
+extern char *optarg;
+extern int optind, opterr, optopt;
+
 static int usage(const char *argv0, const char *cmd)
 {
 	fprintf(stderr, "Usage: %s container %s [options] IMAGE [ARG...]\n", argv0, cmd);
@@ -78,7 +81,7 @@ int cmd_container_create_run(struct ocre_context *ctx, const char *argv0, int ar
 
 				/* Check if the provided container ID is valid */
 
-				if (optarg && !ocre_is_valid_id(optarg)) {
+				if (optarg && !ocre_is_valid_name(optarg)) {
 					fprintf(stderr,
 						"Invalid characters in container ID '%s'. Valid are [a-z0-9_-.] "
 						"(lowercase alphanumeric) and cannot start with '.'\n",
@@ -197,7 +200,7 @@ int cmd_container_create_run(struct ocre_context *ctx, const char *argv0, int ar
 
 	/* Check if the provided image ID is valid */
 
-	if (argv[optind] && !ocre_is_valid_id(argv[optind])) {
+	if (argv[optind] && !ocre_is_valid_name(argv[optind])) {
 		fprintf(stderr,
 			"Invalid characters in image ID '%s'. Valid are [a-z0-9_-.] (lowercase alphanumeric) and "
 			"cannot start with '.'",

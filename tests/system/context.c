@@ -61,8 +61,10 @@ void test_ocre_context_create_container_bad_ids(void)
 	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", ".", false, NULL));
 	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "..", false, NULL));
 	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "/", false, NULL));
-	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "/somewhere", false, NULL));
-	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "some/where", false, NULL));
+	TEST_ASSERT_NULL(
+		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "/somewhere", false, NULL));
+	TEST_ASSERT_NULL(
+		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "some/where", false, NULL));
 	TEST_ASSERT_NULL(ocre_context_create_container(context, ".", "wamr/wasip1", NULL, false, NULL));
 	TEST_ASSERT_NULL(ocre_context_create_container(context, "..", "wamr/wasip1", NULL, false, NULL));
 	TEST_ASSERT_NULL(ocre_context_create_container(context, "/", "wamr/wasip1", NULL, false, NULL));
@@ -83,31 +85,38 @@ void test_ocre_context_create_container_bad_mounts(void)
 
 	bad_mounts.mounts = (const char *[]){"no-colon", NULL};
 
-	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
+	TEST_ASSERT_NULL(
+		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
 
 	bad_mounts.mounts = (const char *[]){"no_abs_path:/hello", NULL};
 
-	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
+	TEST_ASSERT_NULL(
+		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
 
 	bad_mounts.mounts = (const char *[]){"/tmp:/", NULL};
 
-	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
+	TEST_ASSERT_NULL(
+		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
 
 	bad_mounts.mounts = (const char *[]){"/tmp:no_abs", NULL};
 
-	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
+	TEST_ASSERT_NULL(
+		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
 
 	bad_mounts.mounts = (const char *[]){"/tmp:", NULL};
 
-	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
+	TEST_ASSERT_NULL(
+		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
 
 	bad_mounts.mounts = (const char *[]){"/tmp", NULL};
 
-	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
+	TEST_ASSERT_NULL(
+		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
 
 	bad_mounts.mounts = (const char *[]){"/tmp:/ok", "bad", NULL};
 
-	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
+	TEST_ASSERT_NULL(
+		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", NULL, false, &bad_mounts));
 }
 
 void test_ocre_context_remove_bad_container(void)
@@ -162,8 +171,8 @@ void test_ocre_context_create_container_with_id_ok(void)
 {
 	/* Create a valid container */
 
-	struct ocre_container *container =
-		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "test-container", false, NULL);
+	struct ocre_container *container = ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1",
+									 "test-container", false, NULL);
 	TEST_ASSERT_NOT_NULL(container);
 
 	/* Check container status */
@@ -209,14 +218,14 @@ void test_ocre_context_create_container_with_id_twice(void)
 {
 	/* Create a valid container */
 
-	struct ocre_container *container =
-		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "test-container", false, NULL);
+	struct ocre_container *container = ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1",
+									 "test-container", false, NULL);
 	TEST_ASSERT_NOT_NULL(container);
 
 	/* Another container with the same id should fail */
 
-	TEST_ASSERT_NULL(
-		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "test-container", false, NULL));
+	TEST_ASSERT_NULL(ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "test-container",
+						       false, NULL));
 
 	/* Remove the container */
 
@@ -227,8 +236,8 @@ void test_ocre_context_create_container_and_forget(void)
 {
 	/* Create a valid container */
 
-	struct ocre_container *container =
-		ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "should-not-leak", false, NULL);
+	struct ocre_container *container = ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1",
+									 "should-not-leak", false, NULL);
 	TEST_ASSERT_NOT_NULL(container);
 
 	/* Check container status */

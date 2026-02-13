@@ -217,8 +217,8 @@ static int runtime_deinit(void)
 	return 0;
 }
 
-static void *instance_create(const char *img_path, const char *workdir, const char **capabilities, const char **argv,
-			     const char **envp, const char **mounts)
+static void *instance_create(const char *container_id, const char *img_path, const char *workdir,
+			     const char **capabilities, const char **argv, const char **envp, const char **mounts)
 {
 	struct wamr_context *context = NULL;
 	// char **dir_map_list = NULL;

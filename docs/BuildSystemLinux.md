@@ -22,6 +22,8 @@ While the file `commit_id.h` includes the commit ID of the Ocre Library.
 If this file is not present in the source tree, the file is generated during the build process and is stored in the build directory.
 If the file does not exist, and the source tree is not a valid git repository, the build will fail.
 
+Check [Versioning](Versioning.md) documentation for more information.
+
 #### Ocre build Configuration
 
 The default Ocre build configuration is in the file `src/platform/posix/include/ocre/platform/config.h`.

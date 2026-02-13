@@ -127,7 +127,7 @@ static ocre_container_status_t ocre_container_status_locked(struct ocre_containe
 	return container->status;
 }
 
-static char *ocre_find_best_matching_runtime(const char *image)
+static const char *ocre_find_best_matching_runtime(const char *image)
 {
 	static const char default_runtime[] = "wamr/wasip1";
 
@@ -267,8 +267,8 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 	}
 
 	container->runtime_context =
-		container->runtime->create(img_path, workdir, capabilities, (const char **)container->argv,
-					   (const char **)container->envp, mounts);
+		container->runtime->create(container_id, img_path, workdir, capabilities,
+					   (const char **)container->argv, (const char **)container->envp, mounts);
 	if (!container->runtime_context) {
 		LOG_ERR("Failed to create container");
 		goto error_cond;

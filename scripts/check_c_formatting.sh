@@ -26,7 +26,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SRC_DIR="$ROOT_DIR/src"
 
-echo "Checking formatting in $SRC_DIR/.."
+echo "Checking C formatting."
 
-find src -type f '(' -name '*.c' -o -name '*.h' ')' ! -name 'utlist.h' -print0 | \
+find . -type f '(' -name '*.c' -o -name '*.h' ')' \
+    '(' -path './src/*' -o -path './tests/*' ')' \
+    ! -name 'utlist.h' \
+    ! -path './tests/Unity/*' \
+    -print0 | \
     xargs -0 -n1 clang-format ${ARGUMENT} -Werror

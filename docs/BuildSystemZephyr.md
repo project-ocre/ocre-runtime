@@ -13,9 +13,9 @@ We provide several points of integration with Zephyr:
 - Ocre West Project
 - Ocre Zephyr Module
 - Ocre Sample Applications
-    - mini
-    - demo
-    - supervisor
+  - mini
+  - demo
+  - supervisor
 
 The general usage of these points of integration are described below.
 
@@ -34,7 +34,7 @@ west init -l .
 
 Here, `-l .` tells west to initialize the project using the manifest (`west.yml` in the current directory).
 
-This will create a `.west` directory in `..` (i.e. side by side with the ocre-runtime directory). And when `west update` is run, Zephyr and its modules will also be checked out in `..`. 
+This will create a `.west` directory in `..` (i.e. side by side with the ocre-runtime directory). And when `west update` is run, Zephyr and its modules will also be checked out in `..`.
 
 This is the recommended way to work with the [Devcontainers](./Devcontainers.md).
 
@@ -87,6 +87,8 @@ If this file is not present in the source tree, the file is generated during the
 If the file does not exist, and the source tree is not a valid git repository, the build will fail.
 
 Note that these are unrelated to the Zephyr version and the Zephyr application version mechanism (i.e. throught he use of the VERSION file in the Zephyr application directory).
+
+Check [Versioning](Versioning.md) documentation for more information.
 
 #### Kconfig
 

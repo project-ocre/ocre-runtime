@@ -51,6 +51,7 @@
  * See ocre_runtime_vtable class for documentation.
  */
 
+#include <ocre/common.h>
 #include <ocre/library.h>
 #include <ocre/context.h>
 #include <ocre/container.h>

@@ -5,6 +5,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <stdbool.h>
+
 #include <ocre/ocre.h>
 
 struct ocre_container;
