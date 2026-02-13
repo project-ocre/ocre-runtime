@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.20.0)
 
-set(CMAKE_C_COMPILER /usr/bin/clang)
+# set(CMAKE_C_COMPILER /usr/bin/clang)
 
 list(APPEND OCRE_SDK_PRELOADED_IMAGES
     "return0.wasm"

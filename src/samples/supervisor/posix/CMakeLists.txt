@@ -7,6 +7,9 @@ cmake_minimum_required(VERSION 3.20.0)
 
 project (ocre_supervisor)
 
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads)
+
 add_executable(ocre_cli
     ocre.c
     download.c
@@ -22,6 +25,7 @@ add_library(OcreClient)
 target_sources(OcreClient
     PRIVATE
     client/client.c
+    client/context.c
     zcbor_helpers.c
     zcbor/src/zcbor_encode.c
     zcbor/src/zcbor_decode.c
@@ -71,6 +75,7 @@ target_link_libraries(OcreClient
 target_link_libraries(ocre_cli
     PUBLIC
     OcreClient
+    Threads::Threads
 )
 
 # target_include_directories(ocre_cli PRIVATE ../../../ocre/include)
@@ -85,28 +90,10 @@ target_link_libraries(ocre_cli
 #     OcreCore
 # )
 
-set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-find_package(Threads)
-target_link_libraries(ocre_cli PRIVATE Threads::Threads)
+
 
 
 # add_definitions(-DZCBOR_VERBOSE)
 
 # add_definitions(-DZCBOR_CANONICAL)
-
-add_executable(ocred
-    ocred.c
-    zcbor_helpers.c
-    zcbor/src/zcbor_encode.c
-    zcbor/src/zcbor_decode.c
-    zcbor/src/zcbor_common.c
-)
-
-target_link_libraries(ocred
-    PRIVATE
-    OcreCore
-)
-
-target_include_directories(ocred
-    PRIVATE zcbor/include
-)
+add_subdirectory(server)
