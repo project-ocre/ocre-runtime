@@ -7,11 +7,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <sys/un.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -22,10 +23,13 @@
 
 #include <ocre/ocre.h>
 
-#include "ipc.h"
-#include "zcbor_helpers.h"
+#include "../ipc.h"
+#include "../zcbor_helpers.h"
+#include "../server/waiters.h"
 
-#define SOCK_PATH	   "ocre.sock"
+#define DEFAULT_PID_FILE   "ocre.pid"
+
+#define SOCK_PATH	   "/tmp/ocre.sock"
 #define RX_BUFFER_SIZE	   2048
 #define TX_BUFFER_SIZE	   2048
 #define STRING_BUFFER_SIZE 256
@@ -33,7 +37,7 @@
 #define MAX_STRING_ARRAY   32
 
 /* Global ocre context for the server */
-static struct ocre_context *ctx = NULL;
+// static struct ocre_context *ctx = NULL;
 
 // static void print_hex(const char *label, const uint8_t *data, size_t len)
 // {
@@ -44,7 +48,8 @@ static struct ocre_context *ctx = NULL;
 // 	printf("\n");
 // }
 
-static int handle_context_create_container(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_context_create_container(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+					   size_t tx_buf_size)
 {
 	char image[STRING_BUFFER_SIZE];
 	char runtime[STRING_BUFFER_SIZE];
@@ -176,7 +181,8 @@ static int handle_context_create_container(zcbor_state_t *dec_state, uint8_t *tx
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_context_get_container_by_id(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_context_get_container_by_id(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+					      size_t tx_buf_size)
 {
 	char id[STRING_BUFFER_SIZE];
 	bool is_nil;
@@ -208,7 +214,8 @@ static int handle_context_get_container_by_id(zcbor_state_t *dec_state, uint8_t 
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_context_remove_container(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_context_remove_container(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+					   size_t tx_buf_size)
 {
 	char id[STRING_BUFFER_SIZE];
 	bool is_nil;
@@ -247,7 +254,8 @@ static int handle_context_remove_container(zcbor_state_t *dec_state, uint8_t *tx
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_context_get_container_count(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_context_get_container_count(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+					      size_t tx_buf_size)
 {
 	/* Call the actual function */
 	int result = ocre_context_get_container_count(ctx);
@@ -270,7 +278,8 @@ static int handle_context_get_container_count(zcbor_state_t *dec_state, uint8_t 
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_context_get_containers(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_context_get_containers(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+					 size_t tx_buf_size)
 {
 	int32_t max_size;
 
@@ -318,7 +327,8 @@ static int handle_context_get_containers(zcbor_state_t *dec_state, uint8_t *tx_b
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_context_get_working_directory(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_context_get_working_directory(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+						size_t tx_buf_size)
 {
 	/* Call the actual function */
 	const char *workdir = ocre_context_get_working_directory(ctx);
@@ -342,7 +352,8 @@ static int handle_context_get_working_directory(zcbor_state_t *dec_state, uint8_
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_container_start(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_container_start(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+				  size_t tx_buf_size)
 {
 	char id[STRING_BUFFER_SIZE];
 	bool is_nil;
@@ -381,7 +392,8 @@ static int handle_container_start(zcbor_state_t *dec_state, uint8_t *tx_buf, siz
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_container_get_status(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_container_get_status(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+				       size_t tx_buf_size)
 {
 	char id[STRING_BUFFER_SIZE];
 	bool is_nil;
@@ -418,7 +430,8 @@ static int handle_container_get_status(zcbor_state_t *dec_state, uint8_t *tx_buf
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_container_get_image(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_container_get_image(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+				      size_t tx_buf_size)
 {
 	char id[STRING_BUFFER_SIZE];
 	bool is_nil;
@@ -457,7 +470,8 @@ static int handle_container_get_image(zcbor_state_t *dec_state, uint8_t *tx_buf,
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_container_pause(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_container_pause(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+				  size_t tx_buf_size)
 {
 	char id[STRING_BUFFER_SIZE];
 	bool is_nil;
@@ -494,7 +508,8 @@ static int handle_container_pause(zcbor_state_t *dec_state, uint8_t *tx_buf, siz
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_container_unpause(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_container_unpause(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+				    size_t tx_buf_size)
 {
 	char id[STRING_BUFFER_SIZE];
 	bool is_nil;
@@ -531,7 +546,8 @@ static int handle_container_unpause(zcbor_state_t *dec_state, uint8_t *tx_buf, s
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_container_stop(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_container_stop(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+				 size_t tx_buf_size)
 {
 	char id[STRING_BUFFER_SIZE];
 	bool is_nil;
@@ -568,7 +584,8 @@ static int handle_container_stop(zcbor_state_t *dec_state, uint8_t *tx_buf, size
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_container_kill(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_container_kill(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+				 size_t tx_buf_size)
 {
 	char id[STRING_BUFFER_SIZE];
 	bool is_nil;
@@ -605,7 +622,8 @@ static int handle_container_kill(zcbor_state_t *dec_state, uint8_t *tx_buf, size
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_container_wait(zcbor_state_t *dec_state, uint8_t *tx_buf, size_t tx_buf_size)
+static int handle_container_wait(struct ocre_context *ctx, int socket, zcbor_state_t *dec_state, uint8_t *tx_buf,
+				 size_t tx_buf_size)
 {
 	char id[STRING_BUFFER_SIZE];
 	bool is_nil;
@@ -623,31 +641,23 @@ static int handle_container_wait(zcbor_state_t *dec_state, uint8_t *tx_buf, size
 		return -1;
 	}
 
-	/* Call the actual function */
-	int exit_status = 0;
-	int result = ocre_container_wait(container, &exit_status);
-
-	/* Encode response */
-	ZCBOR_STATE_E(enc_state, 0, tx_buf, tx_buf_size, 0);
-
-	bool success = zcbor_uint32_put(enc_state, OCRE_IPC_CONTAINER_WAIT_RSP);
-	if (success) {
-		success = zcbor_int32_put(enc_state, result);
-	}
-	if (success && result == 0) {
-		success = zcbor_int32_put(enc_state, exit_status);
-	}
-
-	if (!success) {
-		printf("Encoding response failed\n");
+	struct waiter *waiter = waiter_get_or_new(container);
+	if (!waiter) {
+		printf("Failed to create waiter\n");
 		return -1;
 	}
 
-	return enc_state->payload - tx_buf;
+	if (waiter_add_client(waiter, socket) < 0) {
+		printf("Failed to add client to waiter\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 /* Process a single IPC request */
-static int process_request(uint8_t *rx_buf, int rx_len, uint8_t *tx_buf, size_t tx_buf_size)
+int process_request(struct ocre_context *ctx, int socket, uint8_t *rx_buf, int rx_len, uint8_t *tx_buf,
+		    size_t tx_buf_size)
 {
 	bool success;
 
@@ -670,59 +680,59 @@ static int process_request(uint8_t *rx_buf, int rx_len, uint8_t *tx_buf, size_t 
 
 	switch (decoded_cmd) {
 		case OCRE_IPC_CONTEXT_CREATE_CONTAINER_REQ:
-			response_len = handle_context_create_container(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_context_create_container(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTEXT_GET_CONTAINER_BY_ID_REQ:
-			response_len = handle_context_get_container_by_id(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_context_get_container_by_id(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTEXT_REMOVE_CONTAINER_REQ:
-			response_len = handle_context_remove_container(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_context_remove_container(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTEXT_GET_CONTAINER_COUNT_REQ:
-			response_len = handle_context_get_container_count(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_context_get_container_count(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTEXT_GET_CONTAINERS_REQ:
-			response_len = handle_context_get_containers(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_context_get_containers(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTEXT_GET_WORKING_DIRECTORY_REQ:
-			response_len = handle_context_get_working_directory(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_context_get_working_directory(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTAINER_START_REQ:
-			response_len = handle_container_start(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_container_start(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTAINER_GET_STATUS_REQ:
-			response_len = handle_container_get_status(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_container_get_status(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTAINER_GET_IMAGE_REQ:
-			response_len = handle_container_get_image(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_container_get_image(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTAINER_PAUSE_REQ:
-			response_len = handle_container_pause(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_container_pause(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTAINER_UNPAUSE_REQ:
-			response_len = handle_container_unpause(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_container_unpause(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTAINER_STOP_REQ:
-			response_len = handle_container_stop(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_container_stop(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTAINER_KILL_REQ:
-			response_len = handle_container_kill(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_container_kill(ctx, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTAINER_WAIT_REQ:
-			response_len = handle_container_wait(decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_container_wait(ctx, socket, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		default:
@@ -731,95 +741,4 @@ static int process_request(uint8_t *rx_buf, int rx_len, uint8_t *tx_buf, size_t 
 	}
 
 	return response_len;
-}
-
-int main(void)
-{
-
-	int rc = ocre_initialize(NULL);
-	if (rc) {
-		fprintf(stderr, "Failed to initialize runtimes\n");
-		return 1;
-	}
-
-	ctx = ocre_create_context(NULL);
-	if (!ctx) {
-		fprintf(stderr, "Failed to create ocre context\n");
-		return 1;
-	}
-
-	int s, s2;
-	struct sockaddr_un remote, local = {
-					   .sun_family = AF_UNIX,
-				   };
-	uint8_t rx_buf[RX_BUFFER_SIZE];
-	uint8_t tx_buf[TX_BUFFER_SIZE];
-
-	if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-		perror("socket");
-		exit(1);
-	}
-
-	strcpy(local.sun_path, SOCK_PATH);
-	unlink(local.sun_path);
-	size_t len = strlen(local.sun_path) + sizeof(local.sun_family);
-	if (bind(s, (struct sockaddr *)&local, len) == -1) {
-		perror("bind");
-		exit(1);
-	}
-
-	if (listen(s, 5) == -1) {
-		perror("listen");
-		exit(1);
-	}
-
-	printf("Ocre daemon started, listening on %s\n", SOCK_PATH);
-
-	for (;;) {
-		int n;
-		printf("Waiting for a connection...\n");
-		socklen_t slen = sizeof(remote);
-		if ((s2 = accept(s, (struct sockaddr *)&remote, &slen)) == -1) {
-			perror("accept");
-			exit(1);
-		}
-
-		printf("Connected.\n");
-
-		do {
-			n = recv(s2, rx_buf, sizeof(rx_buf), 0);
-			if (n <= 0) {
-				if (n < 0)
-					perror("recv");
-				else
-					printf("Client disconnected\n");
-				break;
-			}
-
-			// printf("Received %d bytes\n", n);
-			// print_hex("received", rx_buf, n);
-
-			/* Process the request and generate response */
-			int response_len = process_request(rx_buf, n, tx_buf, sizeof(tx_buf));
-
-			if (response_len < 0) {
-				printf("Failed to process request\n");
-				break;
-			}
-
-			// print_hex("sending", tx_buf, response_len);
-
-			if (send(s2, tx_buf, response_len, 0) < 0) {
-				perror("send");
-				break;
-			}
-
-			printf("Response sent (%d bytes)\n", response_len);
-
-		} while (1);
-
-		close(s2);
-	}
-
-	return 0;
 }

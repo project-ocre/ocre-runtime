@@ -12,7 +12,6 @@
 #include <ctype.h>
 
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -28,7 +27,7 @@
 #include "../ipc.h"
 #include "zcbor_helpers.h"
 
-#define SOCK_PATH	    "ocre.sock"
+#define SOCK_PATH	    "/tmp/ocre.sock"
 
 /* Buffer sizes for IPC communication */
 #define SMALL_PAYLOAD_SIZE  64
@@ -256,11 +255,14 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 
 struct ocre_container *ocre_context_get_container_by_id(struct ocre_context *context, const char *id)
 {
-	(void)context; /* Context is not sent over IPC - server uses global context */
 	int rc;
 
 	uint8_t payload[MEDIUM_PAYLOAD_SIZE];
 	bool success;
+
+	if (!context) {
+		return NULL;
+	}
 
 	/* Encode the request - server expects only the ID string */
 	ZCBOR_STATE_E(encoding_state, 0, payload, sizeof(payload), 0);
@@ -328,13 +330,12 @@ struct ocre_container *ocre_context_get_container_by_id(struct ocre_context *con
 
 int ocre_context_remove_container(struct ocre_context *context, struct ocre_container *container)
 {
-	(void)context; /* Context is not sent over IPC - server uses global context */
 	int rc;
 
 	uint8_t payload[MEDIUM_PAYLOAD_SIZE];
 	bool success;
 
-	if (!container || !container->id) {
+	if (!context || !container || !container->id) {
 		return -1;
 	}
 
@@ -385,12 +386,14 @@ int ocre_context_remove_container(struct ocre_context *context, struct ocre_cont
 
 int ocre_context_get_container_count(struct ocre_context *context)
 {
-	(void)context; /* Context is not sent over IPC - server uses global context */
 	int rc;
 
 	uint8_t payload[SMALL_PAYLOAD_SIZE];
 	bool success;
 
+	if (!context) {
+		return -1;
+	}
 	/* Encode the request - server takes no parameters */
 	ZCBOR_STATE_E(encoding_state, 0, payload, sizeof(payload), 0);
 
@@ -438,11 +441,14 @@ int ocre_context_get_container_count(struct ocre_context *context)
 
 int ocre_context_get_containers(struct ocre_context *context, struct ocre_container **containers, int max_size)
 {
-	(void)context; /* Context is not sent over IPC - server uses global context */
 	int rc;
 
 	uint8_t payload[SMALL_PAYLOAD_SIZE];
 	bool success;
+
+	if (!context || !containers) {
+		return -1;
+	}
 
 	/* Encode the request - server expects only max_size */
 	ZCBOR_STATE_E(encoding_state, 0, payload, sizeof(payload), 0);
@@ -533,12 +539,15 @@ int ocre_context_get_containers(struct ocre_context *context, struct ocre_contai
 
 const char *ocre_context_get_working_directory(const struct ocre_context *context)
 {
-	(void)context; /* Context is not sent over IPC - server uses global context */
 	int rc;
 	static char workdir_buffer[STRING_BUFFER_SIZE];
 
 	uint8_t payload[SMALL_PAYLOAD_SIZE];
 	bool success;
+
+	if (!context) {
+		return NULL;
+	}
 
 	/* Encode the request - server takes no parameters */
 	ZCBOR_STATE_E(encoding_state, 0, payload, sizeof(payload), 0);
@@ -975,7 +984,7 @@ int ocre_container_kill(struct ocre_container *container)
 	}
 
 	/* Decode the response */
-	ZCBOR_STATE_D(decoding_state, 0, rx_buf, rc, 1, 0);
+	ZCBOR_STATE_D(decoding_state, 0, rx_buf, rc, 2, 0);
 
 	uint32_t decoded_rsp;
 	success = zcbor_uint32_decode(decoding_state, &decoded_rsp);
@@ -1031,7 +1040,7 @@ int ocre_container_wait(struct ocre_container *container, int *status)
 	}
 
 	/* Decode the response */
-	ZCBOR_STATE_D(decoding_state, 0, rx_buf, rc, 1, 0);
+	ZCBOR_STATE_D(decoding_state, 0, rx_buf, rc, 3, 0);
 
 	uint32_t decoded_rsp;
 	success = zcbor_uint32_decode(decoding_state, &decoded_rsp);
