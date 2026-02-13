@@ -15,12 +15,14 @@ def main():
 
     conn = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
     conn.reset_input_buffer()
+    conn.send_break()
     time.sleep(5)
     # Refactor to use conn.read_until to remove need for separate timeout
     response = conn.read(2048).decode(errors='ignore')
 
     print("Container Output:")
     print(response)
+    conn.reset_output_buffer()
     conn.close()
 
     if "powered by Ocre" in response:

@@ -165,17 +165,10 @@ jobs:
           west build -p always -b b_u585i_iot02a src/samples/mini/zephyr 
           west flash --extload=/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr
 
-  mini-test:
-    name: Mini Validation Test
-    needs: mini-flash
-    runs-on: zephyr-xlarge-runner
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Run mini sample Test Case
         run: |
+          . /opt/zephyr-venv/bin/activate
+          pip install pyserial
           cd tests_hw && bash beginTests.sh "mini"
 
       - name: Print mini sample Test Case Logs
@@ -185,7 +178,7 @@ jobs:
 
   demo-flash:
     name: Demo sample build and flash
-    needs: [artifact-wasm-files, mini-test]
+    needs: [artifact-wasm-files, mini-flash]
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
@@ -233,17 +226,10 @@ jobs:
           west build -p always -b b_u585i_iot02a src/samples/demo/zephyr 
           west flash --extload=/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr --hex-file build/zephyr/merged.hex
 
-  demo-test:
-    name: Demo Validation Test
-    needs: demo-flash
-    runs-on: zephyr-xlarge-runner
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Run Demo Sample Test Case
         run: |
+          . /opt/zephyr-venv/bin/activate
+          pip install pyserial
           cd tests_hw && bash beginTests.sh "demo"
 
       - name: Print Demo Sample Test Case Logs
@@ -253,7 +239,7 @@ jobs:
 
   build-flash-supervisor-set-1:
     name: Build and Flash Supervisor with Image Set 1
-    needs: [artifact-wasm-files, demo-test]
+    needs: [artifact-wasm-files, demo-flash]
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}

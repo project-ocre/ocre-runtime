@@ -14,28 +14,29 @@ the string "powered by Ocre" appears in the output of that break command.
 lines_to_check = [
     "powered by Ocre",
     "Generic blinking started.",
+    "Subscriber initialized",
+    "Publisher initialized",
     "Demo completed successfully",
 ]
 
 
-# Test stub, add more checks to ensure other containers ran successfully
 def main():
-
 
     conn = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
     conn.reset_input_buffer()
-    time.sleep(20)
-    # Refactor to use conn.read_until to remove need for separate timeout
-    response = conn.read(2048).decode(errors='ignore')
-
+    conn.send_break()
     print("Container Output:")
-    print(response)
-    conn.close()
-
     for line in lines_to_check:
+        response = conn.read_until(line.encode(), 4096).decode(errors='ignore')
+        print(response)
+
         if line not in response:
+            conn.reset_output_buffer()
+            conn.close()
             sys.exit(1)
     
+    conn.reset_output_buffer()
+    conn.close()
     sys.exit(0)
 
     
