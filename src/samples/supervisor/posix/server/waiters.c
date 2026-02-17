@@ -202,6 +202,8 @@ static struct waiter *waiter_get_or_new(struct ocre_container *container)
 		return waiter;
 	}
 
+	// pthread_mutex_unlock(&mutex);
+
 	waiter = malloc(sizeof(struct waiter));
 	if (!waiter) {
 		fprintf(stderr, "Failed to allocate memory for waiter\n");
