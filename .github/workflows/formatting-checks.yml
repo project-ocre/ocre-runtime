@@ -37,4 +37,4 @@ jobs:
         run: sh scripts/check_c_formatting.sh
 
       - name: Run YAML Format Checks
-        run: bash scripts/yml_linter.sh
+        run: sh scripts/yml_linter.sh
