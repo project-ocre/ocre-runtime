@@ -156,6 +156,7 @@ static void *socket_thread(void *arg)
 		struct pollfd *pfds = malloc(sizeof(struct pollfd) * count);
 		if (!pfds) {
 			perror("malloc");
+			pthread_mutex_unlock(&waiter->mutex);
 			return NULL;
 		}
 
