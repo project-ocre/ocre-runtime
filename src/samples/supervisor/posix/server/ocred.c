@@ -284,8 +284,9 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-			if (response_len < 0) {
-				printf("Failed to process request\n");
+		if (response_len > 0) {
+			if (send(s2, tx_buf, response_len, 0) < 0) {
+				perror("send");
 				break;
 			}
 
