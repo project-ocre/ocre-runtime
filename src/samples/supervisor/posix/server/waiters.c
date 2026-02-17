@@ -79,8 +79,8 @@ static void *wait_thread(void *arg)
 		return NULL;
 	}
 
-	if (result == 0) {
-		success = zcbor_int32_put(enc_state, exit_status);
+	if (waiter->result == 0) {
+		success = zcbor_int32_put(enc_state, waiter->exit_status);
 		if (!success) {
 			printf("Encoding exit status failed\n");
 			return NULL;
