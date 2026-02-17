@@ -251,6 +251,7 @@ int main(int argc, char *argv[])
 			close(s);
 			exit(1);
 		}
+
 		int n;
 		printf("Waiting for a connection...\n");
 		socklen_t slen = sizeof(remote);
