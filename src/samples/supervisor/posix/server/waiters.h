@@ -9,5 +9,7 @@
 
 struct waiter;
 
-struct waiter *waiter_get_or_new(struct ocre_container *container);
-int waiter_add_client(struct waiter *waiter, int socket);
+// struct waiter *waiter_get_or_new(struct ocre_container *container);
+// int waiter_add_client(struct waiter *waiter, int socket);
+
+int container_waiter_add_client(struct ocre_container *container, int socket);
