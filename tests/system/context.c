@@ -547,7 +547,7 @@ void test_ocre_context_create_container_detached_mode(void)
 int main(void)
 {
 	UNITY_BEGIN();
-	// RUN_TEST(test_ocre_context_initialized);
+	RUN_TEST(test_ocre_context_initialized);
 	RUN_TEST(test_ocre_context_get_working_directory_ok);
 	RUN_TEST(test_ocre_context_get_working_directory_err);
 	RUN_TEST(test_ocre_context_create_container_null_context);
