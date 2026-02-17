@@ -97,9 +97,6 @@ jobs:
       - name: Save .wasm artifact locally
         if: always()
         run: |
-          pwd
-          ls /var/
-          ls /var/ocre-ci-files/
           mkdir /var/ocre-ci-files/wasm/${{ matrix.sample.name }}/
           cp "ocre-runtime/ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}" "/var/ocre-ci-files/wasm/${{ matrix.sample.name }}/${{ matrix.sample.filename }}"
 

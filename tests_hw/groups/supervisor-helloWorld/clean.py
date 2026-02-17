@@ -9,9 +9,13 @@ def main():
     conn.send_break(duration=1)
     time.sleep(5)
     print("Cleaning up container hello-world")
-    conn.write(b'ocre rm hello-world\n')
+    conn.write(b'ocre container ps\n')
     response = conn.read(2048).decode(errors='ignore')
-    print("Runtime Output:")
+    if ("hello-world" in response):
+        conn.write(b'ocre rm hello-world\n')
+        response += conn.read(2048).decode(errors='ignore')
+
+    print("==== Runtime Output: ====")
     print(response)
     conn.close()
 

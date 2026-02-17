@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-import time
-import serial
-import sys
+
+import pexpect
+import testlib
 
 """
 This testcase is to be used following the flashing of the supervisor sample to a board with the hello-world container running.
@@ -10,23 +10,38 @@ The testcase forms a serial connection to the board, sends a break and checks th
 the string "powered by Ocre" appears in the output of that break command. 
 """
 
+line = "powered by Ocre"
+
 def main():
+    full_output = ''
+    serial_conn, pex = testlib.setup('/dev/ttyACM0')
 
-    conn = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
-    conn.reset_input_buffer()
-    time.sleep(5)
     print("Running hello-world container:")
-    conn.write(b'ocre start hello-world\n')
-    response = conn.read(2048).decode(errors='ignore')
+    pex.write(b'ocre start hello-world\n')
+    expect_index = pex.expect([line, pexpect.TIMEOUT], 20)
+    full_output += bytes(pex.before).decode(errors='ignore')
 
-    print("Container Output:")
-    print(response)
-    conn.close()
+    if (expect_index == 1):
+        print(f"Failed to find line: '{line}' in given timeout.")
+        pex.expect([pexpect.EOF, pexpect.TIMEOUT], 10)
+        full_output += bytes(pex.before).decode(errors='ignore')
+        testlib.format_runtime_output(full_output, "Failed")
 
-    if "powered by Ocre" in response:
-        sys.exit(0)
-    sys.exit(1)
+        testlib.full_exit(serial_conn, 1)
 
+    pex.expect(["ocre:~$", pexpect.TIMEOUT], 10)
+    full_output += bytes(pex.before).decode(errors='ignore')
+
+    if (expect_index == 1):
+        print("Container failed to exit in given timeout")
+        pex.expect([pexpect.EOF, pexpect.TIMEOUT], 10)
+        full_output += bytes(pex.before).decode(errors='ignore')
+        testlib.format_runtime_output(full_output, "Failed")
+
+        testlib.full_exit(serial_conn, 1)
+
+    testlib.format_runtime_output(full_output, "Entire")
+    testlib.full_exit(serial_conn, 0)
     
 if __name__ == "__main__":
     main()

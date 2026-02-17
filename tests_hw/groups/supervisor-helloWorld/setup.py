@@ -12,6 +12,7 @@ def main():
     print("Creating container on board off of hello-world.wasm")
     conn.write(b'ocre create -n hello-world -k ocre:api hello-world.wasm\n')
     response = conn.read(2048).decode(errors='ignore')
+    print("==== Runtime Output: ====")
     print(response)
 
     conn.close()
