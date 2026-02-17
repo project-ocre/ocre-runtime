@@ -143,11 +143,11 @@ static void *socket_thread(void *arg)
 
 		LL_COUNT(waiter->clients, client, count);
 
-		if (count == 0) {
-			fprintf(stderr, "No clients connected for polling. Exiting.\n");
-			pthread_mutex_unlock(&waiter->mutex);
-			break;
-		}
+		// if (count == 0) {
+		// 	fprintf(stderr, "No clients connected for polling. Exiting.\n");
+		// 	pthread_mutex_unlock(&waiter->mutex);
+		// 	break;
+		// }
 
 		fprintf(stderr, "Number of clients: %d.\n", count);
 
