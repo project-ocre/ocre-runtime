@@ -1,7 +1,13 @@
+/**
+ * @copyright Copyright (c) contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 #include <zcbor_encode.h>
 #include <zcbor_common.h>
