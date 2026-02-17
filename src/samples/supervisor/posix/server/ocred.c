@@ -290,17 +290,9 @@ int main(int argc, char *argv[])
 				break;
 			}
 
-			// print_hex("sending", tx_buf, response_len);
-
-			if (response_len > 0) {
-				if (send(s2, tx_buf, response_len, 0) < 0) {
-					perror("send");
-					break;
-				}
-
-				printf("Response sent (%d bytes)\n", response_len);
-			}
-		} while (1);
+			printf("Response sent (%d bytes)\n", response_len);
+		}
+		// } while (1);
 
 		close(s2);
 	}
