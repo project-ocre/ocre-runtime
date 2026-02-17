@@ -25,6 +25,7 @@
 
 #include "../zcbor_helpers.h"
 #include "waiters.h"
+#include "handlers.h"
 
 #define DEFAULT_PID_FILE   "ocre.pid"
 
