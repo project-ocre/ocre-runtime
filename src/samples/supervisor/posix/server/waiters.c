@@ -122,8 +122,6 @@ static void *wait_thread(void *arg)
 
 	fprintf(stderr, "SOCKET THREAD FINISHED\n");
 
-	LL_DELETE(waiters, waiter);
-
 	fprintf(stderr, "returned\n");
 
 	return NULL;
