@@ -118,6 +118,7 @@ static void *wait_thread(void *arg)
 	// if (!waiter->finished) {
 	/* Wait for the socket thread to finish */
 	pthread_join(waiter->socket_thread, NULL);
+	// }
 
 	fprintf(stderr, "SOCKET THREAD FINISHED\n");
 
