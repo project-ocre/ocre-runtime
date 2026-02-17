@@ -238,6 +238,10 @@ static struct waiter *waiter_get_or_new(struct ocre_container *container)
 		return NULL;
 	}
 
+	pthread_mutex_unlock(&waiter->mutex);
+
+	// pthread_mutex_lock(&mutex);
+
 	LL_APPEND(waiters, waiter);
 
 	return waiter;
