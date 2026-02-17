@@ -117,6 +117,10 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 	uint8_t payload[LARGE_PAYLOAD_SIZE];
 	bool success;
 
+	if (!context) {
+		return NULL;
+	}
+
 	/* Encode the request */
 	ZCBOR_STATE_E(encoding_state, 0, payload, sizeof(payload), 0);
 

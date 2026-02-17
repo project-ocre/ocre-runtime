@@ -36,18 +36,6 @@
 #define MAX_CONTAINERS	   64
 #define MAX_STRING_ARRAY   32
 
-/* Global ocre context for the server */
-// static struct ocre_context *ctx = NULL;
-
-// static void print_hex(const char *label, const uint8_t *data, size_t len)
-// {
-// 	printf("HEX %s: ", label);
-// 	for (size_t i = 0; i < len; i++) {
-// 		printf("%02x ", data[i]);
-// 	}
-// 	printf("\n");
-// }
-
 static int handle_context_create_container(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
 					   size_t tx_buf_size)
 {
