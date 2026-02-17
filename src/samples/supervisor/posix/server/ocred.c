@@ -258,11 +258,6 @@ int main(int argc, char *argv[])
 		if ((s2 = accept(s, (struct sockaddr *)&remote, &slen)) == -1) {
 			perror("accept");
 			continue;
-
-			// if (should_exit) {
-			// 	close(s);
-			// 	exit(1);
-			// }
 		}
 
 		printf("Connected.\n");
