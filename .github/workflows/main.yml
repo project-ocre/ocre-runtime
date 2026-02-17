@@ -47,28 +47,28 @@ jobs:
       devcontainer-tag: ${{ needs.linux-devcontainer.outputs.devcontainer-tag }}
 
   linux:
-      name: Linux
-      needs:
-        - linux-devcontainer
-      uses: ./.github/workflows/linux.yml
-      secrets: inherit
-      with:
-        devcontainer-tag: ${{ needs.linux-devcontainer.outputs.devcontainer-tag }}
+    name: Linux
+    needs:
+      - linux-devcontainer
+    uses: ./.github/workflows/linux.yml
+    secrets: inherit
+    with:
+      devcontainer-tag: ${{ needs.linux-devcontainer.outputs.devcontainer-tag }}
 
   zephyr:
-      name: Zephyr
-      needs:
-        - zephyr-devcontainer
-      uses: ./.github/workflows/zephyr.yml
-      secrets: inherit
-      with:
-        devcontainer-tag: ${{ needs.zephyr-devcontainer.outputs.devcontainer-tag }}
+    name: Zephyr
+    needs:
+      - zephyr-devcontainer
+    uses: ./.github/workflows/zephyr.yml
+    secrets: inherit
+    with:
+      devcontainer-tag: ${{ needs.zephyr-devcontainer.outputs.devcontainer-tag }}
 
   zephyr-systests:
-      name: Zephyr System Tests
-      needs:
-        - zephyr-devcontainer
-      uses: ./.github/workflows/zephyr-systests.yml
-      secrets: inherit
-      with:
-        devcontainer-tag: ${{ needs.zephyr-devcontainer.outputs.devcontainer-tag }}
+    name: Zephyr System Tests
+    needs:
+      - zephyr-devcontainer
+    uses: ./.github/workflows/zephyr-systests.yml
+    secrets: inherit
+    with:
+      devcontainer-tag: ${{ needs.zephyr-devcontainer.outputs.devcontainer-tag }}

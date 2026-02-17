@@ -55,7 +55,7 @@ jobs:
         run: |
           . /opt/zephyr-venv/bin/activate
           west build -p always -b native_sim/native/64 ocre-runtime/tests/system/zephyr/${{ matrix.test }}
-      
+
       - name: Run Test ${{ matrix.test }}
         run: |
           . /opt/zephyr-venv/bin/activate
