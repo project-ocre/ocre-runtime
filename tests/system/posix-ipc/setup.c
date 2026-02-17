@@ -70,6 +70,7 @@ void setUp(void)
 void tearDown(void)
 {
 	test_tearDown();
+#if 1
 	printf("sending SIGTERM to ocred\n");
 	kill(ocred_pid, SIGTERM);
 	waitpid(ocred_pid, NULL, 0);
