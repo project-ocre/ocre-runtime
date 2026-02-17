@@ -73,7 +73,7 @@ static void *wait_thread(void *arg)
 		return NULL;
 	}
 
-	success = zcbor_int32_put(enc_state, result);
+	success = zcbor_int32_put(enc_state, waiter->result);
 	if (!success) {
 		printf("Encoding result failed\n");
 		return NULL;
