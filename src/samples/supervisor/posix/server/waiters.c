@@ -267,3 +267,22 @@ static int waiter_add_client(struct waiter *waiter, int socket)
 
 	return 0;
 }
+
+int container_waiter_add_client(struct ocre_container *container, int socket)
+{
+	int ret = -1;
+	pthread_mutex_lock(&mutex);
+	struct waiter *waiter = waiter_get_or_new(container);
+
+	if (!waiter) {
+		fprintf(stderr, "Failed to get or create waiter for container %p\n", container);
+		pthread_mutex_unlock(&mutex);
+		return -1;
+	}
+
+	ret = waiter_add_client(waiter, socket);
+
+	pthread_mutex_unlock(&mutex);
+
+	return ret;
+}
