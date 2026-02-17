@@ -198,6 +198,7 @@ static struct waiter *waiter_get_or_new(struct ocre_container *container)
 	LL_SEARCH_SCALAR(waiters, waiter, container, container);
 	if (waiter) {
 		fprintf(stderr, "Waiter already exists for container %p\n", container);
+		pthread_mutex_unlock(&mutex);
 		return waiter;
 	}
 
