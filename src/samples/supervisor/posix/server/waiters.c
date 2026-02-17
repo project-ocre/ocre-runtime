@@ -191,7 +191,7 @@ static void *socket_thread(void *arg)
 	return NULL;
 }
 
-struct waiter *waiter_get_or_new(struct ocre_container *container)
+static struct waiter *waiter_get_or_new(struct ocre_container *container)
 {
 	struct waiter *waiter;
 
