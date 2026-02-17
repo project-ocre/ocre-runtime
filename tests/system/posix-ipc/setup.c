@@ -16,6 +16,7 @@ static pid_t ocred_pid;
 void setUp(void)
 {
 
+#if 1
 	if (chdir("ocre")) {
 		perror("chdir");
 	}
