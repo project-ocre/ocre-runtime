@@ -24,7 +24,6 @@
 #define TX_BUFFER_SIZE 2048
 
 struct client {
-	pthread_mutex_t mutex;
 	int socket;
 	struct client *next;
 };
