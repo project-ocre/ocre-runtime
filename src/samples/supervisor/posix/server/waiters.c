@@ -136,6 +136,11 @@ static void *socket_thread(void *arg)
 		int count = 0;
 		pthread_mutex_lock(&waiter->mutex);
 
+		if (waiter->finished) {
+			pthread_mutex_unlock(&waiter->mutex);
+			return NULL;
+		};
+
 		LL_COUNT(waiter->clients, client, count);
 
 		if (count == 0) {
