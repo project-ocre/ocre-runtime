@@ -1,0 +1,20 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+extends: default
+
+rules:
+  line-length:
+    max: 150
+    level: warning
+  indentation:
+    spaces: 2
+  document-start: disable
+  comments:
+    min-spaces-from-content: 1
+  trailing-spaces: enable
+  empty-lines:
+    max: 1
+  truthy: {check-keys: false}
