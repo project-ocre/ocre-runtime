@@ -157,7 +157,6 @@ static int handle_context_create_container(struct ocre_context *ctx, zcbor_state
 	const char *container_id = ocre_container_get_id(container);
 	if (!container_id) {
 		printf("Failed to get container ID\n");
-		return -1;
 	}
 
 	success = encode_string_or_nil(enc_state, container_id);
