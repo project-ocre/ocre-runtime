@@ -30,6 +30,9 @@ struct client {
 
 struct waiter {
 	pthread_mutex_t mutex;
+	bool finished;
+	int exit_status;
+	int result;
 	struct ocre_container *container;
 	pthread_t wait_thread;
 	pthread_t socket_thread;
