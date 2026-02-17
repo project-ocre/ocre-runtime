@@ -61,7 +61,7 @@ void setUp(void)
 	if (chdir("..")) {
 		perror("chdir");
 	}
-
+#endif
 	// sleep(1);
 
 	test_setUp();
