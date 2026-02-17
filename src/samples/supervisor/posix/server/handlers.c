@@ -628,18 +628,7 @@ static int handle_container_wait(struct ocre_context *ctx, int socket, zcbor_sta
 		return -1;
 	}
 
-	struct waiter *waiter = waiter_get_or_new(container);
-	if (!waiter) {
-		printf("Failed to create waiter\n");
-		return -1;
-	}
-
-	if (waiter_add_client(waiter, socket) < 0) {
-		printf("Failed to add client to waiter\n");
-		return -1;
-	}
-
-	return 0;
+	return container_waiter_add_client(container, socket);
 }
 
 /* Process a single IPC request */
