@@ -103,7 +103,7 @@ static void *wait_thread(void *arg)
 		fprintf(stderr, "Response sent from waiter (%d bytes)\n", response_len);
 
 		if (close(client->socket) < 0) {
-			perror("send");
+			perror("close");
 		}
 
 		LL_DELETE(waiter->clients, client);
