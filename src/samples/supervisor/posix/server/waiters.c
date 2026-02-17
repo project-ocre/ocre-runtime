@@ -52,8 +52,17 @@ static void *wait_thread(void *arg)
 	fprintf(stderr, "Wait thread started\n");
 
 	/* Call the actual function */
-	int exit_status = 0;
-	int result = ocre_container_wait(waiter->container, &exit_status);
+	waiter->result = ocre_container_wait(waiter->container, &waiter->exit_status);
+
+	fprintf(stderr, "container wait returned\n");
+
+	pthread_mutex_lock(&mutex);
+
+	LL_DELETE(waiters, waiter);
+
+	pthread_mutex_unlock(&mutex);
+
+	fprintf(stderr, "removed from waiters\n");
 
 	/* Encode response */
 	ZCBOR_STATE_E(enc_state, 0, tx_buf, TX_BUFFER_SIZE, 0);
