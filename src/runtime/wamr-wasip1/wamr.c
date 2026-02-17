@@ -314,14 +314,14 @@ static void *instance_create(const char *container_id, const char *img_path, con
 		}
 #if CONFIG_OCRE_NETWORKING
 		else if (!strcmp(*cap, "networking")) {
-			const char *addr_pool[] = {
+			static const char *addr_pool[] = {
 				"0.0.0.0/0",
 			};
 
 			wasm_runtime_set_wasi_addr_pool(context->module, addr_pool,
 							sizeof(addr_pool) / sizeof(addr_pool[0]));
 
-			const char *ns_lookup_pool[] = {"*"};
+			static const char *ns_lookup_pool[] = {"*"};
 
 			wasm_runtime_set_wasi_ns_lookup_pool(context->module, ns_lookup_pool,
 							     sizeof(ns_lookup_pool) / sizeof(ns_lookup_pool[0]));
