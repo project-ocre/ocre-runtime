@@ -100,7 +100,7 @@ static void *wait_thread(void *arg)
 			perror("send");
 		}
 
-		printf("Response sent from waiter (%d bytes)\n", response_len);
+		fprintf(stderr, "Response sent from waiter (%d bytes)\n", response_len);
 
 		if (close(client->socket) < 0) {
 			perror("send");
