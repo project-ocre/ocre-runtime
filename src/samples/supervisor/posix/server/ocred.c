@@ -279,8 +279,10 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-			/* Process the request and generate response */
-			int response_len = process_request(ctx, s2, rx_buf, n, tx_buf, sizeof(tx_buf));
+		if (response_len < 0) {
+			printf("Failed to process request\n");
+			continue;
+		}
 
 			if (response_len < 0) {
 				printf("Failed to process request\n");
