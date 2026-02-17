@@ -77,4 +77,5 @@ void tearDown(void)
 	if (unlink("/tmp/ocre.sock") == -1) {
 		perror("tearDown unlink");
 	}
+#endif
 }
