@@ -109,8 +109,6 @@ static void *wait_thread(void *arg)
 		LL_DELETE(waiter->clients, client);
 	}
 
-	pthread_mutex_unlock(&waiter->mutex);
-
 	fprintf(stderr, "WAIT FOR SOCKET THREAD TO FINISH\n");
 
 	/* Wait for the socket thread to finish */
