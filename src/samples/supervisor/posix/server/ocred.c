@@ -272,8 +272,12 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-			// printf("Received %d bytes\n", n);
-			// print_hex("received", rx_buf, n);
+		/* Process the request and generate response */
+		int response_len = process_request(ctx, s2, rx_buf, n, tx_buf, sizeof(tx_buf));
+
+		if (response_len == 0) {
+			continue;
+		}
 
 			/* Process the request and generate response */
 			int response_len = process_request(ctx, s2, rx_buf, n, tx_buf, sizeof(tx_buf));
