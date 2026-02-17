@@ -247,7 +247,7 @@ static struct waiter *waiter_get_or_new(struct ocre_container *container)
 	return waiter;
 }
 
-int waiter_add_client(struct waiter *waiter, int socket)
+static int waiter_add_client(struct waiter *waiter, int socket)
 {
 	struct client *client = malloc(sizeof(struct client));
 	if (!client) {
