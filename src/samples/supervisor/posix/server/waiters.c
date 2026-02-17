@@ -42,6 +42,8 @@ struct waiter {
 
 static struct waiter *waiters = NULL;
 
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static void *wait_thread(void *arg)
 {
 	uint8_t tx_buf[TX_BUFFER_SIZE];
