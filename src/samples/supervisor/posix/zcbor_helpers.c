@@ -50,6 +50,9 @@ bool encode_string_array(zcbor_state_t *state, const char **arr)
 		}
 	}
 
+	return zcbor_nil_put(state, NULL);
+	count++;
+
 	return zcbor_list_end_encode(state, count);
 }
 
