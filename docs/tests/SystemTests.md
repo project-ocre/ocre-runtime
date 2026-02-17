@@ -4,7 +4,7 @@ System Tests are tests designed to test the entire system as a black box,
 including all components and dependencies.
 We usually build it in release mode, so we test exactly what we are delivering.
 
-Currently, these are only available for the POSIX platform.
+Currently, these are available for POSIX and Zephyr platforms.
 
 However, these are also sometimes reused for memory [leak checks](LeakChecks.md) and [source code coverage generation](CoverageReports.md).
 In these cases, Ocre needs to be built with instrumentation so it is not testing the release build.
@@ -12,7 +12,9 @@ For more information on those, refer to their specific documentation.
 
 These tests are configured in the CI workflows as a quality gate. All PRs must pass all of them.
 
-## Build and run
+## Linux
+
+### Build and run
 
 Create a build directory and navigate to it:
 
@@ -47,7 +49,7 @@ You can also run the individual test executable binaries `test_*` in the build d
 
 Note that the tests must be run from the build directory, because they look for images in the current working directory + `./ocre/src/ocre/var/lib/ocre/images/`.
 
-## Details
+### Details
 
 The individual test binaries:
 
@@ -62,3 +64,34 @@ Follow a similar pattern. `test_lib` is testing the general library initializati
 `test_container` tests the specific functionality of a specific container.
 
 Please, refer to their source code for more details.
+
+## Zephyr
+
+### Build and run
+To build the Zephyr system tests for the `native_sim_64` board:
+
+```sh
+west build -p always -b native_sim/native/64 tests/system/zephyr/context
+```
+
+Replace `context` with `container`, `lib`, or `ocre` to build different tests:
+
+- `tests/system/zephyr/lib` - Tests the general library initialization functions
+- `tests/system/zephyr/ocre` - Tests the Ocre library and management of contexts
+- `tests/system/zephyr/context` - Tests context functionality, creating and managing the lifetime of containers
+- `tests/system/zephyr/container` - Tests the specific functionality of a container
+
+To run the test:
+```sh
+west build -t run
+```
+
+The last lines of the output will be something like:
+```
+-----------------------
+25 Tests 0 Failures 0 Ignored 
+OK
+```
+
+### Details
+Each test must be run individually. Run the build command for one test at a time, then execute `west build -t run` to run that specific test.

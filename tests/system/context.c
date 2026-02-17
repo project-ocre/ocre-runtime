@@ -15,7 +15,7 @@ struct ocre_context *context;
 void setUp(void)
 {
 	ocre_initialize(NULL);
-	context = ocre_create_context("./ocre/src/ocre/var/lib/ocre");
+	context = ocre_create_context(NULL);
 }
 
 void tearDown(void)

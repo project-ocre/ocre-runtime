@@ -1,0 +1,71 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Zephyr
+
+on:
+  workflow_call:
+    inputs:
+      devcontainer-tag:
+        description: The container tag to be used
+        default: latest
+        required: false
+        type: string
+
+jobs:
+  zephyr-systests:
+    name: Build and Run System Tests
+    runs-on: ["self-hosted", "build-server"]
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+      options: --user 1000:1000
+    strategy:
+      matrix:
+        test:
+          - container
+          - lib
+          - ocre
+          - context
+    steps:
+      - name: Clean other workspace
+        run: rm -rf ../.west
+
+      - name: Clean workspace
+        run: find . -name . -o -prune -exec rm -rf -- {} +
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: ocre-runtime
+          submodules: true
+
+      - name: West init
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west init -l ocre-runtime
+
+      - name: West update
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west update
+
+      - name: West build
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west build -p always -b native_sim/native/64 ocre-runtime/tests/system/zephyr/${{ matrix.test }}
+      
+      - name: Run Test ${{ matrix.test }}
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          EXPECTED_LOG="^OK$"
+          echo "Running application..."
+          stdbuf -oL -eL timeout 20s west build -t run | tee zephyr_run.log
+          echo "===== Checking for expected log ====="
+          if grep -q "$EXPECTED_LOG" zephyr_run.log; then
+            echo "[OK] Found expected log: $EXPECTED_LOG"
+          else
+            echo "[ERROR] Expected log not found: $EXPECTED_LOG"
+            exit 1
+          fi

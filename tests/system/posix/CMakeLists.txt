@@ -46,6 +46,10 @@ foreach(test ${OCRE_TESTS})
         ../${test}.c
     )
 
+    set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/../ocre.c PROPERTIES COMPILE_FLAGS
+        -DOCRE_TEST_OTHER_CONTEXT_PATH=\\"./othercontext\\"
+    )
+
     target_link_libraries(test_${test}
         OcreCore
         Unity
@@ -53,7 +57,7 @@ foreach(test ${OCRE_TESTS})
 
     add_custom_command(
         OUTPUT test_${test}.log
-        COMMAND LLVM_PROFILE_FILE=test_${test}.profraw ./test_${test} > test_${test}.log
+        COMMAND cd ocre && LLVM_PROFILE_FILE=../test_${test}.profraw ../test_${test} > ../test_${test}.log
         COMMAND rm -f test_${test}.testpass test_${test}.testfail
         COMMAND sh -c "[ \"$(tail -1 test_${test}.log)\" = \"OK\" ] && cp test_${test}.log test_${test}.testpass || cp test_${test}.log test_${test}.testfail"
         DEPENDS
