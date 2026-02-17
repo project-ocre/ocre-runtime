@@ -111,6 +111,11 @@ static void *wait_thread(void *arg)
 
 	fprintf(stderr, "WAIT FOR SOCKET THREAD TO FINISH\n");
 
+	waiter->finished = true;
+
+	pthread_mutex_unlock(&waiter->mutex);
+
+	// if (!waiter->finished) {
 	/* Wait for the socket thread to finish */
 	pthread_join(waiter->socket_thread, NULL);
 
