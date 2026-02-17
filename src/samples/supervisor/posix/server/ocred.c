@@ -262,15 +262,15 @@ int main(int argc, char *argv[])
 
 		printf("Connected.\n");
 
-		do {
-			n = recv(s2, rx_buf, sizeof(rx_buf), 0);
-			if (n <= 0) {
-				if (n < 0)
-					perror("recv");
-				else
-					printf("Client disconnected\n");
-				break;
-			}
+		// do {
+		n = recv(s2, rx_buf, sizeof(rx_buf), 0);
+		if (n <= 0) {
+			if (n < 0)
+				perror("recv");
+			else
+				printf("Client disconnected\n");
+			continue;
+		}
 
 			// printf("Received %d bytes\n", n);
 			// print_hex("received", rx_buf, n);
