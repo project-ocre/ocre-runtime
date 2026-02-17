@@ -133,6 +133,7 @@ static void *socket_thread(void *arg)
 	struct waiter *waiter = (struct waiter *)arg;
 
 	while (true) {
+		int count = 0;
 		pthread_mutex_lock(&waiter->mutex);
 
 		LL_COUNT(waiter->clients, client, count);
