@@ -5,11 +5,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <poll.h>
 
 #include <sys/socket.h>
 
@@ -28,15 +30,22 @@ struct client {
 };
 
 struct waiter {
+	pthread_mutex_t mutex;
+	bool finished;
+	int exit_status;
+	int result;
 	struct ocre_container *container;
-	pthread_t thread;
+	pthread_t wait_thread;
+	pthread_t socket_thread;
 	struct client *clients;
 	struct waiter *next;
 };
 
 static struct waiter *waiters = NULL;
 
-static void *container_wait_thread(void *arg)
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static void *wait_thread(void *arg)
 {
 	uint8_t tx_buf[TX_BUFFER_SIZE];
 	struct waiter *waiter = (struct waiter *)arg;
@@ -82,6 +91,8 @@ static void *container_wait_thread(void *arg)
 	struct client *client = NULL;
 	struct client *elt = NULL;
 
+	pthread_mutex_lock(&waiter->mutex);
+
 	LL_FOREACH_SAFE(waiter->clients, client, elt)
 	{
 		if (send(client->socket, tx_buf, response_len, 0) < 0) {
@@ -97,7 +108,85 @@ static void *container_wait_thread(void *arg)
 		LL_DELETE(waiter->clients, client);
 	}
 
-	LL_DELETE(waiters, waiter);
+	waiter->finished = true;
+
+	pthread_mutex_unlock(&waiter->mutex);
+
+	/* Wait for the socket thread to finish */
+	pthread_join(waiter->socket_thread, NULL);
+
+	return NULL;
+}
+
+static void *socket_thread(void *arg)
+{
+	struct client *client = NULL;
+	struct waiter *waiter = (struct waiter *)arg;
+
+	while (true) {
+		int count = 0;
+		pthread_mutex_lock(&waiter->mutex);
+
+		if (waiter->finished) {
+			pthread_mutex_unlock(&waiter->mutex);
+			return NULL;
+		};
+
+		LL_COUNT(waiter->clients, client, count);
+
+		fprintf(stderr, "Number of clients: %d.\n", count);
+
+		uint8_t rx_buf[RX_BUFFER_SIZE];
+
+		struct pollfd *pfds = malloc(sizeof(struct pollfd) * count);
+		if (!pfds) {
+			perror("malloc");
+			pthread_mutex_unlock(&waiter->mutex);
+			return NULL;
+		}
+
+		int i = 0;
+		LL_FOREACH(waiter->clients, client)
+		{
+			pfds[i].fd = client->socket;
+			pfds[i].events = POLLIN;
+			i++;
+		}
+
+		pthread_mutex_unlock(&waiter->mutex);
+
+		int ret = poll(pfds, count, 2500);
+		if (ret < 0) {
+			perror("poll");
+			return NULL;
+		}
+
+		for (i = 0; i < count; i++) {
+			if (pfds[i].revents & POLLIN) {
+				fprintf(stderr, "poll in from %d\n", pfds[i].fd);
+				ssize_t n = recv(pfds[i].fd, rx_buf, sizeof(rx_buf), 0);
+				if (n <= 0) {
+					if (n < 0) {
+						perror("recv");
+					} else {
+						printf("Client disconnected\n");
+					}
+
+					close(pfds[i].fd);
+
+					pthread_mutex_lock(&waiter->mutex);
+
+					// TODO: remove from client list
+
+					pthread_mutex_unlock(&waiter->mutex);
+
+					break;
+				}
+			}
+		}
+
+		free(pfds);
+	}
 
 	return NULL;
 }
@@ -125,11 +214,35 @@ static struct waiter *waiter_get_or_new(struct ocre_container *container)
 
 	waiter->container = container;
 
-	int rc = pthread_create(&waiter->thread, NULL, container_wait_thread, waiter);
+	int rc = pthread_mutex_init(&waiter->mutex, NULL);
 	if (rc) {
-		fprintf(stderr, "Failed to create thread: rc=%d", rc);
-		free(waiter);
-		return NULL;
+		fprintf(stderr, "Failed to initialize mutex: rc=%d", rc);
+		goto error_waiter;
+	}
+
+	rc = pthread_attr_init(&attr);
+	if (rc) {
+		fprintf(stderr, "Failed to initialize thread attributes: rc=%d", rc);
+		goto error_mutex;
+	}
+
+	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if (rc) {
+		fprintf(stderr, "Failed to initialize thread attributes: rc=%d", rc);
+		goto error_attr;
+	}
+
+	fprintf(stderr, "Creating socket thread for container %p\n", container);
+	rc = pthread_create(&waiter->socket_thread, NULL, socket_thread, waiter);
+	if (rc) {
+		fprintf(stderr, "Failed to create socket thread: rc=%d", rc);
+		goto error_mutex;
+	}
+
+	rc = pthread_create(&waiter->wait_thread, &attr, wait_thread, waiter);
+	if (rc) {
+		fprintf(stderr, "Failed to create waiter thread: rc=%d", rc);
+		goto error_thread;
 	}
 
 	pthread_mutex_unlock(&waiter->mutex);
@@ -153,7 +266,19 @@ static int waiter_add_client(struct waiter *waiter, int socket)
 
 	client->socket = socket;
 
+	rc = pthread_mutex_lock(&waiter->mutex);
+	if (rc) {
+		fprintf(stderr, "Failed to lock mutex: rc=%d", rc);
+		goto error_client;
+	}
+
 	LL_APPEND(waiter->clients, client);
+
+	rc = pthread_mutex_unlock(&waiter->mutex);
+	if (rc) {
+		fprintf(stderr, "Failed to unlock mutex: rc=%d", rc);
+		goto error_client;
+	}
 
 	return 0;
 }
