@@ -129,7 +129,6 @@ static void *wait_thread(void *arg)
 
 static void *socket_thread(void *arg)
 {
-	int count;
 	struct client *client = NULL;
 	struct waiter *waiter = (struct waiter *)arg;
 
