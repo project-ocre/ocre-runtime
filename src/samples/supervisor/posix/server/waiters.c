@@ -221,6 +221,9 @@ static struct waiter *waiter_get_or_new(struct ocre_container *container)
 		return NULL;
 	}
 
+	pthread_mutex_lock(&waiter->mutex);
+
+	fprintf(stderr, "Creating socket thread for container %p\n", container);
 	rc = pthread_create(&waiter->socket_thread, NULL, socket_thread, waiter);
 	if (rc) {
 		fprintf(stderr, "Failed to create socket thread: rc=%d", rc);
