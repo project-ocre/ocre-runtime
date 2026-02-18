@@ -22,9 +22,11 @@ add_executable(ocred
 target_link_libraries(ocred
     PRIVATE
     OcreCore
+    uthash
     Threads::Threads
 )
 
 target_include_directories(ocred
-    PRIVATE ../zcbor/include
+    PRIVATE
+    ../zcbor/include
 )
