@@ -25,7 +25,9 @@
 
 #include "../ipc.h"
 #include "../zcbor_helpers.h"
-#include "../server/waiters.h"
+#include "ocre/container.h"
+#include "waiters.h"
+#include "runners.h"
 
 #define DEFAULT_PID_FILE   "ocre.pid"
 
@@ -339,7 +341,7 @@ static int handle_context_get_working_directory(struct ocre_context *ctx, zcbor_
 	return enc_state->payload - tx_buf;
 }
 
-static int handle_container_start(struct ocre_context *ctx, zcbor_state_t *dec_state, uint8_t *tx_buf,
+static int handle_container_start(struct ocre_context *ctx, int socket, zcbor_state_t *dec_state, uint8_t *tx_buf,
 				  size_t tx_buf_size)
 {
 	char id[STRING_BUFFER_SIZE];
@@ -357,6 +359,13 @@ static int handle_container_start(struct ocre_context *ctx, zcbor_state_t *dec_s
 		printf("Container not found\n");
 		return -1;
 	}
+
+	/* If container is not detached, we need to dispatch it to the runners */
+	if (!ocre_container_is_detached(container)) {
+		return container_runner_dispatch(container, socket);
+	}
+
+	/* Otherwise we handle here */
 
 	/* Call the actual function */
 	int result = ocre_container_start(container);
@@ -680,7 +689,7 @@ int process_request(struct ocre_context *ctx, int socket, uint8_t *rx_buf, int r
 			break;
 
 		case OCRE_IPC_CONTAINER_START_REQ:
-			response_len = handle_container_start(ctx, decoding_state, tx_buf, tx_buf_size);
+			response_len = handle_container_start(ctx, socket, decoding_state, tx_buf, tx_buf_size);
 			break;
 
 		case OCRE_IPC_CONTAINER_GET_STATUS_REQ:
