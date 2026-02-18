@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <poll.h>
 
 #include <sys/socket.h>
@@ -21,8 +22,8 @@
 
 #include "../ipc.h"
 
-#define TX_BUFFER_SIZE 2048
-#define RX_BUFFER_SIZE 2048
+#define TX_BUFFER_SIZE 32
+#define RX_BUFFER_SIZE 32
 
 struct client {
 	int socket;
@@ -53,15 +54,11 @@ static void *wait_thread(void *arg)
 	/* Call the actual function */
 	waiter->result = ocre_container_wait(waiter->container, &waiter->exit_status);
 
-	fprintf(stderr, "container wait returned\n");
-
 	pthread_mutex_lock(&mutex);
 
 	LL_DELETE(waiters, waiter);
 
 	pthread_mutex_unlock(&mutex);
-
-	fprintf(stderr, "removed from waiters\n");
 
 	/* Encode response */
 	ZCBOR_STATE_E(enc_state, 0, tx_buf, TX_BUFFER_SIZE, 0);
@@ -98,8 +95,6 @@ static void *wait_thread(void *arg)
 		if (send(client->socket, tx_buf, response_len, 0) < 0) {
 			perror("send");
 		}
-
-		fprintf(stderr, "Response sent from waiter (%d bytes)\n", response_len);
 
 		if (close(client->socket) < 0) {
 			perror("close");
@@ -191,18 +186,16 @@ static void *socket_thread(void *arg)
 	return NULL;
 }
 
-static struct waiter *waiter_get_or_new(struct ocre_container *container)
+static struct waiter *waiter_get_or_new_locked(struct ocre_container *container)
 {
-	struct waiter *waiter;
+	struct waiter *waiter = NULL;
+	pthread_attr_t attr;
 
 	LL_SEARCH_SCALAR(waiters, waiter, container, container);
 	if (waiter) {
 		fprintf(stderr, "Waiter already exists for container %p\n", container);
-		// pthread_mutex_unlock(&mutex);
 		return waiter;
 	}
-
-	// pthread_mutex_unlock(&mutex);
 
 	waiter = malloc(sizeof(struct waiter));
 	if (!waiter) {
@@ -245,17 +238,43 @@ static struct waiter *waiter_get_or_new(struct ocre_container *container)
 		goto error_thread;
 	}
 
-	pthread_mutex_unlock(&waiter->mutex);
-
-	// pthread_mutex_lock(&mutex);
-
 	LL_APPEND(waiters, waiter);
 
 	return waiter;
+
+error_thread:
+	rc = pthread_mutex_lock(&waiter->mutex);
+	if (rc) {
+		fprintf(stderr, "Failed to lock mutex: rc=%d", rc);
+	}
+
+	waiter->finished = true;
+
+	rc = pthread_mutex_unlock(&waiter->mutex);
+	if (rc) {
+		fprintf(stderr, "Failed to unlock mutex: rc=%d", rc);
+	}
+
+	pthread_join(waiter->socket_thread, NULL);
+
+error_attr:
+	rc = pthread_attr_destroy(&attr);
+	if (rc) {
+		fprintf(stderr, "Failed to destroy thread attributes: rc=%d", rc);
+	}
+
+error_mutex:
+	pthread_mutex_destroy(&waiter->mutex);
+
+error_waiter:
+	free(waiter);
+	return NULL;
 }
 
 static int waiter_add_client(struct waiter *waiter, int socket)
 {
+	int rc;
+
 	struct client *client = malloc(sizeof(struct client));
 	if (!client) {
 		fprintf(stderr, "Failed to allocate memory for client\n");
@@ -281,13 +300,19 @@ static int waiter_add_client(struct waiter *waiter, int socket)
 	}
 
 	return 0;
+
+error_client:
+	free(client);
+	return -1;
 }
 
 int container_waiter_add_client(struct ocre_container *container, int socket)
 {
 	int ret = -1;
+
 	pthread_mutex_lock(&mutex);
-	struct waiter *waiter = waiter_get_or_new(container);
+
+	struct waiter *waiter = waiter_get_or_new_locked(container);
 
 	if (!waiter) {
 		fprintf(stderr, "Failed to get or create waiter for container %p\n", container);
