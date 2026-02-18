@@ -16,7 +16,7 @@ target_include_directories(OcreRuntimeWamr
 )
 
 target_link_libraries(OcreRuntimeWamr
-    PUBLIC
+    PRIVATE
     OcreRuntime
     OcrePlatform
     OcreRuntimeAPI
