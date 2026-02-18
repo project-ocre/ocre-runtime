@@ -13,6 +13,7 @@ add_executable(ocred
     handlers.c
     waiters.c
     runners.c
+    pid_file.c
     ../zcbor_helpers.c
     ../zcbor/src/zcbor_encode.c
     ../zcbor/src/zcbor_decode.c
