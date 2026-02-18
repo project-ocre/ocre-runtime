@@ -129,6 +129,7 @@ static void *socket_thread(void *arg)
 int container_runner_dispatch(struct ocre_container *container, int socket)
 {
 	struct runner *runner = NULL;
+	pthread_attr_t attr;
 
 	runner = malloc(sizeof(struct runner));
 	if (!runner) {
@@ -147,16 +148,35 @@ int container_runner_dispatch(struct ocre_container *container, int socket)
 		goto error_runner;
 	}
 
+	rc = pthread_attr_init(&attr);
+	if (rc) {
+		fprintf(stderr, "Failed to initialize thread attributes: rc=%d", rc);
+		goto error_mutex;
+	}
+
+	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if (rc) {
+		fprintf(stderr, "Failed to initialize thread attributes: rc=%d", rc);
+		goto error_attr;
+	}
+
+	/* The socket thread is joinable */
 	rc = pthread_create(&runner->socket_thread, NULL, socket_thread, runner);
 	if (rc) {
 		fprintf(stderr, "Failed to create socket thread: rc=%d", rc);
 		goto error_mutex;
 	}
 
-	rc = pthread_create(&runner->run_thread, NULL, run_thread, runner);
+	/* The run_thread is detached */
+	rc = pthread_create(&runner->run_thread, &attr, run_thread, runner);
 	if (rc) {
 		fprintf(stderr, "Failed to create runner thread: rc=%d", rc);
 		goto error_thread;
+	}
+
+	rc = pthread_attr_destroy(&attr);
+	if (rc) {
+		fprintf(stderr, "Failed to destroy thread attributes: rc=%d", rc);
 	}
 
 	return 0;
@@ -175,6 +195,12 @@ error_thread:
 	}
 
 	pthread_join(runner->socket_thread, NULL);
+
+error_attr:
+	rc = pthread_attr_destroy(&attr);
+	if (rc) {
+		fprintf(stderr, "Failed to destroy thread attributes: rc=%d", rc);
+	}
 
 error_mutex:
 	pthread_mutex_destroy(&runner->mutex);
