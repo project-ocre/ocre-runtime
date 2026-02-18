@@ -63,10 +63,12 @@ static int usage(const char *argv0)
 	fprintf(stderr, "  -H LISTEN_ADDR           Specifies a socket to listen on\n");
 	fprintf(stderr, "  -P PID_FILE              Use a PID file (default: " DEFAULT_PID_FILE ")\n");
 	fprintf(stderr, "  -h                       Display this help message\n");
-	fprintf(stderr, "\nOption '-H' can be supplied multiple times and take the format:\n");
-	fprintf(stderr, "  fd://SOCKET_PATH         UNIX domain socket path\n");
-	fprintf(stderr, "  tcp://HOST:PORT          TCP socket path\n");
-	fprintf(stderr, "  fd://                    Socket activation mode\n");
+	fprintf(stderr, "\nOption '-H' can currently be supplied a single time and takes the format:\n");
+	fprintf(stderr, "  SOCKET_PATH              UNIX domain socket path\n");
+	// fprintf(stderr, "\nOption '-H' can be supplied multiple times and take the format:\n");
+	// fprintf(stderr, "  fd://SOCKET_PATH         UNIX domain socket path\n");
+	// fprintf(stderr, "  tcp://HOST:PORT          TCP socket path\n");
+	// fprintf(stderr, "  fd://                    Socket activation mode\n");
 	return -1;
 }
 
@@ -159,46 +161,17 @@ int main(int argc, char *argv[])
 		ctrl_path = SOCK_PATH;
 	}
 
-	// if (!workdir) {
-	// 	fprintf(stderr, "Using default working directory\n");
-	// }
-
-	// /* Read current PID file */
-	// int pidfile = open(pid_file, O_RDONLY);
-	// if (pidfile >= 0) {
-	// 	fprintf(stderr, "PID file '%s' already exists. Will check it\n", pid_file);
-	// 	char pids[16];
-	// 	if (read(pidfile, pids, sizeof(pids)) != sizeof(pids)) {
-	// 		fprintf(stderr, "Failed to read PID file '%s'\n", pid_file);
-	// 		close(pidfile);
-	// 		return -1;
-	// 	}
-
-	// 	int pid = atoi(pids);
-
-	// 	if (pid >= 0) {
-	// 		fprintf(stderr, "Checking PID %d\n", pid);
-	// 		if (waitpid(pid, NULL, WNOHANG) == pid) {
-	// 			fprintf(stderr, "Process %d is running\n", pid);
-	// 			fprintf(stderr, "Process %d is not running\n", pid);
-	// 		} else {
-	// 		}
-	// 	}
-	// }
-
-	// close(pidfile);
-
-	// int rc = cleanup_socket(SOCK_PATH);
-	// if (rc < 0) {
-	// 	fprintf(stderr, "Failed to cleanup socket file\n");
-	// 	return 1;
-	// }
+	if (ocre_pid_file_manage(pid_file)) {
+		fprintf(stderr, "Failed to manage PID file '%s'\n", pid_file);
+		exit(1);
+	};
 
 	int rc = ocre_initialize(NULL);
 	if (rc < 0) {
 		fprintf(stderr, "Failed to initialize runtimes\n");
 		return 1;
 	}
+
 	ctx = ocre_create_context(workdir);
 	if (!ctx) {
 		fprintf(stderr, "Failed to create ocre context\n");
@@ -244,7 +217,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	printf("Ocre daemon started, listening on %s\n", SOCK_PATH);
+	fprintf(stderr, "Ocre daemon started, listening on %s\n", SOCK_PATH);
 
 	for (;;) {
 
@@ -254,22 +227,27 @@ int main(int argc, char *argv[])
 		}
 
 		int n;
-		printf("Waiting for a connection...\n");
+		fprintf(stderr, "Waiting for a connection...\n");
 		socklen_t slen = sizeof(remote);
 		if ((s2 = accept(s, (struct sockaddr *)&remote, &slen)) == -1) {
 			perror("accept");
 			continue;
 		}
 
-		printf("Connected.\n");
+		fprintf(stderr, "Connected.\n");
+
+		/* TODO: poll on multiple listeners */
 
 		// do {
+		//
+		/* TODO: handle partial reads */
+
 		n = recv(s2, rx_buf, sizeof(rx_buf), 0);
 		if (n <= 0) {
 			if (n < 0)
 				perror("recv");
 			else
-				printf("Client disconnected\n");
+				fprintf(stderr, "Client disconnected\n");
 			continue;
 		}
 
@@ -281,7 +259,7 @@ int main(int argc, char *argv[])
 		}
 
 		if (response_len < 0) {
-			printf("Failed to process request\n");
+			fprintf(stderr, "Failed to process request\n");
 			continue;
 		}
 
@@ -291,7 +269,7 @@ int main(int argc, char *argv[])
 				break;
 			}
 
-			printf("Response sent (%d bytes)\n", response_len);
+			fprintf(stderr, "Response sent (%d bytes)\n", response_len);
 		}
 		// } while (1);
 
