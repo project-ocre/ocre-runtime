@@ -58,6 +58,7 @@ static int print_usage(struct ocre_context *ctx, const char *argv0, int argc, ch
 	fprintf(stderr, "  run       container run\n");
 	fprintf(stderr, "  start     container start\n");
 	// fprintf(stderr, "  stop      container stop\n");
+	fprintf(stderr, "  wait      container wait\n");
 	fprintf(stderr, "  kill      container kill\n");
 	// fprintf(stderr, "  pause     container pause\n");
 	// fprintf(stderr, "  unpause   container unpause\n");
@@ -80,6 +81,7 @@ static const struct ocre_command commands[] = {
 	{"start", cmd_container_start},
 	{"stop", cmd_container_stop},
 	{"kill", cmd_container_kill},
+	{"wait", cmd_container_wait},
 	{"pause", cmd_container_pause},
 	{"unpause", cmd_container_unpause},
 	{"rm", cmd_container_rm},

@@ -161,6 +161,7 @@ The following shortcut commands are available for convenience:
 - `create` → `container create` - Create a container
 - `run` → `container run` - Create and start a container
 - `start` → `container start` - Start a container
+- `wait` → `container wait` - Wait for a container to exit
 - `kill` → `container kill` - Kill a container
 - `rm` → `container rm` - Remove a container
 
