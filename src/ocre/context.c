@@ -30,7 +30,7 @@ LOG_MODULE_REGISTER(context, CONFIG_OCRE_LOG_LEVEL);
 
 struct ocre_context {
 	pthread_mutex_t mutex;
-	const char *working_directory;
+	char *working_directory;
 	struct container_node *containers;
 };
 
@@ -98,7 +98,10 @@ struct ocre_context *ocre_context_create(const char *workdir)
 
 	/* Set working directory */
 
-	context->working_directory = workdir;
+	context->working_directory = strdup(workdir);
+	if (!context->working_directory) {
+		goto error;
+	}
 
 	/* Initialize containers list */
 
@@ -108,6 +111,7 @@ struct ocre_context *ocre_context_create(const char *workdir)
 
 error:
 	free(context);
+	free(context->working_directory);
 
 	return NULL;
 };
@@ -163,6 +167,7 @@ int ocre_context_destroy(struct ocre_context *context)
 		return -1;
 	}
 
+	free(context->working_directory);
 	free(context);
 
 	return 0;
