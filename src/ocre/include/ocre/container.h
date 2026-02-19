@@ -8,6 +8,8 @@
 #ifndef OCRE_CONTAINER_H
 #define OCRE_CONTAINER_H
 
+#include <stdbool.h>
+
 /**
  * @brief The possible status of a container
  *
@@ -164,5 +166,17 @@ int ocre_container_kill(struct ocre_container *container);
  * @return Zero on success, non-zero on failure
  */
 int ocre_container_wait(struct ocre_container *container, int *status);
+
+/**
+ * @brief Get detached mode
+ * @memberof ocre_container
+ *
+ * Detached containers run on background.
+ *
+ * @param container A pointer to the container to terminate
+ *
+ * @return true if container is detached, false otherwise
+ */
+bool ocre_container_is_detached(struct ocre_container *container);
 
 #endif /* OCRE_CONTAINER_H */

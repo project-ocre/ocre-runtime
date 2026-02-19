@@ -14,8 +14,14 @@ target_sources(OcrePlatform
     lstat.c
 )
 
+add_subdirectory(.. OcrePlatformBase)
+
 target_include_directories(OcrePlatform
     PUBLIC
     include
-    ../include
+)
+
+target_link_libraries(OcrePlatform
+    PRIVATE
+    OcrePlatformBase
 )

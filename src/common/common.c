@@ -2,6 +2,21 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <ocre/common.h>
+
+#include "version.h"
+#include "build_info.h"
+#include "commit_id.h"
+
+/* Constant build information */
+
+const struct ocre_config ocre_build_configuration = {
+	.build_info = OCRE_BUILD_HOST_INFO,
+	.version = OCRE_VERSION_STRING,
+	.commit_id = GIT_COMMIT_ID,
+	.build_date = OCRE_BUILD_DATE,
+};
+
 int ocre_is_valid_name(const char *id)
 {
 	/* Cannot be NULL */

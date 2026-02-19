@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # @copyright Copyright (c) contributors to Project Ocre,
 # which has been established as Project Ocre a Series of LF Projects, LLC
 #
@@ -22,7 +22,7 @@ if [ $# -eq 1 ]; then
     fi
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SRC_DIR="$ROOT_DIR/src"
 

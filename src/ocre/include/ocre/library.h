@@ -11,25 +11,6 @@
 #include <ocre/runtime/vtable.h>
 
 /**
- * @brief Build configuration of the Ocre Library
- * @headerfile ocre.h <ocre/ocre.h>
- *
- * There should only be only one instance of this structure in the program. And it must be in constant read-only memory.
- * It is set at build-time and should only be read-only to the user.
- */
-struct ocre_config {
-	const char *version;	/**< Version of the Ocre Library */
-	const char *commit_id;	/**< Commit ID of the build tree */
-	const char *build_info; /**< Host build information */
-	const char *build_date; /**< Build date */
-};
-
-/**
- * @brief The instance of configuration of the Ocre Library is constant and compiled-in.
- */
-extern const struct ocre_config ocre_build_configuration;
-
-/**
  * @class ocre_context
  * @headerfile ocre.h <ocre/ocre.h>
  * @brief Ocre Context

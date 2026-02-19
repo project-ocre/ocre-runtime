@@ -51,6 +51,7 @@ foreach(test ${OCRE_TESTS})
     )
 
     target_link_libraries(test_${test}
+        OcreCommon
         OcreCore
         Unity
     )

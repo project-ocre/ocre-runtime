@@ -17,10 +17,9 @@ if(GIT_DIR)
 
     # Generate commit ID header file in source dir if we are in a git repository
     add_custom_command(
-        OUTPUT include/ocre/commit_id.h
-        COMMAND sh -c "mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/include/ocre"
-        COMMAND sh -c "echo '/* Auto-generated file. DO NOT EDIT */' > ${CMAKE_CURRENT_BINARY_DIR}/include/ocre/commit_id.h"
-        COMMAND sh -c "echo \"#define GIT_COMMIT_ID \\\"$(git describe --always --abbrev=0 --dirty)\\\"\" >> ${CMAKE_CURRENT_BINARY_DIR}/include/ocre/commit_id.h"
+        OUTPUT include/commit_id.h
+        COMMAND sh -c "echo '/* Auto-generated file. DO NOT EDIT */' > ${CMAKE_CURRENT_BINARY_DIR}/include/commit_id.h"
+        COMMAND sh -c "echo \"#define GIT_COMMIT_ID \\\"$(git describe --always --abbrev=0 --dirty)\\\"\" >> ${CMAKE_CURRENT_BINARY_DIR}/include/commit_id.h"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         VERBATIM
         DEPENDS always_rebuild
@@ -31,9 +30,9 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/ocre)
 
 # Generate build info header file in binary dir for every build
 add_custom_command(
-    OUTPUT include/ocre/build_info.h
-    COMMAND sh -c "echo \"#define OCRE_BUILD_HOST_INFO \\\"$ENV{USER} @ $(uname -a)\\\"\" > include/ocre/build_info.h"
-    COMMAND sh -c "echo \"#define OCRE_BUILD_DATE \\\"$(date +'%Y-%m-%d %H:%M:%S %Z')\\\"\" >> include/ocre/build_info.h"
+    OUTPUT include/build_info.h
+    COMMAND sh -c "echo \"#define OCRE_BUILD_HOST_INFO \\\"$ENV{USER} @ $(uname -a)\\\"\" > include/build_info.h"
+    COMMAND sh -c "echo \"#define OCRE_BUILD_DATE \\\"$(date +'%Y-%m-%d %H:%M:%S %Z')\\\"\" >> include/build_info.h"
     VERBATIM
     DEPENDS always_rebuild
 )
@@ -50,12 +49,13 @@ add_library(OcreCommon)
 target_sources(OcreCommon
     PRIVATE
     common.c
-    include/ocre/build_info.h
-    include/ocre/commit_id.h
+    include/build_info.h
+    include/commit_id.h
 )
 
 target_include_directories(OcreCommon
+    PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}/include
     PUBLIC
     include
-    ${CMAKE_CURRENT_BINARY_DIR}/include
 )

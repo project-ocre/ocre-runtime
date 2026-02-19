@@ -16,11 +16,12 @@ target_sources(OcreCore
 )
 
 target_link_libraries(OcreCore
-    PUBLIC
+    PRIVATE
     uthash
     OcrePlatform
-    OcreRuntime
     OcreRuntimeWamr
+    PUBLIC
+    OcreRuntime
     OcreCommon
 )
 

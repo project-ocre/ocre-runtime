@@ -18,11 +18,6 @@ target_link_libraries(ocre_cmd
     OcreShell
 )
 
-target_link_libraries(OcreShell
-    PUBLIC
-    OcreCore
-)
-
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads)
 target_link_libraries(ocre_cmd PRIVATE Threads::Threads)
