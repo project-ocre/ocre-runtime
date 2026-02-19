@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
-import serial
-import sys
 import pexpect
-import pexpect.fdpexpect
 import testlib
 
 """
@@ -23,7 +20,6 @@ lines_to_check = [
     "Publisher exited with status 0",
     "Demo completed successfully",
 ]
-
 
 def main():
     full_output = ''

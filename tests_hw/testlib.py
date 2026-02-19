@@ -4,6 +4,7 @@ import pexpect
 import pexpect.fdpexpect
 from typing import Tuple
 
+
 def setup(device_filepath: str) -> Tuple[serial.Serial, pexpect.fdpexpect.fdspawn]:
     conn = serial.Serial(device_filepath, 115200, timeout=10)
     conn.reset_input_buffer()
