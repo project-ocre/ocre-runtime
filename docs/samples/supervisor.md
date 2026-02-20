@@ -14,7 +14,9 @@ It also preloads the following images:
 - `webserver-complex.wasm`
 - `webserver.wasm`
 
-Currently it only supports Zephyr.
+In Zephyr, there is no daemon, and Ocre is run directly from the command line. In Linux there is the `ocred` daemon, which listens in a socket and `ocre` (client) will connect to it.
+
+In Linux, a library called OcreClient is used to interact with the daemon. It offers almost the same functionality as the OcreCore library.
 
 ## Building and running on Zephyr
 
@@ -72,34 +74,92 @@ If it is not possible to flash the storage_partition with west, as a workaround,
 it is possible to use the [Supervisor] with `ocre pull` to populate the images
 directory, and then flash just this demo with the command above.
 
+## Building and running on Linux
+
+Make sure you are using the [Devcontainer](../Devcontainers.md) or have the necessary
+tools for Linux described in the [Get Started with Linux](../GetStartedLinux.md) guide.
+
+In Linux, the the supervisor is split in two parts:
+
+- `ocred`, the ocre daemon which uses a control socket that listens in a socket.
+- `ocre-cli`, the ocre command line which interacts with the daemon to manage the containers.
+
+From the root of the repository, or from anywhere else, create build directory:
+
+```sh
+mkdir build
+cd build
+```
+
+Configure the Ocre Library build:
+
+```sh
+cmake ..
+```
+
+Make sure `..` points to the root of the ocre-runtime source tree.
+
+Build ocre and the samples:
+
+```sh
+make
+```
+
+Run the daemon:
+
+```sh
+./src/samples/supervisor/posix/server/ocred
+```
+
+Note that this command should be run from the build directory
+(i.e. the directory that contains files in the relative path `./src/ocre/var/lib/ocre/images/`).
+
+This will create the ocre socket by default in `/tmp/ocre.sock`.
+
+On another terminal, run the client:
+
+```sh
+./src/samples/supervisor/posix/ocre_cli ps
+```
+
+Other commands, described in the next section work just fine.
+
+Notice that the container logs are not redirected to the client. Check the ocre daemon logs for more information.
+
 ## Using ocre-cli (shell)
 
 Quick usage of ocre client is described below. Detailed usage information can be found on the [Ocre CLI](../OcreCli.md) documentation.
 
 Get help:
 
-```
+````
+
 ocre
+
 ```
 
 List local images:
 
 ```
+
 ocre image ls
+
 ```
 
 It should display the local images:
 
 ```
-SHA-256									                                          SIZE	NAME
-d9d2984172d74b157cbcd27ff53ce5b5e07c1b8f9aa06facd16a59f66ddd0afb	22772	blinky.wasm
-fdeffaf2240bd6b3541fccbb5974c72f03cbf4bdd0970ea7e0a5647f08b7b50a	58601	filesystem-full.wasm
-a8042be335fd733ecf4c48b76e6c00a43b274ad9b0d9a6d3c662c5f0c36d4a40	41545	filesystem.wasm
-4a42158ff5b0a4d0a65d9cf8a3d2bb411d846434a236ca84b483e05b2f1dff99	5026	hello-world.wasm
-c7b29c38bd91f67e69771fbe83db4ae84d515a6038a77ee6823ae377c55eac3c	23111	publisher.wasm
-5f94ea4678c4c1ab42a3302e190ffe61c58b8db4fcf4919e1c5a576a1b8dcd3b	22944	subscriber.wasm
-496ab513d6b1b586f846834fd8d17e0360c053bc614f2c2418ef84a87fbcd384	98082	webserver-complex.wasm
-0a8cd55cb93c995d71500381c11bab1f2536c66282b8cab324b42c35817fba57	81647	webserver.wasm
+
+SHA-256 SIZE NAME
+d9d2984172d74b157cbcd27ff53ce5b5e07c1b8f9aa06facd16a59f66ddd0afb 22772 blinky.wasm
+fdeffaf2240bd6b3541fccbb5974c72f03cbf4bdd0970ea7e0a5647f08b7b50a 58601 filesystem-full.wasm
+a8042be335fd733ecf4c48b76e6c00a43b274ad9b0d9a6d3c662c5f0c36d4a40 41545 filesystem.wasm
+4a42158ff5b0a4d0a65d9cf8a3d2bb411d846434a236ca84b483e05b2f1dff99 5026 hello-world.wasm
+c7b29c38bd91f67e69771fbe83db4ae84d515a6038a77ee6823ae377c55eac3c 23111 publisher.wasm
+5f94ea4678c4c1ab42a3302e190ffe61c58b8db4fcf4919e1c5a576a1b8dcd3b 22944 subscriber.wasm
+496ab513d6b1b586f846834fd8d17e0360c053bc614f2c2418ef84a87fbcd384 98082 webserver-complex.wasm
+0a8cd55cb93c995d71500381c11bab1f2536c66282b8cab324b42c35817fba57 81647 webserver.wasm
+
 ```
 
 If there are no images, before you proceed, you can use `ocre pull` to populate the images.
@@ -108,32 +168,42 @@ Check the Ocre SDK and [Ocre CLI](../OcreCli.md) documentation for details.
 Start a container with the the `hello-world.wasm` image:
 
 ```
+
 ocre run hello-world.wasm
+
 ```
 
 Start a background container named `my_blinky` with the `blinky.wasm` image:
 
 ```
+
 ocre run -n my_blinky -d -k ocre:api blinky.wasm
+
 ```
 
 Show container statuses:
 
 ```
+
 ocre ps
+
 ```
 
 Kill the `my_blinky` container:
 
 ```
+
 ocre kill my_blinky
+
 ```
 
 Remove the `my_blinky` container:
 
 ```
+
 ocre rm my_blinky
-```
+
+````
 
 Please, refer to [Ocre CLI](../OcreCli.md) documentation and help messages for details
 
