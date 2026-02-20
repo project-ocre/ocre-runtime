@@ -274,7 +274,6 @@ jobs:
           path: ocre-runtime
           submodules: recursive
 
-
       - name: Setup west environment
         run: |
           . /opt/zephyr-venv/bin/activate

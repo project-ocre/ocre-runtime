@@ -18,30 +18,22 @@ lines_to_check = [
 ]
 
 def main():
-    full_output = ''
     serial_conn, pex = testlib.setup('/dev/ttyACM0')
     serial_conn.send_break()
+    pex.expect([pexpect.EOF, pexpect.TIMEOUT], 45)
+    runtime_output = bytes(pex.before).decode(errors='ignore')
 
     print("Checking Runtime Output:")
     for line in lines_to_check:
         print(f"Checking for line: '{line}'")
-        expect_index = pex.expect([line, pexpect.TIMEOUT], 30)
-        full_output += bytes(pex.before).decode(errors='ignore')
-
-        if (expect_index == 1):
+        if (line not in runtime_output):
             print(f"Failed to find line: '{line}' in given timeout.")
 
-            pex.expect([pexpect.EOF, pexpect.TIMEOUT], 10)
-            full_output += bytes(pex.before).decode(errors='ignore')
-            testlib.format_runtime_output(full_output, "Failed")
-            
+            testlib.format_runtime_output(runtime_output, "Failed")
             testlib.full_exit(serial_conn, 1)
 
-    pex.expect([pexpect.EOF, pexpect.TIMEOUT], 10)
-    full_output += bytes(pex.before).decode(errors='ignore')
-
     print("Able to successful verify runtime")
-    testlib.format_runtime_output(full_output, "Entire")
+    testlib.format_runtime_output(runtime_output, "Entire")
     testlib.full_exit(serial_conn, 0)
 
     

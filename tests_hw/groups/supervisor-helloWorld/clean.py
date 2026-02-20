@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
-import time
-import serial
+
+import sys
+sys.path.append("../..")
+
+import pexpect
+import testlib
 
 
 def main():
-    conn = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
-    conn.reset_input_buffer()
-    conn.send_break(duration=1)
-    time.sleep(5)
+    serial_conn, pex = testlib.setup('/dev/ttyACM0')
+
     print("Cleaning up container hello-world")
-    conn.write(b'ocre container ps\n')
-    response = conn.read(2048).decode(errors='ignore')
-    if ("hello-world" in response):
-        conn.write(b'ocre rm hello-world\n')
-        response += conn.read(2048).decode(errors='ignore')
+    pex.write(b'ocre container ps\n')
+    pex.expect(["ocre:~$", pexpect.TIMEOUT], 30)
+    runtime_output = bytes(pex.before).decode(errors='ignore')
+    if ("hello-world" in runtime_output):
+        pex.write(b'ocre rm hello-world\n')
+        runtime_output += bytes(pex.before).decode(errors='ignore')
 
-    print("==== Runtime Output: ====")
-    print(response)
-    conn.close()
-
+    testlib.format_runtime_output(runtime_output, "Cleanup")
+    testlib.full_exit(serial_conn, 0)
 
 if __name__ == "__main__":
     main()
