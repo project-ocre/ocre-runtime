@@ -41,3 +41,6 @@ jobs:
 
       - name: Run Banner License Checks
         run: sh scripts/check_license_banner.sh
+
+      - name: License Banner Checks(conf files)
+        run: sh scripts/check_license_banner_conf_files.sh
