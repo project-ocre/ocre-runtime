@@ -39,8 +39,8 @@ jobs:
       - name: Run YAML Format Checks
         run: sh scripts/yml_linter.sh
 
-      - name: Run Banner License Checks
-        run: sh scripts/check_license_banner.sh
+      - name: License Banner Checks(.c files)
+        run: sh scripts/check_license_banner_c.sh
 
       - name: License Banner Checks(conf files)
         run: sh scripts/check_license_banner_conf_files.sh
