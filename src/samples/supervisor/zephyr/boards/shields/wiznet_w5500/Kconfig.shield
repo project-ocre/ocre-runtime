@@ -1,2 +1,7 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
 config SHIELD_WIZNET_W5500
 	def_bool $(shields_list_contains,wiznet_w5500)
