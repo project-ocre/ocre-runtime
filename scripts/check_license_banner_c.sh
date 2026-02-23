@@ -38,7 +38,6 @@ echo "Checking license banners."
 ERROR_FOUND=0
 for file in $(find . -type f \( -name '*.c' -o -name '*.h' \) \
     ! -name 'utlist.h' \
-    ! -name 'CMakeCCompilerId.c' \
     ! -path './tests/Unity/*' \
     ! -path './build/*' \
     ! -path './wasm-micro-runtime/*' \
