@@ -1,4 +1,8 @@
 #!/bin/bash
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
 
 TG=$1
 LOGFILE="/tmp/$TG.log"
