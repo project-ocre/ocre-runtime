@@ -41,7 +41,8 @@ int ocre_is_valid_name(const char *id)
 	/* Can only contain alphanumeric characters, dots, underscores, and hyphens */
 
 	for (size_t i = 0; i < strlen(id); i++) {
-		if ((isalnum((int)id[i]) && islower((int)id[i])) || id[i] == '.' || id[i] == '_' || id[i] == '-') {
+		if ((isalpha((int)id[i]) && islower((int)id[i])) || isdigit((int)id[i]) || id[i] == '.' ||
+		    id[i] == '_' || id[i] == '-') {
 			continue;
 		}
 
