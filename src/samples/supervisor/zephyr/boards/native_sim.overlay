@@ -1,0 +1,14 @@
+/**
+ * @copyright Copyright (c) contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&flash0 {
+	reg = < 0x0 DT_SIZE_M(32) >;
+};
+
+&storage_partition {
+    reg = < 0xfc000 DT_SIZE_M(16) >;
+};
