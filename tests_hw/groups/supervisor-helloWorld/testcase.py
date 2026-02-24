@@ -20,11 +20,11 @@ def main():
 
     print("Running hello-world container:")
     pex.write(b'ocre start hello-world\n')
- 
-    expect_index = pex.expect(["ocre:~$", pexpect.TIMEOUT], 30)
+
+    expect_index = pex.expect([testlib.shell_prompt, pexpect.TIMEOUT], 30)
     runtime_output = bytes(pex.before).decode(errors='ignore')
 
-    if (expect_index == 1):
+    if (expect_index == 1 and testlib.shell_prompt not in runtime_output):
         print("Container failed to exit in given timeout")
         testlib.format_runtime_output(runtime_output, "Failed")
         testlib.full_exit(serial_conn, 1)
