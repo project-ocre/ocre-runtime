@@ -33,7 +33,7 @@ void *user_realloc(void *ptr, size_t size)
 
 void *user_malloc(size_t size)
 {
-	return malloc(size);
+	return aligned_alloc(8, size);
 }
 
 void user_free(void *ptr)
