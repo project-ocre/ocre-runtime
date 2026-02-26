@@ -137,18 +137,6 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Setup west environment
-        run: |
-          . /opt/zephyr-venv/bin/activate
-          west init -l .
-          west update
-          west zephyr-export
-          west packages pip --install
-          west sdk install -t \
-            x86_64-zephyr-elf \
-            aarch64-zephyr-elf \
-            arm-zephyr-eabi
-
       - name: Download wasm artifact
         uses: actions/download-artifact@v4
         with:
@@ -206,18 +194,6 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Setup west environment
-        run: |
-          . /opt/zephyr-venv/bin/activate
-          west init -l .
-          west update
-          west zephyr-export
-          west packages pip --install
-          west sdk install -t \
-            x86_64-zephyr-elf \
-            aarch64-zephyr-elf \
-            arm-zephyr-eabi
-
       - name: Download wasm artifact
         uses: actions/download-artifact@v4
         with:
@@ -273,18 +249,6 @@ jobs:
         with:
           path: ocre-runtime
           submodules: recursive
-
-      - name: Setup west environment
-        run: |
-          . /opt/zephyr-venv/bin/activate
-          west init -l .
-          west update
-          west zephyr-export
-          west packages pip --install
-          west sdk install -t \
-            x86_64-zephyr-elf \
-            aarch64-zephyr-elf \
-            arm-zephyr-eabi
 
       - name: Download wasm artifact
         uses: actions/download-artifact@v4
