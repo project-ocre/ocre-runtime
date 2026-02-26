@@ -126,16 +126,20 @@ jobs:
     steps:
       - name: Clean workspace
         run: |
-          rm -rf ocre-runtime || true
           rm -rf ../.west || true
-        continue-on-error: true
+          find . -name . -o -prune -exec rm -rf -- {} +
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
           path: ocre-runtime
           submodules: recursive
-          fetch-depth: 0
+
+      - name: Setup west environment
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west init -l ocre-runtime
+          west update
 
       - name: Download wasm artifact
         uses: actions/download-artifact@v4
@@ -146,7 +150,7 @@ jobs:
       - name: Build and Flash mini sample
         run: |
           . /opt/zephyr-venv/bin/activate
-          west build -p always -b b_u585i_iot02a src/samples/mini/zephyr
+          west build -p always -b b_u585i_iot02a ocre-runtime/src/samples/mini/zephyr
           west flash --extload=/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr
 
   mini-test:
@@ -183,16 +187,20 @@ jobs:
     steps:
       - name: Clean workspace
         run: |
-          rm -rf ocre-runtime || true
           rm -rf ../.west || true
-        continue-on-error: true
+          find . -name . -o -prune -exec rm -rf -- {} +
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
           path: ocre-runtime
           submodules: recursive
-          fetch-depth: 0
+
+      - name: Setup west environment
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west init -l ocre-runtime
+          west update
 
       - name: Download wasm artifact
         uses: actions/download-artifact@v4
@@ -203,7 +211,7 @@ jobs:
       - name: Build and Flash Demo Sample
         run: |
           . /opt/zephyr-venv/bin/activate
-          west build -p always -b b_u585i_iot02a src/samples/demo/zephyr
+          west build -p always -b b_u585i_iot02a ocre-runtime/src/samples/demo/zephyr
           west flash --extload=/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr --hex-file build/zephyr/merged.hex
 
   demo-test:
@@ -240,15 +248,20 @@ jobs:
     steps:
       - name: Clean workspace
         run: |
-          rm -rf ocre-runtime || true
           rm -rf ../.west || true
-        continue-on-error: true
+          find . -name . -o -prune -exec rm -rf -- {} +
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
           path: ocre-runtime
           submodules: recursive
+
+      - name: Setup west environment
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west init -l ocre-runtime
+          west update
 
       - name: Download wasm artifact
         uses: actions/download-artifact@v4
@@ -259,7 +272,7 @@ jobs:
       - name: Build and Flash Supervisor
         run: |
           . /opt/zephyr-venv/bin/activate
-          west build -p always -b b_u585i_iot02a src/samples/supervisor/zephyr -- "-DOCRE_SDK_PRELOADED_IMAGES=hello-world.wasm"
+          west build -p always -b b_u585i_iot02a ocre-runtime/src/samples/supervisor/zephyr -- "-DOCRE_SDK_PRELOADED_IMAGES=hello-world.wasm"
           west flash --extload=/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr --hex-file build/zephyr/merged.hex
 
   supervisor-test-set-1:
