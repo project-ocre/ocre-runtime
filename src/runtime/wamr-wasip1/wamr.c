@@ -140,10 +140,10 @@ static int runtime_init(void)
 
 	/* Allocate memory for the shared heap */
 
-	shared_heap_buf = user_malloc(CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL);
+	shared_heap_buf = user_malloc(CONFIG_OCRE_SHARED_HEAP_BUF_SIZE);
 	if (!shared_heap_buf) {
 		LOG_ERR("Failed to allocate memory for the shared heap of size %zu",
-			(size_t)CONFIG_OCRE_SHARED_HEAP_BUF_VIRTUAL);
+			(size_t)CONFIG_OCRE_SHARED_HEAP_BUF_SIZE);
 		return -1;
 	}
 #elif defined(CONFIG_OCRE_SHARED_HEAP_BUF_PHYSICAL)
