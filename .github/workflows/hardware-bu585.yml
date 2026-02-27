@@ -1,0 +1,299 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Hardware Checks (b_u585)
+
+concurrency:
+  group: pr-workflows
+  cancel-in-progress: false
+
+on:
+  workflow_call:
+    inputs:
+      devcontainer-tag:
+        description: The container tag to be used
+        default: latest
+        required: false
+        type: string
+
+jobs:
+  setup-local-runner:
+    name: Setup local runner
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Remove old workflow files
+        run: rm -rf /var/ocre-ci-files/*
+
+      - name: Create wasm directory
+        run: mkdir /var/ocre-ci-files/wasm
+
+  build-wasm-files:
+    name: Build .wasm Files
+    needs: setup-local-runner
+    runs-on: zephyr-xlarge-runner
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+      volumes:
+        - /var/ocre-ci-files/:/var/ocre-ci-files/
+      options: --user root
+    strategy:
+      matrix:
+        sample:
+          - name: generic-hello-world
+            path: generic/hello-world
+            filename: hello-world.wasm
+          - name: generic-subscriber
+            path: generic/messaging/subscriber
+            filename: subscriber.wasm
+          - name: generic-publisher
+            path: generic/messaging/publisher
+            filename: publisher.wasm
+          - name: generic-blinky
+            path: generic/blinky
+            filename: blinky.wasm
+
+          # Examples for future images to add
+          # - name: generic-filesystem-full
+          #   path: generic/filesystem-full
+          #   filename: filesystem-full.wasm
+          # - name: b_u585i-modbus-server
+          #   path: board_specific/b_u585i_iot02a/modbus-server
+          #   filename: modbus-server.wasm
+
+    steps:
+      - name: Cleanup workspace
+        run: |
+          rm -rf ocre-runtime || true
+          rm -rf ../.west || true
+        continue-on-error: true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: ocre-runtime
+          submodules: recursive
+
+      - name: Build WASM sample
+        run: |
+          SAMPLE_DIR=$GITHUB_WORKSPACE/ocre-runtime/ocre-sdk/${{ matrix.sample.path }}
+          if [ ! -d "$SAMPLE_DIR" ]; then
+            echo "Directory not found: $SAMPLE_DIR"
+            exit 1
+          fi
+
+          mkdir -p "$SAMPLE_DIR/build"
+          cd "$SAMPLE_DIR/build"
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake
+          make
+
+        env:
+          WASI_SDK_PATH: /opt/wasi-sdk
+
+      # Saving files to the runner so avoid uploading .wasm files as artifacts individually, uploaded in separate step
+      - name: Save .wasm artifact locally
+        if: always()
+        run: |
+          mkdir /var/ocre-ci-files/wasm/${{ matrix.sample.name }}/
+          cp "ocre-runtime/ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}" "/var/ocre-ci-files/wasm/${{ matrix.sample.name }}/${{ matrix.sample.filename }}"
+
+  artifact-wasm-files:
+    name: Artifact built .wasm Files
+    needs: build-wasm-files
+    runs-on: zephyr-xlarge-runner
+    steps:
+      - name: Artifact local wasm files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-build-artifacts
+          path: "/var/ocre-ci-files/wasm"
+
+  mini-flash:
+    name: Mini sample build and flash
+    needs: artifact-wasm-files
+    runs-on: zephyr-xlarge-runner
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+      volumes:
+        - /var/ocre-ci-files/:/var/ocre-ci-files/
+        - /usr/local/STMicroelectronics/:/usr/local/STMicroelectronics/
+        - /github/home/STMicroelectronics/:/github/home/STMicroelectronics/
+        - /dev/bus/usb:/dev/bus/usb
+      options: --user root --privileged --device=/dev/ttyACM0
+
+    steps:
+      - name: Clean workspace
+        run: |
+          rm -rf ../.west || true
+          find . -name . -o -prune -exec rm -rf -- {} +
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: ocre-runtime
+          submodules: recursive
+
+      - name: Setup west environment
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west init -l ocre-runtime
+          west update
+
+      - name: Download wasm artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-build-artifacts
+          path: wasm-build-artifacts
+
+      - name: Build and Flash mini sample
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west build -p always -b b_u585i_iot02a ocre-runtime/src/samples/mini/zephyr
+          west flash --extload=/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr
+
+  mini-test:
+    name: Mini Validation Test
+    needs: mini-flash
+    runs-on: zephyr-xlarge-runner
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run mini sample Test Case
+        run: |
+          cd tests_hw && bash beginTests.sh "mini"
+
+      - name: Print mini sample Test Case Logs
+        if: always()
+        run: |
+          cat /tmp/mini.log
+
+  demo-flash:
+    name: Demo sample build and flash
+    needs: [artifact-wasm-files, mini-test]
+    runs-on: zephyr-xlarge-runner
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+      volumes:
+        - /var/ocre-ci-files/:/var/ocre-ci-files/
+        - /usr/local/STMicroelectronics/:/usr/local/STMicroelectronics/
+        - /github/home/STMicroelectronics/:/github/home/STMicroelectronics/
+        - /dev/bus/usb:/dev/bus/usb
+      options: --user root --privileged --device=/dev/ttyACM0
+
+    steps:
+      - name: Clean workspace
+        run: |
+          rm -rf ../.west || true
+          find . -name . -o -prune -exec rm -rf -- {} +
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: ocre-runtime
+          submodules: recursive
+
+      - name: Setup west environment
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west init -l ocre-runtime
+          west update
+
+      - name: Download wasm artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-build-artifacts
+          path: wasm-build-artifacts
+
+      - name: Build and Flash Demo Sample
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west build -p always -b b_u585i_iot02a ocre-runtime/src/samples/demo/zephyr
+          west flash --extload=/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr --hex-file build/zephyr/merged.hex
+
+  demo-test:
+    name: Demo Validation Test
+    needs: demo-flash
+    runs-on: zephyr-xlarge-runner
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Demo Sample Test Case
+        run: |
+          cd tests_hw && bash beginTests.sh "demo"
+
+      - name: Print Demo Sample Test Case Logs
+        if: always()
+        run: |
+          cat /tmp/demo.log
+
+  build-flash-supervisor-set-1:
+    name: Build and Flash Supervisor with Image Set 1
+    needs: [artifact-wasm-files, demo-test]
+    runs-on: zephyr-xlarge-runner
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+      volumes:
+        - /var/ocre-ci-files/:/var/ocre-ci-files/
+        - /usr/local/STMicroelectronics/:/usr/local/STMicroelectronics/
+        - /github/home/STMicroelectronics/:/github/home/STMicroelectronics/
+        - /dev/bus/usb:/dev/bus/usb
+      options: --user root --privileged --device=/dev/ttyACM0
+
+    steps:
+      - name: Clean workspace
+        run: |
+          rm -rf ../.west || true
+          find . -name . -o -prune -exec rm -rf -- {} +
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: ocre-runtime
+          submodules: recursive
+
+      - name: Setup west environment
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west init -l ocre-runtime
+          west update
+
+      - name: Download wasm artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-build-artifacts
+          path: wasm-build-artifacts
+
+      - name: Build and Flash Supervisor
+        run: |
+          . /opt/zephyr-venv/bin/activate
+          west build -p always -b b_u585i_iot02a ocre-runtime/src/samples/supervisor/zephyr -- "-DOCRE_SDK_PRELOADED_IMAGES=hello-world.wasm"
+          west flash --extload=/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr --hex-file build/zephyr/merged.hex
+
+  supervisor-test-set-1:
+    name: Supervisor Test Set 1
+    needs: build-flash-supervisor-set-1
+    runs-on: zephyr-xlarge-runner
+
+    strategy:
+      matrix:
+        test:
+          - name: Hello-World
+            group: supervisor-helloWorld
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Supervisor ${{ matrix.test.name }} Testcase
+        run: |
+          cd tests_hw && bash beginTests.sh ${{ matrix.test.group }}
+
+      - name: Print Hello-World Test Case Logs
+        if: always()
+        run: cat /tmp/${{ matrix.test.group }}.log

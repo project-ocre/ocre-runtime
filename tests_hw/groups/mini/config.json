@@ -1,0 +1,28 @@
+{
+    "name": "Mini Validation",
+    "description": "Test the Ocre mini sample with the default hello-world container",
+    "setup": [
+      {
+        "name": "Mini Validation Setup",
+        "exec": "bash setup.sh"
+      }
+    ],
+    "test_suites": [
+      {
+        "name": "Mini Validation Tests",
+        "description": "Reads output from mini sample to make sure it successfully ran",
+        "test_cases": [
+          {
+            "name": "Check Mini Hello World",
+            "exec": "./testcase.py"
+          }
+        ]
+      }
+    ],
+    "cleanup": [
+      {
+        "name": "Mini Validation Cleanup",
+        "exec": "bash clean.sh"
+      }
+    ]
+  }

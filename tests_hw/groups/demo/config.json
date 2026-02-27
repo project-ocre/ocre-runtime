@@ -1,0 +1,28 @@
+{
+    "name": "Demo Validation",
+    "description": "Test the Ocre demo sample with the default containers",
+    "setup": [
+      {
+        "name": "Demo Validation Setup",
+        "exec": "bash setup.sh"
+      }
+    ],
+    "test_suites": [
+      {
+        "name": "Demo Validation Tests",
+        "description": "Reads output from the demo sample to make sure it successfully ran",
+        "test_cases": [
+          {
+            "name": "Check Demo Hello World",
+            "exec": "./testcase.py"
+          }
+        ]
+      }
+    ],
+    "cleanup": [
+      {
+        "name": "Demo Validation Cleanup",
+        "exec": "bash clean.sh"
+      }
+    ]
+  }

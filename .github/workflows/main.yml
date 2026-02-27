@@ -72,3 +72,12 @@ jobs:
     secrets: inherit
     with:
       devcontainer-tag: ${{ needs.zephyr-devcontainer.outputs.devcontainer-tag }}
+
+  hardware-b_u585i_iot02a:
+    name: Hardware b_u585i_iot02a
+    needs:
+      - zephyr-devcontainer
+    uses: ./.github/workflows/hardware-bu585.yml
+    secrets: inherit
+    with:
+      devcontainer-tag: ${{ needs.zephyr-devcontainer.outputs.devcontainer-tag }}
