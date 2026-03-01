@@ -5,13 +5,13 @@ The demo sample will run a few scenarios in a sequential demonstration.
 Currently it will run the following scenarios in order:
 
 1. `hello-world.wasm`
-   - Prints a nice ASCII art
+    - Prints a nice ASCII art
 
 2. `blinky.wasm` runs for 2 seconds
-   - Prints some logs to stdout
+    - Prints some logs to stdout
 
 3. `subscriber.wasm` and `publisher.wasm` run alongside for 4 seconds
-   - Exchange messages between the containers
+    - Exchange messages between the containers
 
 It requires the [state information](../StateInformation.md) directory
 to load the images from.
@@ -27,7 +27,7 @@ tools for Linux described in the [Get Started with Linux](../GetStartedLinux.md)
 
 In Linux, the demo sample is part of the main library build.
 
-From the root of the repository, or from anywhere else, reate build directory:
+From the root of the repository, or from anywhere else, create build directory:
 
 ```sh
 mkdir build
