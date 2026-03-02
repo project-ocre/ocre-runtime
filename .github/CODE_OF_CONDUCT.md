@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Code of Conduct
 
 Ocre is a project of Linux Foundation Edge and applies the [LF Edge Contributor Code of Conduct](https://www.lfedge.org/governance/code-of-conduct/).

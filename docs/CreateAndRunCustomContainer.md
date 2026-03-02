@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Create and Run Custom Container
 
 This guide will walk you through the process of creating and running a custom Ocre container on your board.

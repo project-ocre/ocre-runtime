@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Ocre Build System for Linux
 
 Ocre build system is based on CMake. This provides an easy way of embedding Ocre in diffrerent Linux applications,

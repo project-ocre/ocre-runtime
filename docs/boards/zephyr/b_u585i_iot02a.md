@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Zephyr Board: `b_u585i_iot02a`
 
 The [Discovery Kit for IoT Node with STM32U5 Series](https://www.st.com/en/evaluation-tools/b-u585i-iot02a.html) is a demonstration and development board featuring the **STM32U585AIUx** MCU.

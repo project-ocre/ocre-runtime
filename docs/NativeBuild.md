@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Set up host to build Ocre
 
 This document provides instructions on how to build the Ocre Runtime from source without requiring Docker. These instructions also work inside a docker container, however this is provided as a reference for whose who need the development enviroment available in the host.

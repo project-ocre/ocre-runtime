@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Maintainers
 
 This page lists all active maintainers (also known as committers) of the [Ocre Project](https://www.lfedge.org/projects/ocre/), which includes this repository and the [Ocre Project Documentation Repo](https://github.com/project-ocre/project-ocre.github.io).

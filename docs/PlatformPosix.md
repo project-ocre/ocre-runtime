@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # POSIX Platform
 
 In Linux, pthreads are enabled by compiling with `-pthread` and linking with `-lpthread`. This might not be required for other POSIX platforms. The required build flags are automatically selected by the cmake build system.

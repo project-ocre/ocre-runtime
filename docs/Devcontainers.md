@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Devcontainers
 
 Devcontainers are tools that allows you to create and manage isolated development environments in containers. It provides a consistent and reproducible development environment across different machines and operating systems.

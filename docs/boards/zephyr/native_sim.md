@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Zephyr Board: `native_sim`
 
 The **native_sim** board is a simulated Zephyr target that runs on your host Linux machine. It allows you to develop and test Zephyr applications without needing physical hardware. The native_sim board is particularly useful for rapid iteration, testing, and debugging.
