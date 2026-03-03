@@ -3,8 +3,8 @@
 import sys
 sys.path.append("../..")
 
-import pexpect
-import testlib
+import testlib  # noqa: E402
+import pexpect  # noqa: E402
 
 
 def main():
@@ -20,6 +20,7 @@ def main():
 
     testlib.format_runtime_output(runtime_output, "Cleanup")
     testlib.full_exit(serial_conn, 0)
+
 
 if __name__ == "__main__":
     main()

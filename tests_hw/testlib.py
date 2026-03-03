@@ -4,7 +4,8 @@ import pexpect
 import pexpect.fdpexpect
 from typing import Tuple
 
-shell_prompt = "ocre:~$" 
+shell_prompt = "ocre:~$"
+
 
 def setup(device_filepath: str) -> Tuple[serial.Serial, pexpect.fdpexpect.fdspawn]:
     conn = serial.Serial(device_filepath, 115200, timeout=10)

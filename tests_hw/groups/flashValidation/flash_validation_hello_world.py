@@ -11,6 +11,7 @@ The testcase forms a serial connection to the board, sends a break and checks th
 the string Hello World! appears in the output of that break command. 
 """
 
+
 def main():
     conn = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
 
