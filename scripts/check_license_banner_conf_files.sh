@@ -17,13 +17,13 @@ check_license_banner() {
     local file_header
     local start_line=1
 
-    # Check first line and skip if it's a shebang line(only for .sh scripts)
+    # Skip shebang line if present (e.g. #!/bin/sh or #!/usr/bin/python3)
     local first_line
     first_line=$(head -n 1 "$file")
-    if [ "${first_line#\#\!/bin}" != "$first_line" ]; then
+    if [ "${first_line#\#\!/bin}" != "$first_line" ] || [ "${first_line#\#\!/usr/bin}" != "$first_line" ]; then
         start_line=2
     fi
-    
+
     file_header=$(tail -n +$start_line "$file" | head -n 4)
     
     # Expected license banner
@@ -44,7 +44,7 @@ echo "Checking license banners."
 ERROR_FOUND=0
 for file in $(find . -type f \( -name 'CMakeLists.txt' -o -name '*.yaml' \
     -o -name '*.yml' -o -name '*.awk' -o -name '*.conf' -o -name 'Kconfig*' \
-    -o -name '.gitignore' -o -name '.gitmodules' -o -name '*.sh' -o -name '*.cmake' \) \
+    -o -name '.gitignore' -o -name '.gitmodules' -o -name '*.sh' -o -name '*.cmake' -o -name '*.py' \) \
     ! -name 'utlist.h' \
     ! -path './tests/Unity/*' \
     ! -path './build/*' \
