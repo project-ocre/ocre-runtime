@@ -13,7 +13,7 @@ set -e
 ARGUMENT="--dry-run"
 
 if [ $# -eq 1 ]; then
-    if [ "$1" == "-f" ]; then
+    if [ "$1" = "-f" ]; then
         echo "Fixing files in place if necessary"
         ARGUMENT="-i"
     else
