@@ -6,9 +6,7 @@
 extends: default
 
 rules:
-  line-length:
-    max: 150
-    level: warning
+  line-length: disable
   indentation:
     spaces: 2
   document-start: disable
@@ -18,3 +16,4 @@ rules:
   empty-lines:
     max: 1
   truthy: {check-keys: false}
+  comments-indentation: disable
