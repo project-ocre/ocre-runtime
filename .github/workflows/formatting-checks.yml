@@ -39,6 +39,9 @@ jobs:
       - name: Run YAML Format Checks
         run: sh scripts/yml_linter.sh
 
+      - name: Run Python Format Checks
+        run: sh scripts/check_py_formatting.sh
+
       - name: License Banner Checks(.c files)
         run: sh scripts/check_license_banner_c.sh
 

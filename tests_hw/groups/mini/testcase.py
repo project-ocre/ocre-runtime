@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
 
 import sys
 sys.path.append("../..")
 
-import pexpect
-import testlib
+import pexpect  # noqa: E402
+import testlib  # noqa: E402
+
 
 """
 This testcase is to be used following the flashing of the default mini sample to a board.
@@ -16,6 +21,7 @@ the string "powered by Ocre" appears in the output of that break command.
 lines_to_check = [
     "powered by Ocre",
 ]
+
 
 def main():
     serial_conn, pex = testlib.setup('/dev/ttyACM0')
@@ -36,6 +42,6 @@ def main():
     testlib.format_runtime_output(runtime_output, "Entire")
     testlib.full_exit(serial_conn, 0)
 
-    
+
 if __name__ == "__main__":
     main()

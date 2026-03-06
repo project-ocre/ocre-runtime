@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
 
 import serial
 import time
@@ -10,6 +14,7 @@ This testcase is to be used following the flashing of the Ocre runtime to a boar
 The testcase forms a serial connection to the board, sends a break and checks that 
 the string Hello World! appears in the output of that break command. 
 """
+
 
 def main():
     conn = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
