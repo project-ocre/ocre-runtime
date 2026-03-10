@@ -73,6 +73,7 @@ Please, refer to their source code for more details.
 ## Zephyr
 
 ### Build and run
+
 To build the Zephyr system tests for the `native_sim_64` board:
 
 ```sh
@@ -87,16 +88,19 @@ Replace `context` with `container`, `lib`, or `ocre` to build different tests:
 - `tests/system/zephyr/container` - Tests the specific functionality of a container
 
 To run the test:
+
 ```sh
 west build -t run
 ```
 
 The last lines of the output will be something like:
+
 ```
 -----------------------
-25 Tests 0 Failures 0 Ignored 
+25 Tests 0 Failures 0 Ignored
 OK
 ```
 
 ### Details
+
 Each test must be run individually. Run the build command for one test at a time, then execute `west build -t run` to run that specific test.

@@ -74,6 +74,7 @@ west update
 ```
 
 Now, clone Ocre runtime:
+
 ```sh
 git clone --recurse-submodules https://github.com/project-ocre/ocre-runtime.git
 ```

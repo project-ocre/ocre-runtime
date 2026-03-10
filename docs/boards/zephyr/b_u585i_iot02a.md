@@ -90,7 +90,7 @@ Start with [Getting Started with Zephyr](../../GetStartedZephyr.md) to get a wor
 For development or testing without networking:
 
 ```bash
-west build -p always -b b_u585i_iot02a src/samples/supervisor/zephyr/ 
+west build -p always -b b_u585i_iot02a src/samples/supervisor/zephyr/
 ```
 
 ### Building with ENC28J60 Ethernet Shield
@@ -156,7 +156,7 @@ ls /dev/ttyACM*
 WSL does not automatically expose USB serial devices.
 You must attach the ST-Link device using `usbipd`.
 
-**1. Install usbipd on Windows**
+#### 1. Install usbipd on Windows
 
 From PowerShell (Admin):
 
@@ -164,13 +164,13 @@ From PowerShell (Admin):
 winget install usbipd
 ```
 
-**2. List USB devices**
+#### 2. List USB devices
 
 ```bash
 usbipd list
 ```
 
-**3. Attach device to WSL (look for ST-Link / STMicroelectronics)**
+#### 3. Attach device to WSL (look for ST-Link / STMicroelectronics)
 
 ```bash
 usbipd attach --busid <BUS_ID> --wsl
@@ -182,7 +182,7 @@ Example:
 usbipd attach --busid 1-4 --wsl
 ```
 
-**4. Verify in WSL**
+#### 4. Verify in WSL
 
 ```bash
 ls /dev/ttyACM*

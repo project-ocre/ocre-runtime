@@ -60,6 +60,7 @@ To build for the 32-bit `native_sim` variant on a 64-bit system, install `gcc-mu
 ```bash
 sudo apt install gcc-multilib
 ```
+
 **Note:** this is not required for 32-bit systems.
 
 ### Building with TAP Networking (Default)
@@ -69,6 +70,7 @@ To build native_sim with TAP networking:
 ```bash
 west build -p always -b native_sim/native/64 src/samples/supervisor/zephyr/
 ```
+
 Alternatively, the `native_sim` board could be used for supported 32-bit platforms.
 
 ### Building with NSOS Networking
@@ -78,6 +80,7 @@ To build native_sim with Native Sockets (NSOS):
 ```bash
 west build -p always -b native_sim/native/64 src/samples/supervisor/zephyr/ -- -DEXTRA_CONF_FILE=boards/overlay-nsos.conf
 ```
+
 Alternatively, the `native_sim` board could be used for supported 32-bit platforms.
 
 ## Running the Simulation
