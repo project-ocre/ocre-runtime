@@ -43,7 +43,7 @@ check_license_banner() {
 echo "Checking license banners."
 ERROR_FOUND=0
 for file in $(find . -type f \( -name 'CMakeLists.txt' -o -name '*.yaml' \
-    -o -name '*.yml' -o -name '*.awk' -o -name '*.conf' -o -name 'Kconfig*' \
+    -o -name '*.yml' -o -name '*.awk' -o -name '*.conf' -o -name 'Kconfig*' -o -name '*.mdlrc' \
     -o -name '.gitignore' -o -name '.gitmodules' -o -name '*.sh' -o -name '*.cmake' -o -name '*.py' \) \
     ! -path './tests/Unity/*' \
     ! -path './build/*' \
