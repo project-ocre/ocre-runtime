@@ -13,7 +13,11 @@ set(CMAKE_C_STANDARD 99)
 
 set(WAMR_BUILD_PLATFORM linux)
 
-include (src/samples/demo/demo_containers.cmake)
+option(OCRE_BUILD_DEMO_CONTAINERS "Build demo containers from ocre-sdk (requires WASI SDK)" ON)
+
+if(OCRE_BUILD_DEMO_CONTAINERS)
+    include (src/samples/demo/demo_containers.cmake)
+endif()
 
 # uthash
 add_subdirectory(src/uthash)
