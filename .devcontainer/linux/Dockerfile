@@ -42,10 +42,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean -y\
     && update-alternatives --install /usr/bin/python python /usr/bin/python3 50
 
-# Install wasi-sdk
-RUN mkdir /opt/wasi-sdk && \
-    curl -sSL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$WASI_SDK_VERSION/wasi-sdk-$WASI_SDK_VERSION.0-$(uname -m | sed s/aarch64/arm64/)-linux.tar.gz | \
-        tar zxvf - --strip-components=1 -C /opt/wasi-sdk
+# Install wasi-sdk (pre-built binaries available for x86_64 and arm64 only)
+RUN ARCH=$(uname -m); \
+    if [ "$ARCH" = "aarch64" ]; then ARCH=arm64; fi; \
+    if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "arm64" ]; then \
+        mkdir /opt/wasi-sdk && \
+        curl -sSL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$WASI_SDK_VERSION/wasi-sdk-$WASI_SDK_VERSION.0-${ARCH}-linux.tar.gz | \
+            tar zxvf - --strip-components=1 -C /opt/wasi-sdk; \
+    else \
+        mkdir -p /opt/wasi-sdk; \
+        echo "WASI-SDK not available for $(uname -m), skipping (use -DOCRE_BUILD_DEMO_CONTAINERS=OFF)"; \
+    fi
 
 FROM ocre-ci AS ocre-dev
 
