@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Get Started with Zephyr
 
 The samples we currently provide for Zephyr are the following. Check their specific instruction for
@@ -69,6 +74,7 @@ west update
 ```
 
 Now, clone Ocre runtime:
+
 ```sh
 git clone --recurse-submodules https://github.com/project-ocre/ocre-runtime.git
 ```

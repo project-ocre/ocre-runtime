@@ -1,3 +1,8 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
 [submodule "wasm-micro-runtime"]
 	path = wasm-micro-runtime
 	url = https://github.com/project-ocre/wasm-micro-runtime.git

@@ -110,10 +110,10 @@ struct ocre_context *ocre_context_create(const char *workdir)
 	return context;
 
 error:
-    if (context) {
-	    free(context->working_directory);
-    }
-    free(context);
+	if (context) {
+		free(context->working_directory);
+	}
+	free(context);
 
 	return NULL;
 };

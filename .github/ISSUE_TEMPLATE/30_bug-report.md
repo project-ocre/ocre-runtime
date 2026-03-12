@@ -1,19 +1,17 @@
 ---
 name: Bug report
-about: Create a report to help us improve Ocre 
+about: Create a report to help us improve Ocre
 title: ''
 labels: bug
 assignees: ''
 
 ---
 
-
 Please provide information requested in the template below as much as possible.
 
 #### Describe the bug
 
 A clear and concise description of the problem.
-
 
 #### Duplicate
 

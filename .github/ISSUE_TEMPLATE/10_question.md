@@ -1,6 +1,6 @@
 ---
 name: Question
-about: Ask a question about Ocre 
+about: Ask a question about Ocre
 title: ''
 labels: question
 assignees: ''

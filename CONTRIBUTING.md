@@ -1,4 +1,9 @@
-# Contributing to Ocre 
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
+# Contributing to Ocre
 
 The Ocre community shares the spirit of the [Apache Way](https://apache.org/theapacheway/)
 and believes in "Community over Code". We welcome any and all types of contributions
@@ -65,7 +70,7 @@ replace those parts with "REDACTED").
 
 The Ocre community takes security seriously. If you discover a security issue, please bring it to our attention right away!
 
-Please *DO NOT* file a public issue, instead send your report privately to [Ocre-TSC+owner@lists.lfedge.org](mailto:Ocre-TSC+owner@lists.lfedge.org). 
+Please *DO NOT* file a public issue, instead send your report privately to [Ocre-TSC+owner@lists.lfedge.org](mailto:Ocre-TSC+owner@lists.lfedge.org).
 
 ## Code contributions
 
@@ -79,8 +84,8 @@ that may be out of scope for the project.
 
 Not sure if that typo is worth a pull request? Found a bug and know how to fix
 it? Do it! We will appreciate it. We are always thrilled to receive pull requests.
-We do our best to process them quickly. When creating your PR, please tag relevant 
-maintainers from our [MAINTAINERS.md](https://github.com/project-ocre/ocre-runtime/blob/main/MAINTAINERS.md) file. 
+We do our best to process them quickly. When creating your PR, please tag relevant
+maintainers from our [MAINTAINERS.md](https://github.com/project-ocre/ocre-runtime/blob/main/MAINTAINERS.md) file.
 If your pull request is not accepted on the first try, don't get discouraged!
 
 ### Commit Messages

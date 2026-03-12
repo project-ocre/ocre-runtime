@@ -1,10 +1,15 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Description
 
 Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. List any dependencies that are required for this change.
 
 Also, please list any issue that this PR is intended to fix.
 
-- Fixes issue # 
+- Fixes issue #
 
 ## Type of change
 
@@ -19,12 +24,14 @@ Please delete options that are not relevant.
 - [ ] Test Coverage update
 
 # How Has This Been Tested?
-Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce. Please also list any relevant details for your test configuration including the following required details. 
+
+Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce. Please also list any relevant details for your test configuration including the following required details.
 
 **Test Configuration (required)**:
-* Host OS type, version, and arch: `Ubuntu 20.04 (arm64)`
-* Developer Board make & model: `ST Nucleo h723zg`
-* Board Tools Installed: `STM32CubeProgrammer`)
+
+- Host OS type, version, and arch: `Ubuntu 20.04 (arm64)`
+- Developer Board make & model: `ST Nucleo h723zg`
+- Board Tools Installed: `STM32CubeProgrammer`
 
 # Checklist:
 

@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Ocre CLI
 
 The ocre command line interface (CLI) is a powerful tool for interacting with the Ocre runtime. It provides a simple and intuitive way to manage and execute images within the Ocre environment.

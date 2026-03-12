@@ -33,7 +33,11 @@ void *user_realloc(void *ptr, size_t size)
 
 void *user_malloc(size_t size)
 {
-	return malloc(size);
+	/* Note that Zephyr does not use the C11 aligned_alloc(). The aligned_alloc
+	implementation here is just a wrapper around sys_heap_aligned_alloc which does not
+	have the `the size be an integral multiple of alignment` requirement and so can be used
+	without any checks. */
+	return aligned_alloc(8, size);
 }
 
 void user_free(void *ptr)

@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Zephyr Board: `native_sim`
 
 The **native_sim** board is a simulated Zephyr target that runs on your host Linux machine. It allows you to develop and test Zephyr applications without needing physical hardware. The native_sim board is particularly useful for rapid iteration, testing, and debugging.
@@ -6,13 +11,13 @@ For detailed information, see the [Zephyr Native Simulator Documentation](https:
 
 ## Architecture Support
 
-The **native_sim/native/64** (64-bit variant) is supported for the following Ocre samples:
+Both **native_sim/native/64** (64-bit) and **native_sim** (32-bit) variants are supported for the following Ocre samples:
 
 - **mini**
 - **demo**
 - **supervisor**
 
-**Note:** native_sim on 32-bit is not currently supported.
+**Note:** The 32-bit variant requires `gcc-multilib` to be installed on your host machine (see [Prerequisites](#prerequisites)) if you are running on a 64-bit system.
 
 ## Networking
 
@@ -50,6 +55,14 @@ boards/overlay-nsos.conf
 
 Start with [Getting Started with Zephyr](../../GetStartedZephyr.md) to get a working build environment.
 
+To build for the 32-bit `native_sim` variant on a 64-bit system, install `gcc-multilib` on your host machine:
+
+```bash
+sudo apt install gcc-multilib
+```
+
+**Note:** this is not required for 32-bit systems.
+
 ### Building with TAP Networking (Default)
 
 To build native_sim with TAP networking:
@@ -58,6 +71,8 @@ To build native_sim with TAP networking:
 west build -p always -b native_sim/native/64 src/samples/supervisor/zephyr/
 ```
 
+Alternatively, the `native_sim` board could be used for supported 32-bit platforms.
+
 ### Building with NSOS Networking
 
 To build native_sim with Native Sockets (NSOS):
@@ -65,6 +80,8 @@ To build native_sim with Native Sockets (NSOS):
 ```bash
 west build -p always -b native_sim/native/64 src/samples/supervisor/zephyr/ -- -DEXTRA_CONF_FILE=boards/overlay-nsos.conf
 ```
+
+Alternatively, the `native_sim` board could be used for supported 32-bit platforms.
 
 ## Running the Simulation
 
@@ -121,7 +138,7 @@ IPv4 unicast addresses (max 1):
 
 ## Memory Configuration
 
-The native_sim/native/64 variant includes enhanced memory configuration:
+Both `native_sim/native/64` and `native_sim` variant includes enhanced memory configuration:
 
 ```
 CONFIG_COMMON_LIBC_MALLOC_ARENA_SIZE=10485760  # 10 MB malloc arena
@@ -143,7 +160,7 @@ storage:    16 MB (for container images)
 
 ## Limitations
 
-- **64-bit only**: 32-bit native_sim is not supported
+- **32-bit requires gcc-multilib on 64-bit systems**: Install `gcc-multilib` on your machine before building the 32-bit variant
 - **Hardware peripherals**: No hardware-specific peripherals available (GPIO, sensors, etc.)
 
 ## References

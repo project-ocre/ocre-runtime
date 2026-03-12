@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Supervisor
 
 The Supervisor will run "ocre daemon" in background, being controlled by the ocre-cli command line (shell) tool. It by default will preload the following images,

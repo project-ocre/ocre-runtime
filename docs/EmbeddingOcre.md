@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Add Ocre Runtime to a custom Linux Application
 
 This document will guide you through the process of embedding Ocre Runtime into a custom Linux application. For integrating Ocre Runtime into a Zephyr application, please refer to the [Custom Zephyr Application](CustomZephyrApplication.md) documentation.

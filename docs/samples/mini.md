@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # mini sample
 
 This sample will create `hello-world.wasm` from the state information directory (`/lfs/ocre/images/hellow-world.wasm` if it does not exist. Then it will execute this container, which prints a nice ASCII art.

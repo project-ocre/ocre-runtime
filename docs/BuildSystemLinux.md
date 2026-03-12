@@ -1,3 +1,8 @@
+<!-- @copyright Copyright (c) contributors to Project Ocre,
+which has been established as Project Ocre a Series of LF Projects, LLC
+
+SPDX-License-Identifier: Apache-2.0 -->
+
 # Ocre Build System for Linux
 
 Ocre build system is based on CMake. This provides an easy way of embedding Ocre in diffrerent Linux applications,
@@ -9,11 +14,11 @@ However, for [memory leak checks](tests/LeakChecks.md) and [source code test cov
 
 This file described the generic configuration that is used by Ocre Library or the builds described above.
 
-### Configuration
+## Configuration
 
 This sections describes the build-time configuration honored by samples and tests in Linux.
 
-#### Version
+### Version
 
 There are several components of the Ocre version that gets compiled in the project.
 
@@ -24,12 +29,12 @@ If the file does not exist, and the source tree is not a valid git repository, t
 
 Check [Versioning](Versioning.md) documentation for more information.
 
-#### Ocre build Configuration
+### Ocre build Configuration
 
 The default Ocre build configuration is in the file `src/platform/posix/include/ocre/platform/config.h`.
 These options should not be changed by the user and the defaults should be used.
 
-#### build-time variables
+### build-time variables
 
 Some relevant build-time variables are described below:
 
@@ -37,7 +42,7 @@ Some relevant build-time variables are described below:
 - `OCRE_PRELOADED_IMAGES`: List of absolute paths images to be added to the state information directory.
 - `OCRE_SDK_PRELOADED_IMAGES`: List of ocre-sdk submodule target images to be added to the state information directory.
 
-#### State information directory
+### State information directory
 
 In Linux, the [state information](StateInformation.md) is usually stored by default in `/var/run/ocre` if Ocre is installed as a system service. For tests, these are usually stored relative to the build directory.
 
