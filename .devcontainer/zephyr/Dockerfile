@@ -42,6 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv \
     python3-tk \
     sudo \
+    usbutils \
     wget \
     xz-utils \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \

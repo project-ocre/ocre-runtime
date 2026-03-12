@@ -29,6 +29,22 @@ jobs:
       - name: Create wasm directory
         run: mkdir /var/ocre-ci-files/wasm
 
+      - name: Reset USB Connection
+        run: sudo usbreset STLINK-V3 # Product name for the b_u585i_iot02a, may have to update if we add additional STM boards to the workflow
+
+  setup-container:
+    name: Setup Zephyr Container
+    runs-on: zephyr-xlarge-runner
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
+      volumes:
+        - /dev/bus/usb:/dev/bus/usb
+      options: --user root --privileged --device=/dev/ttyACM0
+
+    steps:
+      - name: Reset USB Connection
+        run: usbreset STLINK-V3 # Product name for the b_u585i_iot02a, may have to update if we add additional STM boards to the workflow
+
   build-wasm-files:
     name: Build .wasm Files
     needs: setup-local-runner
@@ -112,7 +128,7 @@ jobs:
 
   mini-flash:
     name: Mini sample build and flash
-    needs: artifact-wasm-files
+    needs: [artifact-wasm-files, setup-container]
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
@@ -173,7 +189,7 @@ jobs:
 
   demo-flash:
     name: Demo sample build and flash
-    needs: [artifact-wasm-files, mini-test]
+    needs: [artifact-wasm-files, mini-test, setup-container]
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
@@ -234,7 +250,7 @@ jobs:
 
   build-flash-supervisor-set-1:
     name: Build and Flash Supervisor with Image Set 1
-    needs: [artifact-wasm-files, demo-test]
+    needs: [artifact-wasm-files, demo-test, setup-container]
     runs-on: zephyr-xlarge-runner
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-zephyr:${{ inputs.devcontainer-tag }}
