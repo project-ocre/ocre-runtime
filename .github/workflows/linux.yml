@@ -47,6 +47,20 @@ jobs:
       - name: Delete build directory
         run: rm -rf build
 
+      - name: Configure (system tests IPC)
+        run: mkdir build && cd build && cmake ../tests/system/posix-ipc
+
+      - name: Build (system tests IPC)
+        working-directory: build
+        run: make
+
+      - name: Run (system tests IPC)
+        working-directory: build
+        run: make run-systests
+
+      - name: Delete build directory
+        run: rm -rf build
+
       - name: Configure (leak checks)
         run: mkdir build && cd build && cmake ../tests/leaks
 

@@ -30,6 +30,8 @@ cd tests/system/posix/build
 
 Configure and build the cmake project. Note that `..` points to `tests/system/posix`:
 
+Alternatively, the IPC system tests can be build in the directory `tests/system/posix-ipc`. Note that only `test_context` and `test_container` are available in IPC mode.
+
 ```sh
 cmake ..
 make
