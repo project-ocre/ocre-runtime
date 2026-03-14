@@ -80,7 +80,9 @@ RUN . /opt/zephyr-venv/bin/activate && \
     west sdk install --install-base /opt -t \
         x86_64-zephyr-elf \
         aarch64-zephyr-elf \
-        arm-zephyr-eabi
+        arm-zephyr-eabi \
+        riscv64-zephyr-elf
+
 
 FROM base AS ocre-ci
 
