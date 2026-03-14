@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0 -->
 
 Devcontainers are tools that allows you to create and manage isolated development environments in containers. It provides a consistent and reproducible development environment across different machines and operating systems.
 
-It is the fastest and easiest way to develop Ocre in Linux, macOS, and Windows. As it already comes preinstalled with all the necessary tools for building Ocre and the samples, including wasi-sdk.
+It is the fastest and easiest way to develop Ocre in Linux, macOS, and Windows. As it already comes preinstalled with all the necessary tools for building Ocre and the samples, including wasi-sysroot.
 
 More information can be found at [the official Devcontainers documentation](https://containers.dev/).
 
