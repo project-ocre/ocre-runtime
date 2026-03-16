@@ -26,7 +26,7 @@ int sha256_file(const char *path, char *hash)
 
 	int fd = open(path, O_RDONLY);
 	if (fd < 0) {
-		return -1;
+		return -2;
 	}
 
 	struct stat finfo;
@@ -57,7 +57,6 @@ int sha256_file(const char *path, char *hash)
 		}
 
 		if (!bytes_read) {
-			ret = 0;
 			break;
 		}
 
@@ -65,6 +64,8 @@ int sha256_file(const char *path, char *hash)
 
 		total_bytes_read += bytes_read;
 	}
+
+	ret = 0;
 
 	sha256_finalize(&buff);
 	sha256_read_hex(&buff, hash);
