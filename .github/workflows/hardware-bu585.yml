@@ -29,6 +29,9 @@ jobs:
       - name: Create wasm directory
         run: mkdir /var/ocre-ci-files/wasm
 
+      - name: Reset USB Connection
+        run: sudo usbreset STLINK-V3 # Product name for the b_u585i_iot02a, may have to update if we add additional STM boards to the workflow
+
   build-wasm-files:
     name: Build .wasm Files
     needs: setup-local-runner
@@ -120,8 +123,7 @@ jobs:
         - /var/ocre-ci-files/:/var/ocre-ci-files/
         - /usr/local/STMicroelectronics/:/usr/local/STMicroelectronics/
         - /github/home/STMicroelectronics/:/github/home/STMicroelectronics/
-        - /dev/bus/usb:/dev/bus/usb
-      options: --user root --privileged --device=/dev/ttyACM0
+      options: --user root --device=/dev/ttyACM0 --device=/dev/bus
 
     steps:
       - name: Clean workspace
@@ -181,8 +183,7 @@ jobs:
         - /var/ocre-ci-files/:/var/ocre-ci-files/
         - /usr/local/STMicroelectronics/:/usr/local/STMicroelectronics/
         - /github/home/STMicroelectronics/:/github/home/STMicroelectronics/
-        - /dev/bus/usb:/dev/bus/usb
-      options: --user root --privileged --device=/dev/ttyACM0
+      options: --user root --device=/dev/ttyACM0 --device=/dev/bus
 
     steps:
       - name: Clean workspace
@@ -242,8 +243,7 @@ jobs:
         - /var/ocre-ci-files/:/var/ocre-ci-files/
         - /usr/local/STMicroelectronics/:/usr/local/STMicroelectronics/
         - /github/home/STMicroelectronics/:/github/home/STMicroelectronics/
-        - /dev/bus/usb:/dev/bus/usb
-      options: --user root --privileged --device=/dev/ttyACM0
+      options: --user root --device=/dev/ttyACM0 --device=/dev/bus
 
     steps:
       - name: Clean workspace
