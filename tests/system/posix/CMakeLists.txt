@@ -10,7 +10,7 @@ set(CMAKE_C_COMPILER /usr/bin/clang)
 list(APPEND OCRE_SDK_PRELOADED_IMAGES
     "return0.wasm"
     "return1.wasm"
-    "sleep_5_return_0.wasm"
+    "sleep5_return0.wasm"
 )
 
 if (SANITIZER)
