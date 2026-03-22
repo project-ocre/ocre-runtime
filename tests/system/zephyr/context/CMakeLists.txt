@@ -12,7 +12,7 @@ list(APPEND EXTRA_DTC_OVERLAY_FILE fstab.overlay)
 list(APPEND OCRE_SDK_PRELOADED_IMAGES
     "return0.wasm"
     "return1.wasm"
-    "sleep_5_return_0.wasm"
+    "sleep5_return0.wasm"
     "hello-world.wasm"
     "filesystem.wasm"
     "blinky.wasm"

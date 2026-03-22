@@ -9,15 +9,18 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/images)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/containers)
 
 if(OCRE_SDK_PRELOADED_IMAGES)
+    string(REPLACE ".wasm" "" OCRE_SDK_PRELOADED_IMAGES_STR "${OCRE_SDK_PRELOADED_IMAGES}")
+
     include(ExternalProject)
     ExternalProject_Add(
         OcreSampleContainers
+        SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/../ocre-sdk"
         PREFIX "${CMAKE_CURRENT_BINARY_DIR}/OcreSampleContainers"
+        BUILD_COMMAND cmake --build . -- ${OCRE_SDK_PRELOADED_IMAGES_STR}
         BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/OcreSampleContainers/build"
         BUILD_ALWAYS TRUE
         INSTALL_COMMAND ""
-        SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/../ocre-sdk"
-        CMAKE_ARGS "-DWAMR_ROOT_DIR=${CMAKE_CURRENT_LIST_DIR}/../wasm-micro-runtime" "-DCMAKE_VERBOSE_MAKEFILE=ON"
+        CMAKE_ARGS "-DWAMR_ROOT:STRING=${CMAKE_CURRENT_LIST_DIR}/../wasm-micro-runtime"
     )
 endif()
 
@@ -31,7 +34,7 @@ foreach(image IN ITEMS ${OCRE_SDK_PRELOADED_IMAGES})
     message(STATUS "Adding sdk sample '${image}' to preloaded images")
     add_custom_target(${image}
         COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_BINARY_DIR}/OcreSampleContainers/build/${image}
+            ${CMAKE_CURRENT_BINARY_DIR}/OcreSampleContainers/build/dist/${image}
             ${CMAKE_CURRENT_BINARY_DIR}/var/lib/ocre/images/${image}
         DEPENDS OcreSampleContainers
     )

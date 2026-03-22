@@ -44,26 +44,10 @@ jobs:
     strategy:
       matrix:
         sample:
-          - name: generic-hello-world
-            path: generic/hello-world
-            filename: hello-world.wasm
-          - name: generic-subscriber
-            path: generic/messaging/subscriber
-            filename: subscriber.wasm
-          - name: generic-publisher
-            path: generic/messaging/publisher
-            filename: publisher.wasm
-          - name: generic-blinky
-            path: generic/blinky
-            filename: blinky.wasm
-
-          # Examples for future images to add
-          # - name: generic-filesystem-full
-          #   path: generic/filesystem-full
-          #   filename: filesystem-full.wasm
-          # - name: b_u585i-modbus-server
-          #   path: board_specific/b_u585i_iot02a/modbus-server
-          #   filename: modbus-server.wasm
+          - hello-world
+          - subscriber
+          - publisher
+          - blinky
 
     steps:
       - name: Cleanup workspace
@@ -80,26 +64,17 @@ jobs:
 
       - name: Build WASM sample
         run: |
-          SAMPLE_DIR=$GITHUB_WORKSPACE/ocre-runtime/ocre-sdk/${{ matrix.sample.path }}
-          if [ ! -d "$SAMPLE_DIR" ]; then
-            echo "Directory not found: $SAMPLE_DIR"
-            exit 1
-          fi
-
-          mkdir -p "$SAMPLE_DIR/build"
-          cd "$SAMPLE_DIR/build"
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake
-          make
-
-        env:
-          WASI_SDK_PATH: /opt/wasi-sdk
+          mkdir -p "ocre-runtime/ocre-sdk/build"
+          cd "ocre-runtime/ocre-sdk/build"
+          cmake ..
+          make ${{ matrix.sample }}
 
       # Saving files to the runner so avoid uploading .wasm files as artifacts individually, uploaded in separate step
       - name: Save .wasm artifact locally
         if: always()
         run: |
-          mkdir /var/ocre-ci-files/wasm/${{ matrix.sample.name }}/
-          cp "ocre-runtime/ocre-sdk/${{ matrix.sample.path }}/build/${{ matrix.sample.filename }}" "/var/ocre-ci-files/wasm/${{ matrix.sample.name }}/${{ matrix.sample.filename }}"
+          mkdir /var/ocre-ci-files/wasm/${{ matrix.sample }}/
+          cp "ocre-runtime/ocre-sdk/build/dist/${{ matrix.sample }}.wasm" "/var/ocre-ci-files/wasm/${{ matrix.sample }}/${{ matrix.sample }}.wasm"
 
   artifact-wasm-files:
     name: Artifact built .wasm Files
