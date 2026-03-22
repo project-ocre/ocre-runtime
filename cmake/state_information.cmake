@@ -20,6 +20,7 @@ if(OCRE_SDK_PRELOADED_IMAGES)
         BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/OcreSampleContainers/build"
         BUILD_ALWAYS TRUE
         INSTALL_COMMAND ""
+        CMAKE_ARGS "-DWAMR_ROOT:STRING=${CMAKE_CURRENT_LIST_DIR}/../wasm-micro-runtime"
     )
 endif()
 
