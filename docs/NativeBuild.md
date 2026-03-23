@@ -20,26 +20,42 @@ Our reference system is a Ubuntu 24.04 LTS, however these instructions can be ea
 ### Build Tools
 
 Ocre requires CMake and a C compiler such as GCC. For full testing support, we also use clang.
-If we are checking out the Ocre repository, we also need Git to clone Ocre Runtime, and Wget to unpack wasi-sysroot. Install all with:
+If we are checking out the Ocre repository, we also need Git to clone Ocre Runtime, and Wget to unpack the WASI-SDK. Install all with:
 
 ```sh
 sudo apt update -y
-sudo apt install -y apt install build-essential git cmake clang wget libclang-rt-dev-wasm32 lld
+sudo apt install -y apt install build-essential git cmake clang wget
 ```
 
-### WASI Sysroot
+### WASI-SDK
 
-For building WASM/WASI containers (including the test containers), we need the WASI Sysroot.
-Download wasi-sysroot from [the WASI SDK releases page](https://github.com/WebAssembly/wasi-sdk/releases) for your platform. The current recommended version is `wasi-sysroot-29`.
+For building WASM/WASI containers (including the test containers), we need the WASI-SDK.
+Download a WASI-P1 compatible WASI-SDK from [the WASI SDK releases page](https://github.com/WebAssembly/wasi-sdk/releases) for your platform. The current recommended version is `wasi-sdk-29`.
 
-This is usually installed under `/opt/wasi-sysroot` for default easy usage without the need to set environment variables.
+This is usually installed under `/opt/wasi-sdk` for default easy usage without the need to set environment variables.
 
-Download, unpack and install wasi-sysroot:
+Download, unpack and install WASI SDK. Note that these are Linux binary packages. Make sure you replace `amd_64` with `arm64` in case your host is ARM64 based:
 
 ```sh
-wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-29/wasi-sysroot-29.0.tar.gz
-tar -xzf wasi-sysroot-29.0.tar.gz
-sudo mv wasi-sysroot-29.0 /opt/wasi-sysroot
+wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-29/wasi-sdk-29.0-amd_64-linux.tar.gz
+tar -xzf wasi-sdk-29.0-amd_64-linux.tar.gz
+sudo mv wasi-sdk-29.0-amd_64-linux /opt/wasi-sdk
+```
+
+You can check that WASI SDK is properly installed by checking the WASI clang version:
+
+```sh
+/opt/wasi-sdk/bin/clang --version
+```
+
+The output should be similar to:
+
+```
+clang version 21.1.4-wasi-sdk (https://github.com/llvm/llvm-project 222fc11f2b8f25f6a0f4976272ef1bb7bf49521d)
+Target: wasm32-unknown-wasi
+Thread model: posix
+InstalledDir: /opt/wasi-sdk/bin
+Configuration file: /opt/wasi-sdk/bin/clang.cfg
 ```
 
 ## Linux
