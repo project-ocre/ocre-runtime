@@ -32,10 +32,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gperf \
     gpg \
     jq \
-    libclang-rt-dev-wasm32 \
     libmagic1 \
     libsdl2-dev \
-    lld \
     llvm \
     make \
     net-tools \
@@ -53,10 +51,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean -y\
     && update-alternatives --install /usr/bin/python python /usr/bin/python3 50
 
-# Install wasi-sysroot
-RUN mkdir /opt/wasi-sysroot && \
-    curl -sSL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$WASI_SDK_VERSION/wasi-sysroot-$WASI_SDK_VERSION.0.tar.gz | \
-        tar zxvf - --strip-components=1 -C /opt/wasi-sysroot
+# Install wasi-sdk
+RUN mkdir /opt/wasi-sdk && \
+    curl -sSL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$WASI_SDK_VERSION/wasi-sdk-$WASI_SDK_VERSION.0-$(uname -m | sed s/aarch64/arm64/)-linux.tar.gz | \
+        tar zxvf - --strip-components=1 -C /opt/wasi-sdk
 
 RUN python -m venv /opt/zephyr-venv && \
     . /opt/zephyr-venv/bin/activate && \
