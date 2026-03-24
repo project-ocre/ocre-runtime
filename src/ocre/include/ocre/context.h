@@ -129,12 +129,16 @@ struct ocre_container_args {
  * @param container_id The ID to assign to the container. Can be NULL, in which case a random ID will be generated
  * @param detached Whether the container should be detached (run in the background) or not
  * @param arguments The container arguments to pass to the container. Can be NULL
+ * @param stdin_fd The file descriptor to use for stdin. Can be -1 to use the default (STDIN_FILENO)
+ * @param stdout_fd The file descriptor to use for stdout. Can be -1 to use the default (STDOUT_FILENO)
+ * @param stderr_fd The file descriptor to use for stderr. Can be -1 to use the default (STDERR_FILENO)
  *
  * @return A pointer to the newly created container, or NULL on failure
  */
 struct ocre_container *ocre_context_create_container(struct ocre_context *context, const char *image,
 						     const char *const runtime, const char *container_id, bool detached,
-						     const struct ocre_container_args *arguments);
+						     const struct ocre_container_args *arguments, int stdin_fd,
+						     int stdout_fd, int stderr_fd);
 
 /**
  * @brief Get a container by its ID

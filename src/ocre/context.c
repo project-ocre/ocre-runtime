@@ -177,7 +177,8 @@ int ocre_context_destroy(struct ocre_context *context)
 
 struct ocre_container *ocre_context_create_container(struct ocre_context *context, const char *image,
 						     const char *const runtime, const char *container_id, bool detached,
-						     const struct ocre_container_args *arguments)
+						     const struct ocre_container_args *arguments, int stdin_fd,
+						     int stdout_fd, int stderr_fd)
 {
 	const char *computed_container_id = NULL;
 	struct ocre_container *container = NULL;
@@ -285,7 +286,7 @@ struct ocre_container *ocre_context_create_container(struct ocre_context *contex
 	/* Create the container */
 
 	container = ocre_container_create(image_path, container_workdir, runtime, computed_container_id, detached,
-					  arguments);
+					  arguments, stdin_fd, stdout_fd, stderr_fd);
 	if (!container) {
 		LOG_ERR("Failed to create container %s: errno=%d", computed_container_id, errno);
 		goto error;
