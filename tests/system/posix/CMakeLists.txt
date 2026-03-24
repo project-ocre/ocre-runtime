@@ -11,6 +11,8 @@ list(APPEND OCRE_SDK_PRELOADED_IMAGES
     "return0.wasm"
     "return1.wasm"
     "sleep5_return0.wasm"
+    "print_args.wasm"
+    "cat.wasm"
 )
 
 if (SANITIZER)
@@ -36,6 +38,7 @@ list(APPEND OCRE_TESTS
     ocre
     context
     container
+    input_output
 )
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src/ocre/var/lib/ocre/images)
@@ -74,4 +77,5 @@ add_custom_target(run-systests
         test_ocre.log
         test_context.log
         test_container.log
+        test_input_output.log
 )
