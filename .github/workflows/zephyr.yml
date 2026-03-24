@@ -27,7 +27,6 @@ jobs:
           - pico_plus2/rp2350b/m33
           - native_sim/native/64
           - b_u585i_iot02a
-          - qemu_riscv64
         app:
           - mini
           - demo
