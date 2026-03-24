@@ -29,8 +29,10 @@ void setUp(void)
 	ocre_initialize(NULL);
 	context = ocre_create_context(NULL);
 
-	hello_world = ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "hello", false, NULL);
-	blinky = ocre_context_create_container(context, "blinky.wasm", "wamr/wasip1", NULL, true, &args);
+	hello_world = ocre_context_create_container(context, "hello-world.wasm", "wamr/wasip1", "hello", false, NULL,
+						    STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO);
+	blinky = ocre_context_create_container(context, "blinky.wasm", "wamr/wasip1", NULL, true, &args, STDIN_FILENO,
+					       STDOUT_FILENO, STDERR_FILENO);
 }
 
 void tearDown(void)

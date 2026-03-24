@@ -36,7 +36,8 @@ int main(int argc, char *argv[])
 	}
 
 	struct ocre_container *hello_world =
-		ocre_context_create_container(ocre, "hello-world.wasm", "wamr/wasip1", NULL, false, &args);
+		ocre_context_create_container(ocre, "hello-world.wasm", "wamr/wasip1", NULL, false, &args, STDIN_FILENO,
+					      STDOUT_FILENO, STDERR_FILENO);
 
 	if (!hello_world) {
 		fprintf(stderr, "Failed to create container\n");
@@ -55,8 +56,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	struct ocre_container *blinky =
-		ocre_context_create_container(ocre, "blinky.wasm", "wamr/wasip1", NULL, true, &args);
+	struct ocre_container *blinky = ocre_context_create_container(
+		ocre, "blinky.wasm", "wamr/wasip1", NULL, true, &args, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO);
 
 	if (!blinky) {
 		fprintf(stderr, "Failed to create container\n");
@@ -91,16 +92,16 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	struct ocre_container *subscriber =
-		ocre_context_create_container(ocre, "subscriber.wasm", "wamr/wasip1", NULL, true, &args);
+	struct ocre_container *subscriber = ocre_context_create_container(
+		ocre, "subscriber.wasm", "wamr/wasip1", NULL, true, &args, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO);
 
 	if (!subscriber) {
 		fprintf(stderr, "Failed to create container\n");
 		return 1;
 	}
 
-	struct ocre_container *publisher =
-		ocre_context_create_container(ocre, "publisher.wasm", "wamr/wasip1", NULL, true, &args);
+	struct ocre_container *publisher = ocre_context_create_container(
+		ocre, "publisher.wasm", "wamr/wasip1", NULL, true, &args, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO);
 
 	if (!publisher) {
 		fprintf(stderr, "Failed to create container\n");

@@ -218,12 +218,11 @@ static int runtime_deinit(void)
 }
 
 static void *instance_create(const char *container_id, const char *img_path, const char *workdir,
-			     const char **capabilities, const char **argv, const char **envp, const char **mounts)
+			     const char **capabilities, const char **argv, const char **envp, const char **mounts,
+			     int stdin_fd, int stdout_fd, int stderr_fd)
 {
 	struct wamr_context *context = NULL;
-	// char **dir_map_list = NULL;
 	char **new_dir_map_list = NULL;
-	// size_t dir_map_list_len = 0;
 
 	if (!img_path) {
 		LOG_ERR("Invalid arguments");
@@ -401,8 +400,9 @@ static void *instance_create(const char *container_id, const char *img_path, con
 		context->dir_map_list[context->dir_map_list_len] = NULL;
 	}
 
-	wasm_runtime_set_wasi_args(context->module, NULL, 0, (const char **)context->dir_map_list,
-				   context->dir_map_list_len, envp, envn, context->argv, argc + 1);
+	wasm_runtime_set_wasi_args_ex(context->module, NULL, 0, (const char **)context->dir_map_list,
+				      context->dir_map_list_len, envp, envn, context->argv, argc + 1, stdin_fd,
+				      stdout_fd, stderr_fd);
 
 	return context;
 

@@ -216,7 +216,8 @@ int cmd_container_create_run(struct ocre_context *ctx, const char *argv0, int ar
 	};
 
 	struct ocre_container *container =
-		ocre_context_create_container(ctx, argv[optind], runtime, container_id, detached, &arguments);
+		ocre_context_create_container(ctx, argv[optind], runtime, container_id, detached, &arguments,
+					      STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO);
 
 	if (!container) {
 		fprintf(stderr, "Failed to create container\n");
