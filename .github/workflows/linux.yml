@@ -5,6 +5,9 @@
 
 name: Linux
 
+permissions:
+  pull-requests: write
+
 on:
   workflow_call:
     inputs:
@@ -62,14 +65,22 @@ jobs:
 
       - name: Build and run (source coverage)
         working-directory: build
-        run: make
+        run: make coverage report.md
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: ocre-coverage
           include-hidden-files: true
-          path: build/report
+          path: build/coverage
+
+      - name: Report code coverage
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          message: |
+            ```
+            $(cat build/report.txt)
+            ```
 
       - name: Delete build directory
         run: rm -rf build
