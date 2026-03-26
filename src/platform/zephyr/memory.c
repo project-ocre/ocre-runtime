@@ -29,7 +29,9 @@ void *user_realloc(void *ptr, size_t size)
 
 #else
 
+#ifndef CONFIG_SOC_POSIX
 #warning CONFIG_SHARED_MULTI_HEAP is not defined. Using internal RAM
+#endif
 
 void *user_malloc(size_t size)
 {
