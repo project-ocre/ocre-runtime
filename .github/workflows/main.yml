@@ -81,3 +81,11 @@ jobs:
     secrets: inherit
     with:
       devcontainer-tag: ${{ needs.zephyr-devcontainer.outputs.devcontainer-tag }}
+
+  hardware-raspberry_pi:
+    name: Hardware Raspberry Pi 5
+    needs: 
+      - linux
+    uses: ./.github/workflows/hardware-rp5.yml
+    secrets: inherit
+      
