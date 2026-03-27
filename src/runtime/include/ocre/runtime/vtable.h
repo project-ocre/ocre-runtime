@@ -72,11 +72,15 @@ struct ocre_runtime_vtable {
 	 * @param envp A NULL-terminated array of environment variables to be passed to the
 	 * container
 	 * @param mounts Mount points for the runtime instance
+	 * @param stdin_fd The file descriptor to use for stdin. Should be valid and open
+	 * @param stdout_fd The file descriptor to use for stdout. Should be valid and open
+	 * @param stderr_fd The file descriptor to use for stderr. Should be valid and open
 	 *
 	 * @return Pointer to the runtime context on success, NULL on failure
 	 */
 	void *(*create)(const char *container_id, const char *img_path, const char *workdir, const char **capabilities,
-			const char **argv, const char **envp, const char **mounts);
+			const char **argv, const char **envp, const char **mounts, int stdin_fd, int stdout_fd,
+			int stderr_fd);
 
 	/**
 	 * @brief Destroy a runtime instance

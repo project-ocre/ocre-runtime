@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
@@ -145,11 +146,22 @@ static const char *ocre_find_best_matching_runtime(const char *image)
 
 struct ocre_container *ocre_container_create(const char *img_path, const char *workdir, const char *runtime,
 					     const char *container_id, bool detached,
-					     const struct ocre_container_args *arguments)
+					     const struct ocre_container_args *arguments, int stdin_fd, int stdout_fd,
+					     int stderr_fd)
 {
 	int rc;
 	const char **capabilities = NULL;
 	const char **mounts = NULL;
+
+	if (stdin_fd < 0) {
+		stdin_fd = STDIN_FILENO;
+	}
+	if (stdout_fd < 0) {
+		stdout_fd = STDOUT_FILENO;
+	}
+	if (stderr_fd < 0) {
+		stderr_fd = STDERR_FILENO;
+	}
 
 	if (!runtime) {
 		runtime = ocre_find_best_matching_runtime(img_path);
@@ -266,9 +278,9 @@ struct ocre_container *ocre_container_create(const char *img_path, const char *w
 		goto error_mutex;
 	}
 
-	container->runtime_context =
-		container->runtime->create(container_id, img_path, workdir, capabilities,
-					   (const char **)container->argv, (const char **)container->envp, mounts);
+	container->runtime_context = container->runtime->create(
+		container_id, img_path, workdir, capabilities, (const char **)container->argv,
+		(const char **)container->envp, mounts, stdin_fd, stdout_fd, stderr_fd);
 	if (!container->runtime_context) {
 		LOG_ERR("Failed to create container");
 		goto error_cond;

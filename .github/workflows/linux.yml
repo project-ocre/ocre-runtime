@@ -57,19 +57,25 @@ jobs:
       - name: Delete build directory
         run: rm -rf build
 
-      - name: Configure (source coverage)
+      - name: Configure (test coverage)
         run: mkdir build && cd build && cmake ../tests/coverage
 
-      - name: Build and run (source coverage)
+      - name: Build and run (test coverage)
         working-directory: build
-        run: make
+        run: make coverage report.md
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: ocre-coverage
           include-hidden-files: true
-          path: build/report
+          path: build/coverage
+
+      - name: Report code coverage
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_WRITE_PR }}
+          path: build/report.md
 
       - name: Delete build directory
         run: rm -rf build
