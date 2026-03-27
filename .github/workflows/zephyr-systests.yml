@@ -29,6 +29,7 @@ jobs:
           - lib
           - ocre
           - context
+          - input_output
     steps:
       - name: Clean other workspace
         run: rm -rf ../.west
