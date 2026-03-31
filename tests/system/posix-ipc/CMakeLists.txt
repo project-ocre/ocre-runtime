@@ -5,14 +5,14 @@
 
 cmake_minimum_required(VERSION 3.20.0)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # set(CMAKE_C_COMPILER /usr/bin/clang)
 
 list(APPEND OCRE_SDK_PRELOADED_IMAGES
     "return0.wasm"
     "return1.wasm"
-    "sleep5_return0.wasm"
-    "print_args.wasm"
-    "cat.wasm"
+    "sleep_5_return_0.wasm"
 )
 
 if (SANITIZER)
@@ -21,7 +21,7 @@ if (SANITIZER)
 )
 endif()
 
-project(OcreSystemTestPosix)
+project(OcreSystemTestPosixIPC)
 
 add_subdirectory(../../.. ocre)
 
@@ -34,11 +34,8 @@ target_include_directories(Unity PUBLIC
 )
 
 list(APPEND OCRE_TESTS
-    lib
-    ocre
     context
     container
-    input_output
 )
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src/ocre/var/lib/ocre/images)
@@ -47,15 +44,16 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src/ocre/var/lib/ocre/containers
 foreach(test ${OCRE_TESTS})
     add_executable(test_${test}
         ../${test}.c
+        setup.c
     )
 
-    set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/../ocre.c PROPERTIES COMPILE_FLAGS
-        -DOCRE_TEST_OTHER_CONTEXT_PATH=\\"./othercontext\\"
+    set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/../${test}.c PROPERTIES COMPILE_FLAGS
+        "-DOCRE_TEST_OTHER_CONTEXT_PATH=\\\"./othercontext\\\" -DtearDown=test_tearDown -DsetUp=test_setUp"
     )
 
     target_link_libraries(test_${test}
         OcreCommon
-        OcreCore
+        OcreClient
         Unity
     )
 
@@ -73,9 +71,6 @@ endforeach()
 add_custom_target(run-systests
     COMMAND python3 ${CMAKE_CURRENT_LIST_DIR}/../../Unity/auto/unity_test_summary.py ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS
-        test_lib.log
-        test_ocre.log
         test_context.log
         test_container.log
-        test_input_output.log
 )
