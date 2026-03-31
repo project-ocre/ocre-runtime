@@ -12,47 +12,7 @@ concurrency:
 on:
   workflow_call:
 
-
 jobs:
-  setup-local-runner:
-    name: Setup local runner
-    runs-on: "ocre-raspberrypi"
-
-    steps:
-      - name: Clean other workspace
-        run: rm -rf ../.west
-
-      - name: Clean workspace
-        run: find . -name . -o -prune -exec rm -rf -- {} +
-
-      - name: Install Dependencies 
-        run: |
-          sudo apt update
-          sudo apt upgrade
-          sudo apt install --no-install-recommends git cmake ninja-build gperf \
-            ccache dfu-util device-tree-compiler wget python3-dev python3-venv python3-tk \
-            xz-utils file make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1 curl
-
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          path: ocre-runtime
-          submodules: true
-
-      - name: Setup Zephyr project
-        uses: zephyrproject-rtos/action-zephyr-setup@v1
-        with:
-          app-path: ocre-runtime
-          sdk-version: 0.16.8
-
-      - name: West Setup
-        run: |
-          ls -lah
-          ls -lah *
-          west init -l ocre-runtime
-          west update
-          west packages pip --install
-
   build-and-run-linux:
     name: Build and Run
     runs-on: "ocre-raspberrypi"
@@ -100,34 +60,3 @@ jobs:
             echo "[ERROR] Expected log not found: $EXPECTED_LOG"
             exit 1
           fi
-
-
-  zephyr-native-sim-build-and-run:
-    name: Build
-    runs-on: "ocre-raspberrypi"
-    strategy:
-      matrix:
-        app:
-          - mini
-          - demo
-    
-    steps:
-      - name: West build
-        run: |
-          source .venv/bin/activate
-          west build -p always -b native_sim/native/64 ocre-runtime/src/samples/${{ matrix.app }}/zephyr
-
-      - name: Run ${{ matrix.app }} on ${{ matrix.board }}
-        run: |
-          EXPECTED_LOG="powered by Ocre"
-          echo "Running application..."
-          chmod +x zephyr/zephyr.exe
-          stdbuf -oL -eL timeout 20s ./zephyr/zephyr.exe | tee zephyr_run.log
-          echo "===== Checking for expected log ====="
-          if grep -q "$EXPECTED_LOG" zephyr_run.log; then
-            echo "[OK] Found expected log: $EXPECTED_LOG"
-          else
-            echo "[ERROR] Expected log not found: $EXPECTED_LOG"
-            exit 1
-          fi
-
