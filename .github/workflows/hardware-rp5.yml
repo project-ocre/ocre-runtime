@@ -1,0 +1,62 @@
+# @copyright Copyright (c) contributors to Project Ocre,
+# which has been established as Project Ocre a Series of LF Projects, LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Hardware Checks (Raspberry Pi 5)
+
+concurrency:
+  group: pr-workflows
+  cancel-in-progress: false
+
+on:
+  workflow_call:
+
+jobs:
+  build-and-run-linux:
+    name: Build and Run
+    runs-on: "ocre-raspberrypi"
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Delete build directory
+        run: rm -rf build
+
+      - name: Configure
+        run: mkdir build && cd build && cmake ..
+
+      - name: Build
+        working-directory: build
+        run: make
+
+      - name: Run mini
+        working-directory: build
+        run: |
+          EXPECTED_LOG="powered by Ocre"
+          echo "Running application..."
+          stdbuf -oL -eL timeout 20s ./src/samples/mini/posix/ocre_mini | tee linux_run.log
+          echo "===== Checking for expected log ====="
+          if grep -q "$EXPECTED_LOG" linux_run.log; then
+            echo "[OK] Found expected log: $EXPECTED_LOG"
+          else
+            echo "[ERROR] Expected log not found: $EXPECTED_LOG"
+            exit 1
+          fi
+
+      - name: Run demo
+        working-directory: build
+        run: |
+          EXPECTED_LOG="Demo completed successfully"
+          echo "Running application..."
+          stdbuf -oL -eL timeout 40s ./src/samples/demo/posix/ocre_demo | tee linux_run.log
+          echo "===== Checking for expected log ====="
+          if grep -q "$EXPECTED_LOG" linux_run.log; then
+            echo "[OK] Found expected log: $EXPECTED_LOG"
+          else
+            echo "[ERROR] Expected log not found: $EXPECTED_LOG"
+            exit 1
+          fi

@@ -5,6 +5,10 @@
 
 name: Linux
 
+concurrency:
+  group: pr-workflows
+  cancel-in-progress: false
+
 on:
   workflow_call:
     inputs:
@@ -17,10 +21,13 @@ on:
 jobs:
   build-and-run-linux:
     name: Build and Run
-    runs-on: ["self-hosted", "build-server"]
+    runs-on: ${{ matrix.run-target }}
     container:
       image: ghcr.io/${{ github.repository }}/devcontainer-linux:${{ inputs.devcontainer-tag }}
       options: --user 1000:1000
+    strategy:
+      matrix:
+        run-target: [["self-hosted", "build-server"], ocre-raspberrypi]
     steps:
       - name: Clean other workspace
         run: rm -rf ../.west
@@ -53,29 +60,6 @@ jobs:
       - name: Build and run (leak checks)
         working-directory: build
         run: make
-
-      - name: Delete build directory
-        run: rm -rf build
-
-      - name: Configure (test coverage)
-        run: mkdir build && cd build && cmake ../tests/coverage
-
-      - name: Build and run (test coverage)
-        working-directory: build
-        run: make coverage report.md
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: ocre-coverage
-          include-hidden-files: true
-          path: build/coverage
-
-      - name: Report code coverage
-        uses: marocchino/sticky-pull-request-comment@v3
-        with:
-          GITHUB_TOKEN: ${{ secrets.TOKEN_WRITE_PR }}
-          path: build/report.md
 
       - name: Delete build directory
         run: rm -rf build
@@ -114,3 +98,44 @@ jobs:
             echo "[ERROR] Expected log not found: $EXPECTED_LOG"
             exit 1
           fi
+
+  post-code-coverage:
+    name: Post Code Test Coverage
+    runs-on: ["self-hosted", "build-server"]
+    container:
+      image: ghcr.io/${{ github.repository }}/devcontainer-linux:${{ inputs.devcontainer-tag }}
+      options: --user 1000:1000
+    steps:
+      - name: Clean other workspace
+        run: rm -rf ../.west
+
+      - name: Clean workspace
+        run: find . -name . -o -prune -exec rm -rf -- {} +
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Delete build directory
+        run: rm -rf build
+
+      - name: Configure (test coverage)
+        run: mkdir build && cd build && cmake ../tests/coverage
+
+      - name: Build and run (test coverage)
+        working-directory: build
+        run: make coverage report.md
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocre-coverage
+          include-hidden-files: true
+          path: build/coverage
+
+      - name: Report code coverage
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_WRITE_PR }}
+          path: build/report.md
