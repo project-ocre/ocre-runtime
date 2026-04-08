@@ -103,6 +103,24 @@ west build -p always -b b_u585i_iot02a --shield enc28j60 src/samples/supervisor/
 
 Replace `enc28j60` with `wiznet_w5500` if WIZnet W5500 ethernet shield is used.
 
+### AoT
+
+For building AoT files use [wamrc](https://github.com/bytecodealliance/wasm-micro-runtime/tree/main/wamr-compiler) with following configuration:
+
+```bash
+wamrc --cpu=cortex-m33 --target=thumbv8m.main --target-abi=eabihf -o hello-world.aot hello-world.wasm
+```
+
+Make sure to build wamrc in the wasm-micro-runtime submodule, not a separate clone, in order to match the versions.
+
+Since we use here hard-float ABI, make sure you enable FPU in boards' config. Additionally, MPU has to be disabled (or configured), since it might affect running AoT images from external memory. Furthermore, AoT config from Ocre has to be enabled. Hence, the necessary configuration shall include:
+
+```
+CONFIG_ARM_MPU=n
+CONFIG_FPU=y
+CONFIG_OCRE_WAMR_AOT=y
+```
+
 ## Flashing
 
 ### First Flash (with Preloaded Images)
