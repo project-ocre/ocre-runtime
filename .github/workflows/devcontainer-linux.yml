@@ -45,6 +45,7 @@ jobs:
 
   build-push:
     name: Build and push
+    timeout-minutes: 300
     if: ${{ needs.necessary.outputs.build == 'true' }}
     needs:
       - necessary
