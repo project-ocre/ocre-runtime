@@ -15,6 +15,11 @@ target_sources(OcreCore
     util/unique_random_id.c
 )
 
+# Ensure generated headers are ready before compiling
+if(TARGET zephyr_generated_headers)
+    add_dependencies(OcreCore zephyr_generated_headers)
+endif()
+
 target_link_libraries(OcreCore
     PRIVATE
     uthash

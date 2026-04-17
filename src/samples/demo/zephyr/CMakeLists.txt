@@ -25,11 +25,9 @@ target_sources(app
     ../main.c
 )
 
-# Ensure generated headers (e.g. heap_constants.h) are ready before compiling
-# the library. Zephyr adds this dependency for its own libraries automatically,
-# but parallel builds can race when the library is added via add_subdirectory.
+# Ensure generated headers are ready before compiling
 if(TARGET zephyr_generated_headers)
-  add_dependencies(OcreCore zephyr_generated_headers)
+    add_dependencies(app zephyr_generated_headers)
 endif()
 
 target_link_libraries(app

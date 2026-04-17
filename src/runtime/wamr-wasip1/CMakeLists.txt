@@ -23,4 +23,9 @@ target_link_libraries(OcreRuntimeWamr
     vmlib
 )
 
+# Ensure generated headers are ready before compiling
+if(TARGET zephyr_generated_headers)
+    add_dependencies(OcreRuntimeWamr zephyr_generated_headers)
+endif()
+
 add_subdirectory(ocre_api)

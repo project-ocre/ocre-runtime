@@ -26,6 +26,11 @@ target_include_directories(Unity PUBLIC
     ../../../../tests/Unity/src
 )
 
+if(TARGET zephyr_generated_headers)
+    add_dependencies(Unity zephyr_generated_headers)
+    add_dependencies(app zephyr_generated_headers)
+endif()
+
 target_sources(app
     PRIVATE
     ../../input_output.c

@@ -59,3 +59,8 @@ target_include_directories(OcreCommon
     PUBLIC
     include
 )
+
+# Ensure generated headers are ready before compiling
+if(TARGET zephyr_generated_headers)
+    add_dependencies(OcreCommon zephyr_generated_headers)
+endif()

@@ -31,3 +31,8 @@ target_link_libraries(OcreRuntimeAPI
     OcrePlatform
     vmlib
 )
+
+# Ensure generated headers are ready before compiling
+if(TARGET zephyr_generated_headers)
+    add_dependencies(OcreRuntimeAPI zephyr_generated_headers)
+endif()
