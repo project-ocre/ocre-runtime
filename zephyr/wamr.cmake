@@ -86,9 +86,8 @@ target_sources(vmlib PRIVATE
 # Ensure generated headers (e.g. heap_constants.h) are ready before compiling
 # the library. Zephyr adds this dependency for its own libraries automatically,
 # but parallel builds can race when the library is added via add_subdirectory.
-if(TARGET zephyr_generated_headers)
-    add_dependencies(vmlib zephyr_generated_headers)
-endif()
+add_dependencies(vmlib zephyr_generated_headers)
+
 target_link_libraries(vmlib zephyr_interface LITTLEFS)
 
 get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)

@@ -36,8 +36,3 @@ target_include_directories(OcreShell
     PUBLIC
     include
 )
-
-# Ensure generated headers are ready before compiling
-if(TARGET zephyr_generated_headers)
-    add_dependencies(OcreShell zephyr_generated_headers)
-endif()

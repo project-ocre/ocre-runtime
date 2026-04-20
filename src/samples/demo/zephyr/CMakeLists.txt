@@ -25,11 +25,6 @@ target_sources(app
     ../main.c
 )
 
-# Ensure generated headers are ready before compiling
-if(TARGET zephyr_generated_headers)
-    add_dependencies(app zephyr_generated_headers)
-endif()
-
 target_link_libraries(app
     PUBLIC
     OcreCore
