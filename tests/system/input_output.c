@@ -69,6 +69,7 @@ void test_ocre_container_output_stdout(void)
 	TEST_ASSERT_EQUAL_STRING("argv[1]=" ARG_TEST_STRING "\n", buf);
 
 	ocre_container_kill(container);
+	close(stdout_pair[0]);
 	ocre_container_wait(container, NULL);
 
 	ocre_context_remove_container(context, container);
@@ -98,6 +99,8 @@ void test_ocre_container_input_stdin_output_stdout(void)
 	TEST_ASSERT_EQUAL_STRING(ARG_TEST_STRING "\n", buf);
 
 	ocre_container_kill(container);
+	close(stdin_pair[0]);
+	close(stdout_pair[0]);
 	ocre_container_wait(container, NULL);
 
 	ocre_context_remove_container(context, container);
@@ -135,6 +138,8 @@ void test_ocre_container_input_stdin_output_stderr(void)
 	TEST_ASSERT_EQUAL_STRING(ARG_TEST_STRING "\n", buf);
 
 	ocre_container_kill(container);
+	close(stdin_pair[0]);
+	close(stderr_pair[0]);
 	ocre_container_wait(container, NULL);
 
 	ocre_context_remove_container(context, container);
