@@ -1,0 +1,28 @@
+{
+    "name": "Supervisor Sample - Webserver Complex",
+    "description": "Test webserver complex container on the supervisor sample",
+    "setup": [
+      {
+        "name": "Create Webserver Complex Container",
+        "exec": "./setup.py"
+      }
+    ],
+    "test_suites": [
+      {
+        "name": "Test Container Output and Connectivity",
+        "description": "Test webserver complex container features and networking",
+        "test_cases": [
+          {
+            "name": "Test the container's response to http requests",
+            "exec": "./testcase.py"
+          }
+        ]
+      }
+    ],
+    "cleanup": [
+      {
+        "name": "Remove Webserver Complex Container",
+        "exec": "./clean.py"
+      }
+    ]
+  }
