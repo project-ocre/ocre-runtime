@@ -247,7 +247,7 @@ jobs:
       - name: Build and Flash Supervisor
         run: |
           . /opt/zephyr-venv/bin/activate
-          west build -p always -b b_u585i_iot02a ocre-runtime/src/samples/supervisor/zephyr -- "-DOCRE_SDK_PRELOADED_IMAGES=hello-world.wasm"
+          west build -p always -b b_u585i_iot02a --shield wiznet_w5500 ocre-runtime/src/samples/supervisor/zephyr -- "-DOCRE_SDK_PRELOADED_IMAGES=hello-world.wasm;webserver-complex.wasm"
           west flash --extload=/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/ExternalLoader/MX25LM51245G_STM32U585I-IOT02A.stldr --hex-file build/zephyr/merged.hex
 
   supervisor-test-set-1:
@@ -260,6 +260,8 @@ jobs:
         test:
           - name: Hello-World
             group: supervisor-helloWorld
+          - name: Webserver-Complex
+            group: supervisor-webserverComplex
 
     steps:
       - name: Checkout
@@ -269,6 +271,6 @@ jobs:
         run: |
           cd tests_hw && bash beginTests.sh ${{ matrix.test.group }}
 
-      - name: Print Hello-World Test Case Logs
+      - name: Print ${{ matrix.test.name }} Testcase Logs
         if: always()
         run: cat /tmp/${{ matrix.test.group }}.log
