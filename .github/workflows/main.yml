@@ -15,6 +15,7 @@ on:
   push:
     branches:
       - main
+workflow_dispatch:
 
 concurrency:
   group: ${{ github.repository }}-${{ github.workflow }}@main-${{ github.ref }}
