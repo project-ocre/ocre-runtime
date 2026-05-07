@@ -67,7 +67,7 @@ jobs:
           echo "BOARD_NAME=$(printf "%s\n" "$BOARD" | tr / _)" >> $GITHUB_ENV
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ocre-zephyr-${{ env.BOARD_NAME }}-${{ matrix.app }}
           include-hidden-files: true
@@ -99,7 +99,7 @@ jobs:
           echo "BOARD_NAME=$(printf "%s\n" "$BOARD" | tr / _)" >> $GITHUB_ENV
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ocre-zephyr-${{ env.BOARD_NAME }}-${{ matrix.app }}
 

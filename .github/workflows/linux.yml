@@ -67,7 +67,7 @@ jobs:
         run: make coverage report.md
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ocre-coverage
           include-hidden-files: true
