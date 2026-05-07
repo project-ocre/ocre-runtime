@@ -38,7 +38,7 @@ jobs:
         run: find . -name . -o -prune -exec rm -rf -- {} +
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           path: ocre-runtime
           submodules: true
@@ -67,7 +67,7 @@ jobs:
           echo "BOARD_NAME=$(printf "%s\n" "$BOARD" | tr / _)" >> $GITHUB_ENV
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ocre-zephyr-${{ env.BOARD_NAME }}-${{ matrix.app }}
           include-hidden-files: true
@@ -99,7 +99,7 @@ jobs:
           echo "BOARD_NAME=$(printf "%s\n" "$BOARD" | tr / _)" >> $GITHUB_ENV
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
         with:
           name: ocre-zephyr-${{ env.BOARD_NAME }}-${{ matrix.app }}
 
