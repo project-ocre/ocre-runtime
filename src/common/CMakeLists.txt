@@ -14,16 +14,26 @@ execute_process(
 
 if(GIT_DIR)
     message(STATUS "Detected git repository. Automatic commit ID tracking is enabled.")
-
-    # Generate commit ID header file in source dir if we are in a git repository
-    add_custom_command(
-        OUTPUT include/commit_id.h
-        COMMAND sh -c "echo '/* Auto-generated file. DO NOT EDIT */' > ${CMAKE_CURRENT_BINARY_DIR}/include/commit_id.h"
-        COMMAND sh -c "echo \"#define GIT_COMMIT_ID \\\"$(git describe --always --abbrev=0 --dirty)\\\"\" >> ${CMAKE_CURRENT_BINARY_DIR}/include/commit_id.h"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        VERBATIM
-        DEPENDS always_rebuild
-    )
+    if(OCRE_COMMIT_ID_IN_SRC_DIR)
+        add_custom_command(
+            OUTPUT commit_id.h
+            COMMAND sh -c "echo '/* Auto-generated file. DO NOT EDIT */' > commit_id.h"
+            COMMAND sh -c "echo \"#define GIT_COMMIT_ID \\\"$(git describe --always --abbrev=0 --dirty)\\\"\" >> commit_id.h"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            VERBATIM
+            DEPENDS always_rebuild
+        )
+          add_custom_target(ocre_commit_id DEPENDS commit_id.h)
+    else()
+        add_custom_command(
+            OUTPUT commit_id.h
+            COMMAND sh -c "echo '/* Auto-generated file. DO NOT EDIT */' > ${CMAKE_CURRENT_BINARY_DIR}/include/commit_id.h"
+            COMMAND sh -c "echo \"#define GIT_COMMIT_ID \\\"$(git describe --always --abbrev=0 --dirty)\\\"\" >> ${CMAKE_CURRENT_BINARY_DIR}/include/commit_id.h"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            VERBATIM
+            DEPENDS always_rebuild
+        )
+    endif()
 endif()
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/ocre)
@@ -50,7 +60,7 @@ target_sources(OcreCommon
     PRIVATE
     common.c
     include/build_info.h
-    include/commit_id.h
+    commit_id.h
 )
 
 target_include_directories(OcreCommon
