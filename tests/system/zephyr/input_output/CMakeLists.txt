@@ -22,6 +22,9 @@ add_library(Unity STATIC
     ../../../../tests/Unity/src/unity.c
 )
 
+target_link_libraries(Unity PUBLIC zephyr_interface)
+
+
 target_include_directories(Unity PUBLIC
     ../../../../tests/Unity/src
 )
