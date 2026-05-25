@@ -212,5 +212,3 @@ Refer to the [Ocre Shell](OcreCli.md) documentation for more details.
 The Ocre Runtime component defines the `ocre_runtime_vtable` interface (`<ocre/runtime/vtable.h>`), which is the plugin contract for custom runtime engines. The vtable includes function pointers for `init`, `deinit`, `create`, `destroy`, `thread_execute`, `stop`, `kill`, `pause`, and `unpause`.
 
 The built-in runtime is **WAMR/WASI-P1** (`wamr/wasip1`), which uses the WebAssembly Micro-Runtime to execute WASM modules compiled against the WASI Preview 1 ABI. Additional runtime engines can be registered at initialization time via `ocre_initialize()`.
-
-Refer to the [Custom Runtime Engine](CustomRuntimeEngine.md) documentation for more details.
