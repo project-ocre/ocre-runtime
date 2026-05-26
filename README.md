@@ -35,7 +35,7 @@ Ocre supports a range of features depending on the platform. The table below sum
 | Interactive Shell   |                 ✅                  |  ❌   |
 
 - **Zephyr**: Full feature set, including hardware integration and shell.
-- **Linux**: Core runtime and multiple I/O features; hardware and shell features are not available.
+- **Linux**: Core runtime and multiple I/O features. Hardware and shell features are not available.
 
 ---
 
