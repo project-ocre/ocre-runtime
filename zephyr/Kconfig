@@ -194,6 +194,62 @@ config OCRE_SHELL
     help
         Enable the OCRE Shell for dynamic configuration management.
 
+config OCRE_HTTP_SERVER
+    bool "Enable OCRE native HTTP request/response API"
+    depends on HTTP_SERVER
+    default n
+    help
+        Runs a native HTTP server (Zephyr's http_server subsystem, outside
+        the WASM sandbox) that catches every request regardless of path or
+        method and hands it to the active container's exported
+        "onRequest(requestId)" function. The container reads the request
+        with ocre_http_get_method/path/query/header/body and answers with
+        ocre_http_respond -- all routing logic lives in container code, not
+        in the native layer.
+
+if OCRE_HTTP_SERVER
+
+config OCRE_HTTP_SERVER_PORT
+    int "Port for the OCRE native HTTP server"
+    default 8081
+    help
+        TCP port the native HTTP server listens on.
+
+endif # OCRE_HTTP_SERVER
+
+config OCRE_HTTP_CLIENT
+    bool "Enable OCRE native outbound HTTP client API"
+    depends on HTTP_CLIENT
+    default n
+    help
+        Exposes a blocking ocre_http_get() to WASM containers, letting
+        container code issue outbound HTTP GET requests via Zephyr's HTTP
+        client subsystem (outside the WASM sandbox) and read the response
+        body back into container memory. Runs on the calling instance's own
+        thread, so -- like any blocking native call -- it stalls that
+        instance's loop()/onRequest() dispatch for the duration of the
+        request.
+
+if OCRE_HTTP_CLIENT
+
+config OCRE_HTTP_CLIENT_TIMEOUT_MS
+    int "Timeout for OCRE HTTP client requests"
+    default 5000
+    help
+        Timeout, in milliseconds, for outbound requests made via
+        ocre_http_get().
+
+endif # OCRE_HTTP_CLIENT
+
+config OCRE_LOOP_INTERVAL_MS
+    int "Interval, in milliseconds, between native calls to a container's loop()"
+    default 100
+    help
+        Once a container's "main" export returns, if it also exports a
+        "loop" function, the native side keeps calling it on this interval
+        (in place of the container looping forever inside a single WASM
+        call) until the container is replaced or removed.
+
 comment "Logging"
 
 module = OCRE
@@ -242,6 +298,37 @@ config OCRE_GPIO_PINS_PER_PORT
       logical pin numbers to physical port and pin numbers.
 
 endif # OCRE_GPIO
+
+config OCRE_ADC
+    bool "Enable OCRE ADC (analog input) support"
+    depends on ADC
+    default n
+    help
+      Exposes named analog-input channels (e.g. "a0") to WASM containers,
+      pre-scaled to 0-255. Resolves channels via the same devicetree
+      "zephyr,user" io-channels convention as Zephyr's own
+      samples/drivers/adc/adc_dt sample, so the native code is unchanged
+      across boards -- only a board's devicetree overlay determines which
+      channel names actually resolve.
+
+if OCRE_ADC
+config OCRE_ADC_MAX_CHANNELS
+    int "Maximum number of named ADC channels"
+    default 4
+    help
+      Maximum number of named analog-input channels ("a0".."a3") the OCRE
+      ADC driver will resolve at init time.
+
+config OCRE_ADC_VREF_MV
+    int "Full-scale voltage (mV) used to scale ADC readings to 0-255"
+    default 3300
+    help
+      Assumed full-scale input voltage, in millivolts, for channels whose
+      reference voltage is known from devicetree (e.g. zephyr,vref-mv).
+      Channels without a known reference voltage instead scale the raw
+      ADC code directly against the channel's resolution.
+
+endif # OCRE_ADC
 
 config OCRE_SENSORS
     bool "Enable OCRE Sensors support"

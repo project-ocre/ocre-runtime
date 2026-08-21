@@ -28,6 +28,7 @@
 
 #include "ocre_api/ocre_common.h"
 #include "ocre_api/ocre_timers/ocre_timer.h"
+#include "ocre_api/ocre_dispatch/ocre_dispatch.h"
 
 LOG_MODULE_REGISTER(wamr_runtime, CONFIG_OCRE_LOG_LEVEL);
 
@@ -47,14 +48,24 @@ struct wamr_context {
 	bool uses_shared_heap;
 	char **dir_map_list;
 	size_t dir_map_list_len;
+	/* Non-NULL once this instance has been handed to ocre_dispatch as the
+	 * active reactive instance (exports "loop" and/or "onRequest").
+	 * instance_execute() then skips deinstantiating on return; cleanup is
+	 * deferred to instance_destroy(). */
+	wasm_exec_env_t reactive_exec_env;
 };
 
 static int instance_execute(void *runtime_context, sem_t *sem)
 {
 	struct wamr_context *context = runtime_context;
 
+	/* host_managed_heap_size=0: this is WAMR's own "app heap" inside linear
+	 * memory, for languages needing malloc() inside the sandbox (C/Rust via
+	 * WASI). AssemblyScript manages its own memory in linear memory and
+	 * never touches it -- skipping it recovers 8KB of native heap per
+	 * container for free. */
 	context->module_inst =
-		wasm_runtime_instantiate(context->module, 8192, 8192, context->error_buf, sizeof(context->error_buf));
+		wasm_runtime_instantiate(context->module, 8192, 0, context->error_buf, sizeof(context->error_buf));
 	if (!context->module_inst) {
 		LOG_ERR("Failed to instantiate module: %s, for context %p", context->error_buf, context);
 		return -1;
@@ -98,6 +109,30 @@ static int instance_execute(void *runtime_context, sem_t *sem)
 		if (exception) {
 			LOG_ERR("Container %p exception: %s", context, exception);
 		}
+	}
+
+	/* If the module also exports "loop" and/or "onRequest", it wants to
+	 * keep running after "main" returns: main() becomes a one-time setup
+	 * call, and native code drives the rest (a periodic loop() call, or
+	 * onRequest() dispatched from the HTTP fallback handler) instead of
+	 * the module looping forever inside this one call. Skip teardown and
+	 * hand the instance off to ocre_dispatch; instance_destroy() will
+	 * deinstantiate it once the container is actually removed. */
+
+	if (wasm_runtime_lookup_function(context->module_inst, "loop") ||
+	    wasm_runtime_lookup_function(context->module_inst, "onRequest")) {
+		wasm_exec_env_t dispatch_exec_env =
+			wasm_runtime_create_exec_env(context->module_inst, OCRE_WASM_STACK_SIZE);
+
+		if (dispatch_exec_env) {
+			context->reactive_exec_env = dispatch_exec_env;
+			ocre_dispatch_activate(context->module_inst, dispatch_exec_env);
+			LOG_INF("Context %p is reactive; handing off to ocre_dispatch", context);
+			return 0;
+		}
+
+		LOG_ERR("Failed to create exec env for reactive dispatch on context %p; tearing down normally",
+			context);
 	}
 
 	if (context->uses_ocre_api) {
@@ -461,6 +496,30 @@ static int instance_destroy(void *runtime_context)
 
 	if (!context) {
 		return -1;
+	}
+
+	/* A reactive instance (see instance_execute()) is still instantiated
+	 * and registered with ocre_dispatch at this point -- finish the
+	 * deferred teardown now that the container is actually being
+	 * removed. Non-reactive instances already deinstantiated in
+	 * instance_execute(), leaving module_inst NULL, so this is a no-op
+	 * for them. */
+
+	if (context->module_inst) {
+		ocre_dispatch_deactivate(context->module_inst);
+
+		if (context->uses_ocre_api) {
+			ocre_cleanup_module_resources(context->module_inst);
+			ocre_unregister_module(context->module_inst);
+		}
+
+		if (context->reactive_exec_env) {
+			wasm_runtime_destroy_exec_env(context->reactive_exec_env);
+			context->reactive_exec_env = NULL;
+		}
+
+		wasm_runtime_deinstantiate(context->module_inst);
+		context->module_inst = NULL;
 	}
 
 	wasm_runtime_unload(context->module);

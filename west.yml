@@ -17,6 +17,9 @@ manifest:
           - hal_st
           - hal_nordic
           - hal_rpi_pico
+          - hal_espressif
           - cmsis_6
+          - mbedtls
+          - tf-psa-crypto
   self:
     path: ocre-runtime

@@ -1,0 +1,33 @@
+/*
+ * @copyright Copyright (c) contributors to Project Ocre,
+ * which has been established as Project Ocre a Series of LF Projects, LLC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Makes ADC1 channel 0 (physical pin "A0"/GPIO0 on the XIAO ESP32-C6's
+ * header) available to ocre_adc as the named channel "a0". Mirrors the
+ * devicetree pattern from Zephyr's own samples/drivers/adc/adc_dt sample
+ * (see socs/esp32c3.overlay there) -- the native ocre_adc.c code is
+ * unchanged across boards; only this overlay is board-specific.
+ */
+
+/ {
+	zephyr,user {
+		io-channels = <&adc0 0>;
+		io-channel-names = "a0";
+	};
+};
+
+&adc0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_4";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+};

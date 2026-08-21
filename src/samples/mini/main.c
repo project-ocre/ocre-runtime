@@ -19,6 +19,11 @@
 #include "nsi_main.h"
 #endif
 
+#if defined(__ZEPHYR__) && !defined(CONFIG_ARCH_POSIX)
+#include <zephyr/kernel.h>
+#include <zephyr/sys/printk.h>
+#endif
+
 extern const unsigned char ocre_mini_sample_image[];
 extern const size_t ocre_mini_sample_image_len;
 
@@ -114,6 +119,13 @@ int main(int argc, char *argv[])
 	ocre_destroy_context(ocre);
 
 	ocre_deinitialize();
+
+#if defined(__ZEPHYR__) && !defined(CONFIG_ARCH_POSIX)
+	while (1) {
+		printk("Ocre mini sample is alive\n");
+		k_sleep(K_SECONDS(1));
+	}
+#endif
 
 	/* Exit simulator on zephyr */
 

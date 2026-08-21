@@ -11,6 +11,15 @@ SPDX-License-Identifier: Apache-2.0 -->
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9691/badge)](https://www.bestpractices.dev/projects/9691)
 [![slack](https://img.shields.io/badge/slack-ocre-brightgreen.svg?logo=slack)](https://lfedge.slack.com/archives/C07F190CC3X)
 
+> **This is a fork** of upstream Ocre adding a `fetch` sample (WiFi-connected,
+> pulls AssemblyScript containers from a network URL and reboots to run
+> updates) plus supporting runtime changes: a reactive `loop()`/`onRequest()`
+> execution model, a generic HTTP request/response bridge, an outbound HTTP
+> client, ADC support, and several memory/reliability fixes. See
+> [`docs/samples/fetch.md`](docs/samples/fetch.md) for the full list and the
+> `ocre-as` CLI (separate repo) and `gpio-demo` example project (separate
+> repo) it's meant to be paired with.
+
 Powered by WebAssembly, the Ocre runtime is available in both Zephyr and Linux variants and supports OCI-like application containers in a footprint up to 2000x lighter than traditional container runtimes like Docker.
 
 With Ocre, developers can run the exact same application container binaries written in choice of programming language on both the Linux and Zephyr-based runtime versions spanning CPU and MCU-based devices.
@@ -192,6 +201,7 @@ The officially supported sample applications are listed below:
 | `mini`       | A simple "Hello World" application using minimal resources |
 | `demo`       | A more featured sample application                         |
 | `supervisor` | Interactive shell control                                  |
+| `fetch`      | WiFi-connected: fetches AssemblyScript containers from a network URL and runs them reactively (see [`docs/samples/fetch.md`](docs/samples/fetch.md)) |
 
 The intended usage of the samples are:
 

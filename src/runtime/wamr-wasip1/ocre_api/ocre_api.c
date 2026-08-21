@@ -17,8 +17,17 @@
 
 #include "ocre_api.h"
 #include "utils/strlcat.h"
+#include "ocre_print/ocre_print.h"
 
 #include <ocre/platform/config.h>
+
+#ifdef CONFIG_OCRE_HTTP_SERVER
+#include "ocre_http/ocre_http.h"
+#endif
+
+#ifdef CONFIG_OCRE_HTTP_CLIENT
+#include "ocre_http_client/ocre_http_client.h"
+#endif
 
 #ifdef CONFIG_OCRE_TIMER
 #include "ocre_timers/ocre_timer.h"
@@ -35,6 +44,10 @@
 
 #ifdef CONFIG_OCRE_GPIO
 #include "ocre_gpio/ocre_gpio.h"
+#endif
+
+#ifdef CONFIG_OCRE_ADC
+#include "ocre_adc/ocre_adc.h"
 #endif
 
 #ifdef CONFIG_OCRE_CONTAINER_MESSAGING
@@ -93,7 +106,22 @@ int _ocre_posix_uname(wasm_exec_env_t exec_env, struct _ocre_posix_utsname *name
 
 int ocre_sleep(wasm_exec_env_t exec_env, int milliseconds)
 {
-	usleep(milliseconds * 1000);
+	if (milliseconds <= 0) {
+		return 0;
+	}
+
+	/* POSIX usleep() rejects any value >= 1 second (returns -1/EINVAL
+	 * instantly instead of sleeping), so chunk the delay into sub-second
+	 * calls to support arbitrary durations. */
+	while (milliseconds >= 1000) {
+		usleep(999000);
+		milliseconds -= 999;
+	}
+
+	if (milliseconds > 0) {
+		usleep((unsigned int)milliseconds * 1000);
+	}
+
 	return 0;
 }
 
@@ -101,6 +129,22 @@ int ocre_sleep(wasm_exec_env_t exec_env, int milliseconds)
 NativeSymbol ocre_api_table[] = {
 	{"uname", _ocre_posix_uname, "(*)i", NULL},
 	{"ocre_sleep", ocre_sleep, "(i)i", NULL},
+	{"ocre_print", ocre_print_wasm, "($)i", NULL},
+	/* Backs AssemblyScript-compiled modules' "env.abort" import. Void
+	 * return: no trailing signature char (WAMR only checks a return char
+	 * when the wasm import itself declares a result). */
+	{"abort", ocre_abort_wasm, "($$ii)", NULL},
+#ifdef CONFIG_OCRE_HTTP_SERVER
+	{"ocre_http_get_method", ocre_http_get_method_wasm, "(i)i", NULL},
+	{"ocre_http_get_path", ocre_http_get_path_wasm, "(i*~)i", NULL},
+	{"ocre_http_get_query", ocre_http_get_query_wasm, "(i*~)i", NULL},
+	{"ocre_http_get_header", ocre_http_get_header_wasm, "(i$*~)i", NULL},
+	{"ocre_http_get_body", ocre_http_get_body_wasm, "(i*~)i", NULL},
+	{"ocre_http_respond", ocre_http_respond_wasm, "(ii$$)i", NULL},
+#endif
+#ifdef CONFIG_OCRE_HTTP_CLIENT
+	{"ocre_http_get", ocre_http_client_get_wasm, "($i$*~)i", NULL},
+#endif
 #if defined(CONFIG_OCRE_TIMER) || defined(CONFIG_OCRE_GPIO) || defined(CONFIG_OCRE_SENSORS) ||                         \
 	defined(CONFIG_OCRE_CONTAINER_MESSAGING)
 	{"ocre_get_event", ocre_get_event, "(iiiiii)i", NULL},
@@ -152,6 +196,11 @@ NativeSymbol ocre_api_table[] = {
 	{"ocre_gpio_toggle_by_name", ocre_gpio_wasm_toggle_by_name, "($)i", NULL},
 	{"ocre_gpio_register_callback_by_name", ocre_gpio_wasm_register_callback_by_name, "($)i", NULL},
 	{"ocre_gpio_unregister_callback_by_name", ocre_gpio_wasm_unregister_callback_by_name, "($)i", NULL},
+#endif
+// ADC API
+#ifdef CONFIG_OCRE_ADC
+	{"ocre_adc_init", ocre_adc_wasm_init, "()i", NULL},
+	{"ocre_adc_read_by_name", ocre_adc_wasm_read_by_name, "($)i", NULL},
 #endif
 };
 
